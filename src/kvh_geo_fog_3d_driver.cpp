@@ -11,3 +11,18 @@ kvh::Driver::Driver()
 {
 
 } //end: Driver()
+
+int kvh::Driver::Init()
+{
+
+} //end: Init()
+
+int kvh::Driver::Once()
+{
+
+} //end: Once()
+
+int kvh::Driver::Cleanup()
+{
+
+} //end: Cleanup()
