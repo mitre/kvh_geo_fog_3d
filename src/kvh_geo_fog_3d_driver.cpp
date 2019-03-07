@@ -7,7 +7,8 @@
  */
 #include "kvh_geo_fog_3d_driver.hpp"
 
-kvh::Driver::Driver()
+kvh::Driver::Driver() :
+  connected_(false)
 {
 
 } //end: Driver()
@@ -17,9 +18,10 @@ int kvh::Driver::Init()
 
 } //end: Init()
 
-int kvh::Driver::Once()
+int kvh::Driver::Once(kvh::MessageType* _messageType, std::vector<uint8_t>* _data)
 {
-
+  //Read serial port, check CRC16, check LRC, return data
+  
 } //end: Once()
 
 int kvh::Driver::Cleanup()
