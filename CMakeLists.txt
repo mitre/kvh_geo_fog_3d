@@ -4,8 +4,6 @@ project(kvh_geo_fog_3d_driver)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
-
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -111,10 +109,14 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-#add_library(kvh_geo_fog_3d_driver_nodelet
-#  src/driver.cpp
-#  src/nodelet.cpp
-#)
+add_library(kvh_geo_fog_3d_driver
+  src/kvh_geo_fog_3d_driver.cpp
+)
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(kvh_geo_fog_3d_driver
+  ${catkin_LIBRARIES}
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -187,7 +189,7 @@ include_directories(
 # )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS kvh_geo_fog_3d_driver_nodelet
+install(TARGETS kvh_geo_fog_3d_driver
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -196,7 +198,7 @@ install(TARGETS kvh_geo_fog_3d_driver_nodelet
 ## Mark cpp header files for installation
 install(DIRECTORY include/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.h"
+  FILES_MATCHING PATTERN "*.hpp"
   PATTERN ".svn" EXCLUDE
 )
 
