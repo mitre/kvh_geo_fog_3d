@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="nodelet" type="nodelet" name="kvh_geo_fog"  args="manager" output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" name="kvg_geo_fog" args="load kvh_geo_fog_3d_driver/GEO_FOG_Nodelet kvh_geo_fog" output="screen">
+  </node>
+</launch>
