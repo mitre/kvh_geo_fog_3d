@@ -110,13 +110,18 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(kvh_geo_fog_3d_driver
+add_library(${PROJECT_NAME}
   src/kvh_geo_fog_3d_driver.cpp
 )
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(kvh_geo_fog_3d_driver
+target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
+  usb-1.0
+)
+
+add_library(${PROJECT_NAME}_nodelet 
+  src/kvh_geo_fog_3d_nodelet.cpp
 )
 
 ## Add cmake target dependencies of the executable
@@ -126,9 +131,10 @@ target_link_libraries(kvh_geo_fog_3d_driver
 #)
 
 ### Specify libraries to link a library or executable target against
-#target_link_libraries(kvh_geo_fog_3d_driver_nodelet
-#  ${catkin_LIBRARIES}
-#)
+target_link_libraries(${PROJECT_NAME}_nodelet
+  ${catkin_LIBRARIES}
+  kvh_geo_fog_3d_driver
+)
 
 
 ## Declare a C++ library
@@ -149,15 +155,20 @@ target_link_libraries(kvh_geo_fog_3d_driver
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-#add_executable(${PROJECT_NAME}_node src/kvh_geo_fog_3d_driver_node.cpp
-#  node.cpp
-#)
+add_executable(${PROJECT_NAME}_node src/kvh_geo_fog_3d_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
+
+
+### Specify libraries to link a library or executable target against
+target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+  kvh_geo_fog_3d_driver
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -167,10 +178,7 @@ target_link_libraries(kvh_geo_fog_3d_driver
 #  ${PROJECT_NAME}_gencfg
 #)
 
-### Specify libraries to link a library or executable target against
-#target_link_libraries(${PROJECT_NAME}_node
-#  ${catkin_LIBRARIES}
-#)
+
 
 #configure_file(settings/equalization_preset.yaml ${CMAKE_CURRENT_BINARY_DIR}/equalization_preset.yaml COPYONLY)
 #file(COPY settings DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/flir_adk_driver_node.dir/src)

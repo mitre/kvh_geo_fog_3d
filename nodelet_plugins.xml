@@ -10,7 +10,7 @@
       type: 2(namespace)::@(class name), e.g. "example::Nodelet"
       base_class_type: "nodelet::Nodelet"
   -->
-  <class name="kvh_geo_fog_3d_driver/Nodelet" type="kvh::Nodelet" base_class_type="nodelet::Nodelet">
+  <class name="kvh_geo_fog_3d_driver/GEO_FOG_Nodelet" type="kvh::GEO_FOG_Nodelet" base_class_type="nodelet::Nodelet">
   <description>
     Nodelet for the KVH GEO FOG 3D Driver.
   </description>

@@ -9,6 +9,12 @@
 
 #include <vector>
 #include <cstdint>
+#include <string>
+
+extern "C"
+{
+#include "libusb-1.0/libusb.h"
+}
 
 namespace kvh
 {
@@ -32,31 +38,21 @@ namespace kvh
   {
   public:
     Driver();
-    /**
-     * @brief Initialize the connection to the device
-     * @return [int] 0 = success, > 0 = warning, < 0 = failure
-     * 
-     * Initialize the serial connection to the KVH GEO FOG 3D.
-     */
+    // ~Driver();
+
+    // Documentation here is about using interface. Implementation documentation in source
+
     int Init();
-    /**
-     * @brief Do a single data read from the device
-     * @param _messageType [out] The type of message read
-     * @param _data [out] An array containing the read data
-     * @return [int]:
-     *  0  = success
-     *  -1 = CRC16 failure
-     *  -2 = LRC failure
-     * 
-     * Single data packet read.
-     */
     int Once(kvh::MessageType* _messageType, std::vector<uint8_t>* _data);
-    /**
-     * @brief Cleanup and close our connections.
-     * @return [int] 0 = success, > 0 = warning, < 0 = failure
-     */
     int Cleanup();
+
   private:
+    const std::string kvhDeviceIdString_{"FTDI - USB-RS422 Cable - FT0NIR20"}; ///< Unique id string for kvh-geofog.
+      ///< @attention Is not truly unique, so may run into name collisions with other kvh software, be aware.
     bool connected_; ///< If we're connected to the localization unit
+    libusb_device_handle* kvhHandle_{NULL}; ///< Handle to the kvh geo fog device
+
+    static int GetDeviceIdString(std::string&, libusb_device_handle *, libusb_device_descriptor&);
+    int GetDeviceHandle(libusb_device_handle *);
   }; //end: class Driver  
 } //end: namespace kvh
