@@ -68,7 +68,7 @@ enum MessageType
 class Driver
 {
 public:
-  Driver();
+  Driver(bool verbose = false);
   ~Driver();
 
   // Documentation here is about using interface. Implementation documentation in source
@@ -83,6 +83,7 @@ private:
   char port_[13];
   int baud_{115200};
   an_decoder_t anDecoder_;
+  bool verbose_{false};
 
   // Map linking packet types to id's and their decoding and enconding functions
   // std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =

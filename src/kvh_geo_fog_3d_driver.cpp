@@ -27,8 +27,9 @@ namespace kvh
    * @fn Driver::Driver
    * @brief Default contstructor.
    */
-Driver::Driver() : connected_(false),
-                   port_("/dev/ttyUSB0")
+Driver::Driver(bool verbose) : connected_(false),
+                   port_("/dev/ttyUSB0"),
+                   verbose_(verbose)
 {
 } //end: Driver()
 
@@ -95,15 +96,18 @@ int Driver::Init()
    * the size they passed in are the same? That might prevent seg faults but would still be open to other
    * errors.
    */
-int Driver::Once(KvhPackageMap& _packetMap)
+// TODO: Probably split into multiple functions: Request packets, Receive, Decode
+int Driver::Once(KvhPackageMap &_packetMap)
 {
   // Request packets
+  // Have to build our request packet since the api function only allows a request of
+  // one at a time
   an_packet_t *requestPacket = an_packet_allocate(_packetMap.size(), packet_id_request);
   int i = 0;
   for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
   {
     // Add to requests
-    printf("Adding request for: %d\n", it->first);
+    // printf("Adding request for: %d\n", it->first);
     requestPacket->data[i] = it->first;
     i++; // Increment package position
 
@@ -113,17 +117,16 @@ int Driver::Once(KvhPackageMap& _packetMap)
   an_packet_encode(requestPacket);
 
   // Attempt to send our request packet
-  // printf("Size of packet: %d\n", (int)sizeof(*requestPacket));
-  // if (SendBuf((unsigned char *)requestPacket, (int)sizeof(*requestPacket)) == 0)
-  // {
-  //   printf("Packet succesfully sent!\n");
-  // }
-  // else
-  // {
-  //   printf("We may have a problem.\n");
-  // }
-  // free(requestPacket);
-  // requestPacket = nullptr;
+  if (SendBuf(an_packet_pointer(requestPacket), an_packet_size(requestPacket)))
+  {
+    if (verbose_) printf("Packet succesfully sent!\n");
+  }
+  else
+  {
+    if (verbose_) printf("We may have a problem.\n");
+  }
+  an_packet_free(&requestPacket);
+  requestPacket = nullptr;
 
   an_packet_t *anPacket;
   int bytesRec;
@@ -136,16 +139,15 @@ int Driver::Once(KvhPackageMap& _packetMap)
     /* decode all the packets in the buffer */
     while ((anPacket = an_packet_decode(&anDecoder_)) != NULL)
     {
-
-      //     if (anPacket->id == packet_id_acknowledge)
-      //     {
-      //       acknowledge_packet_t *ackP;
-      //       if (decode_acknowledge_packet(ackP, anPacket) == 0)
-      //       {
-      //         printf("Acknowledging packet from packet id: %d\n", ackP->packet_id);
-      //       }
-      //       continue; // Don't need to try the below
-      //     }
+      if (anPacket->id == packet_id_acknowledge)
+      {
+        acknowledge_packet_t *ackP;
+        if (decode_acknowledge_packet(ackP, anPacket) == 0)
+        {
+          printf("Acknowledging packet from packet id: %d\n", ackP->packet_id);
+        }
+        continue; // Don't need to try the below for this packet
+      }
 
       // Check if the packet id is in our map
       for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
@@ -161,23 +163,47 @@ int Driver::Once(KvhPackageMap& _packetMap)
             {
               // Notify that we have updated packet
               _packetMap[packet_id_system_state].first = true;
-              system_state_packet_t system_state_packet = *(system_state_packet_t *)_packetMap[packet_id_system_state].second.get();
-              printf("System State Packet:\n");
-              printf("\tLatitude = %f, Longitude = %f, Height = %f\n", system_state_packet.latitude * RADIANS_TO_DEGREES, system_state_packet.longitude * RADIANS_TO_DEGREES, system_state_packet.height);
-              printf("\tRoll = %f, Pitch = %f, Heading = %f\n", system_state_packet.orientation[0] * RADIANS_TO_DEGREES, system_state_packet.orientation[1] * RADIANS_TO_DEGREES, system_state_packet.orientation[2] * RADIANS_TO_DEGREES);
+
+              if (verbose_)
+              {
+                system_state_packet_t system_state_packet = *(system_state_packet_t *)_packetMap[packet_id_system_state].second.get();
+                printf("System State Packet:\n");
+                printf("\tLatitude = %f, Longitude = %f, Height = %f\n", system_state_packet.latitude * RADIANS_TO_DEGREES, system_state_packet.longitude * RADIANS_TO_DEGREES, system_state_packet.height);
+                printf("\tRoll = %f, Pitch = %f, Heading = %f\n", system_state_packet.orientation[0] * RADIANS_TO_DEGREES, system_state_packet.orientation[1] * RADIANS_TO_DEGREES, system_state_packet.orientation[2] * RADIANS_TO_DEGREES);
+              }
             }
           }
-          // else if (anPacket->id == packet_id_raw_sensors) /* raw sensors packet */
-          // {
-          //   /* copy all the binary data into the typedef struct for the packet */
-          //   /* this allows easy access to all the different values             */
-          //   if (decode_raw_sensors_packet(&raw_sensors_packet, anPacket) == 0)
-          //   {
-          //     printf("Raw Sensors Packet:\n");
-          //     printf("\tAccelerometers X: %f Y: %f Z: %f\n", raw_sensors_packet.accelerometers[0], raw_sensors_packet.accelerometers[1], raw_sensors_packet.accelerometers[2]);
-          //     printf("\tGyroscopes X: %f Y: %f Z: %f\n", raw_sensors_packet.gyroscopes[0] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[1] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[2] * RADIANS_TO_DEGREES);
-          //   }
-          // }
+          else if (anPacket->id == packet_id_unix_time)
+          {
+            if (decode_unix_time_packet((unix_time_packet_t *)_packetMap[packet_id_unix_time].second.get(), anPacket) == 0)
+            {
+              _packetMap[packet_id_unix_time].first = true;
+
+              if (verbose_)
+              {
+                unix_time_packet_t unix_time_packet = *(unix_time_packet_t *)_packetMap[packet_id_unix_time].second.get();
+                printf("Unix Time Packet:\n");
+                printf("Unix Time Seconds: %u, Unix Time Microseconds %u\n", unix_time_packet.unix_time_seconds, unix_time_packet.microseconds);
+              }
+            }
+          }
+          else if (anPacket->id == packet_id_raw_sensors) /* raw sensors packet */
+          {
+            /* copy all the binary data into the typedef struct for the packet */
+            /* this allows easy access to all the different values             */
+            if (decode_raw_sensors_packet((raw_sensors_packet_t *)_packetMap[packet_id_raw_sensors].second.get(), anPacket) == 0)
+            {
+              _packetMap[packet_id_raw_sensors].first = true;
+
+              if (verbose_)
+              {
+                raw_sensors_packet_t raw_sensors_packet = *(raw_sensors_packet_t *) _packetMap[packet_id_raw_sensors].second.get();
+                printf("Raw Sensors Packet:\n");
+                printf("\tAccelerometers X: %f Y: %f Z: %f\n", raw_sensors_packet.accelerometers[0], raw_sensors_packet.accelerometers[1], raw_sensors_packet.accelerometers[2]);
+                printf("\tGyroscopes X: %f Y: %f Z: %f\n", raw_sensors_packet.gyroscopes[0] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[1] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[2] * RADIANS_TO_DEGREES);
+              }
+            }
+          }
           else
           {
             printf("Packet ID %u of Length %u\n", anPacket->id, anPacket->length);
@@ -193,20 +219,26 @@ int Driver::Once(KvhPackageMap& _packetMap)
 
 // Helper function to create map for users of driver
 // TODO: Check that we support the id before adding, if we don't return a warning int (e.g. > 0)
-int Driver::CreatePacketMap(KvhPackageMap& _packMap, std::vector<packet_id_e> _packRequest)
+int Driver::CreatePacketMap(KvhPackageMap &_packMap, std::vector<packet_id_e> _packRequest)
 {
   int unsupported = 0;
-  for(packet_id_e &packEnum : _packRequest)
+  for (packet_id_e &packEnum : _packRequest)
   {
     bool updated = false;
 
     switch (packEnum)
     {
-      case packet_id_system_state:
-        _packMap[packet_id_system_state] = std::make_pair(updated, std::make_shared<system_state_packet_t>());
-        break;
-      default:
-        unsupported += 1;
+    case packet_id_system_state:
+      _packMap[packet_id_system_state] = std::make_pair(updated, std::make_shared<system_state_packet_t>());
+      break;
+    case packet_id_unix_time:
+      _packMap[packet_id_unix_time] = std::make_pair(updated, std::make_shared<unix_time_packet_t>());
+      break;
+    case packet_id_raw_sensors:
+      _packMap[packet_id_raw_sensors] = std::make_pair(updated, std::make_shared<raw_sensors_packet_t>());
+      break;
+    default:
+      unsupported += 1;
     }
   }
 
