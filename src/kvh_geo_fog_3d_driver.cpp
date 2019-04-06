@@ -8,236 +8,193 @@
 //STD includes
 #include <cstdio>
 #include <string>
+#include <cmath>
+#include <functional>
+#include <termios.h>
+#include <typeinfo>
+
+// RS232
+#include "rs232.h"
 
 #include "kvh_geo_fog_3d_driver.hpp"
 
-/**
- * @fn kvh::Driver::Driver
- * @brief Default contstructor.
- */
-kvh::Driver::Driver() : 
-  connected_(false)
+#define RADIANS_TO_DEGREES (180.0 / M_PI)
+
+namespace kvh
 {
 
+/**
+   * @fn Driver::Driver
+   * @brief Default contstructor.
+   */
+Driver::Driver() : connected_(false),
+                   port_("/dev/ttyUSB0")
+{
 } //end: Driver()
 
-// kvh::Driver::~Driver()
-// {
-//   Cleanup();
-// }
+Driver::~Driver()
+{
+  Cleanup();
+}
 
 // PRIVATE FUNCTIONS
-
-/**
- * @fn kvh::Driver::GetDeviceIdString
- * @brief Will create a device id string using the manufacturer, product type, and serial number
- * 
- * @attention The device string is not necessarily unique, it is just combining several
- * identifying factors in an attempt to be as unique as possible so that we can correctly identify
- * the device we wish to interact with. It is possible for their still to be naming conflicts.
- * 
- * @param _returnString [out] Holder for the device id string
- * @param _handle [in] Handle to the device to get the string for
- * @param _desc [in] Device descriptor used to retrieve information
- * @return [int]:
- *  0 = Success,
- *  -1 = Unable to retrieve manufacturer,
- *  -2 = Unable to retrieve product type,
- *  -3 = Unable to retrieve serial number
- */
-int kvh::Driver::GetDeviceIdString(std::string &_returnString, libusb_device_handle *_handle,
-                                   libusb_device_descriptor &_desc)
-{
-  // In case string is already populated
-  _returnString.clear();
-  std::string deviceIdString;
-  uint8_t string[256];
-  int ret;
-
-  // Create unique usb string from iManufacturer + iProduct + iSerial
-  if (_desc.iManufacturer)
-  {
-    ret = libusb_get_string_descriptor_ascii(_handle, _desc.iManufacturer, string, sizeof(string));
-    if (ret > 0)
-      deviceIdString += (char *)string;
-    else
-      return -1;
-  }
-
-  deviceIdString += " - ";
-
-  if (_desc.iProduct)
-  {
-    ret = libusb_get_string_descriptor_ascii(_handle, _desc.iProduct, string, sizeof(string));
-    if (ret > 0)
-      deviceIdString += (char *)string;
-    else
-      return -2;
-  }
-
-  deviceIdString += " - ";
-
-  if (_desc.iSerialNumber)
-  {
-    ret = libusb_get_string_descriptor_ascii(_handle, _desc.iSerialNumber, string, sizeof(string));
-    if (ret > 0)
-      deviceIdString += (char *)string;
-    else
-      return -3;
-  }
-
-  _returnString = deviceIdString;
-
-  // printf("Description: %s\n", description.c_str());
-  return 0;
-}
-
-/**
- * @fn kvh::Driver::GetDeviceHandle
- * @brief Will get a handle to a kvh geo fog device, if one is plugged in and permissions are set correctly
- * 
- * @attention In order to get a handle to a device, you must first have the correct permissions. 
- * Here were the steps I had to take to get the correct permission:
- *  1. lsusb -t to find bus and dev number (see images findkvh)
- *  2. cd /dev/bus/usb/{bus num}
- *  3. sudo chmod a+rwx 00{dev number}
- * In my case I was bus 3, and the device number changes each time I would plug it in, so I would have to redo these steps.
- * 
- * @param _returnHandle [out] Returned handle to the kvh geo fog device if one exists
- * @return [int]:
- *  0 = Success,
- *  -1 = Unable to get device list,
- *  -2 = Failed to find correct handle
- *  
- */  
-int kvh::Driver::GetDeviceHandle(libusb_device_handle *_returnHandle)
-{
-  libusb_device **devs;
-  ssize_t count;
-
-  count = libusb_get_device_list(NULL, &devs);
-  if (count < 0)
-  {
-    return -1;
-  }
-
-  printf("Number of found devices: %d\n", (int)count);
-
-  // Variables for connecting to usb
-  struct libusb_device_descriptor desc;
-  libusb_device_handle *handle = NULL;
-  std::string deviceIdString;
-  int ret;
-
-  for (int i = 0; devs[i]; i++)
-  {
-    // Get device descriptor
-    // Struct fields http://libusb.sourceforge.net/api-1.0/structlibusb__device__descriptor.html
-    // Can get usb's on terminal using (sudo) lsusb (-v)
-    ret = libusb_get_device_descriptor(devs[i], &desc);
-    if (ret < 0)
-    {
-      printf("Failed to get device descriptor for device %d.", i);
-    }
-
-    // Get handle to usb device
-    // http://libusb.sourceforge.net/api-1.0/group__libusb__dev.html#ga7df95821d20d27b5597f1d783749d6a4
-    ret = libusb_open(devs[i], &handle);
-
-    if (LIBUSB_SUCCESS == ret)
-    {
-      printf("Able to connect. Getting id string...\n");
-      ret = GetDeviceIdString(deviceIdString, handle, desc);
-      if (ret >= 0)
-      {
-        // Compare device id strings to see if identical
-        if (kvhDeviceIdString_ == deviceIdString)
-        {
-          // This devices id string matches what we expect, return the handle
-          _returnHandle = handle;
-          printf("Found correct device...\n");
-          return 0;
-        }
-      }
-      else
-      {
-        printf("Error getting string.\n");
-      }
-
-      // If the device was incorrect, close the handle
-      if (handle)
-      {
-        printf("Closing handle.\n");
-        libusb_close(handle);
-      }
-    }
-  }
-
-  printf("Freeing device list.\n");
-  libusb_free_device_list(devs, 1);
-  return -2; // No matching device found
-}
 
 // PUBLIC FUNCTIONS
 
 /**
- * @fn kvh::Driver::Init
- * @brief Initialize the connection to the device
- * @return [int]: 0 = success, > 0 = warning, < 0 = failure
- * 
- * Initialize the serial connection to the KVH GEO FOG 3D.
- */
-int kvh::Driver::Init()
+   * @fn Driver::Init
+   * @brief Initialize the connection to the device
+   * @return [int]: 0 = success, > 0 = warning, < 0 = failure
+   * 
+   * Initialize the serial connection to the KVH GEO FOG 3D.
+   */
+int Driver::Init()
 {
-  int ret;
-
-  // Needs to be called before any other libusb functions are used
-  ret = libusb_init(NULL);
-  if (ret < 0)
+  // Open Comport
+  // Make these class variables
+  printf("Opening comport\n");
+  if (OpenComport(port_, baud_) != 0)
   {
-    return ret;
+    printf("Unable to establish connection.\n");
+    return -1;
   }
+  connected_ = true;
 
-  ret = GetDeviceHandle(kvhHandle_);
-  if (ret < 0)
-    printf("Error getting handle.\n");
-  else
-    printf("Success getting handle.\n");
+  printf("Initializing decoder.");
+  an_decoder_initialise(&anDecoder_);
 
 } //end: Init()
 
 /**
- * @fn kvh::Driver::Once
- * @brief Do a single data read from the device
- * @param _messageType [out] The type of message read
- * @param _data [out] An array containing the read data
- * 
- * @return [int]:
- *   0  = success
- *   -1 = CRC16 failure
- *   -2 = LRC failure
- * 
- * Single data packet read.
- */
-int kvh::Driver::Once(kvh::MessageType *_messageType, std::vector<uint8_t> *_data)
-{
-  //Read serial port, check CRC16, check LRC, return data
-
-} //end: Once()
-
-
+   * @fn Driver::Once
+   * @brief Do a single data read from the device
+   * @param _messageType [out] The type of message read
+   * @param _data [out] An array containing the read data
+   * 
+   * @return [int]:
+   *   0  = success
+   *   -1 = CRC16 failure
+   *   -2 = LRC failure
+   * 
+   * Single data packet read.
+   */
 /**
- * @fn kvh::Driver::Cleanup
- * @brief Cleanup and close our connections.
- * @return [int]: 0 = success, > 0 = warning, < 0 = failure
- */
-int kvh::Driver::Cleanup()
+   * This function is a bit of a mess, due to how their api has a different function
+   * for every single type of packet. Our goal is to be able to deal with all of them simply
+   * within one single function, but that brings a lot of typing problems into the mix. Namely
+   * making sure that we have the correct type of struct, and then calling the correct decoding
+   * function for that struct. If there is a good way to pass around types, so that I could 
+   * correctly cast that would be nice, but I do not know of a solution yet. Possibly using
+   * decltype might work.
+   * 
+   * Assumptions:
+   *  Since our map takes in a shared_ptr<void> to deal with having multiple types of structs
+   * per function call, we have now way of knowing if they actually passed in the correct struct
+   * type that matches the packet id. If they didn't I could easily see us running into a seg fault,
+   * which might be disastrous. Perhaps I can at least check if the size of the struct we expect and
+   * the size they passed in are the same? That might prevent seg faults but would still be open to other
+   * errors.
+   */
+int Driver::Once(std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> &_packetMap)
 {
-  if (kvhHandle_)
+  // Request packets
+  // an_packet_t *requestPacket = an_packet_allocate(_packetMap.size(), packet_id_request);
+  // int i = 0;
+  // for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
+  // {
+  //   printf("Adding request for: %d\n", it->first);
+  //   requestPacket->data[i] = it->first;
+  //   i++;
+  // }
+  // an_packet_encode(requestPacket);
+
+  // Attempt to send our request packet
+  // printf("Size of packet: %d\n", (int)sizeof(*requestPacket));
+  // if (SendBuf((unsigned char *)requestPacket, (int)sizeof(*requestPacket)) == 0)
+  // {
+  //   printf("Packet succesfully sent!\n");
+  // }
+  // else
+  // {
+  //   printf("We may have a problem.\n");
+  // }
+  // free(requestPacket);
+  // requestPacket = nullptr;
+
+  an_packet_t *anPacket;
+  int bytesRec;
+
+  if ((bytesRec = PollComport(an_decoder_pointer(&anDecoder_), an_decoder_size(&anDecoder_))) > 0)
   {
-    libusb_close(kvhHandle_);
+    /* increment the decode buffer length by the number of bytes received */
+    an_decoder_increment(&anDecoder_, bytesRec);
+
+    /* decode all the packets in the buffer */
+    while ((anPacket = an_packet_decode(&anDecoder_)) != NULL)
+    {
+
+      //     if (anPacket->id == packet_id_acknowledge)
+      //     {
+      //       acknowledge_packet_t *ackP;
+      //       if (decode_acknowledge_packet(ackP, anPacket) == 0)
+      //       {
+      //         printf("Acknowledging packet from packet id: %d\n", ackP->packet_id);
+      //       }
+      //       continue; // Don't need to try the below
+      //     }
+
+      // Check if the packet id is in our map
+      for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
+      {
+        if (anPacket->id == it->first)
+        {
+          // If the packet id is in our map, figure out which particular packet it is
+          if (anPacket->id == packet_id_system_state) /* system state packet */
+          {
+            /* copy all the binary data into the typedef struct for the packet */
+            /* this allows easy access to all the different values             */
+            if (decode_system_state_packet((system_state_packet_t *)_packetMap[packet_id_system_state].second.get(), anPacket) == 0)
+            {
+              system_state_packet_t system_state_packet = *(system_state_packet_t *)_packetMap[packet_id_system_state].second.get();
+              printf("System State Packet:\n");
+              printf("\tLatitude = %f, Longitude = %f, Height = %f\n", system_state_packet.latitude * RADIANS_TO_DEGREES, system_state_packet.longitude * RADIANS_TO_DEGREES, system_state_packet.height);
+              printf("\tRoll = %f, Pitch = %f, Heading = %f\n", system_state_packet.orientation[0] * RADIANS_TO_DEGREES, system_state_packet.orientation[1] * RADIANS_TO_DEGREES, system_state_packet.orientation[2] * RADIANS_TO_DEGREES);
+            }
+          }
+          // else if (anPacket->id == packet_id_raw_sensors) /* raw sensors packet */
+          // {
+          //   /* copy all the binary data into the typedef struct for the packet */
+          //   /* this allows easy access to all the different values             */
+          //   if (decode_raw_sensors_packet(&raw_sensors_packet, anPacket) == 0)
+          //   {
+          //     printf("Raw Sensors Packet:\n");
+          //     printf("\tAccelerometers X: %f Y: %f Z: %f\n", raw_sensors_packet.accelerometers[0], raw_sensors_packet.accelerometers[1], raw_sensors_packet.accelerometers[2]);
+          //     printf("\tGyroscopes X: %f Y: %f Z: %f\n", raw_sensors_packet.gyroscopes[0] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[1] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[2] * RADIANS_TO_DEGREES);
+          //   }
+          // }
+          else
+          {
+            printf("Packet ID %u of Length %u\n", anPacket->id, anPacket->length);
+          }
+        }
+      }
+
+      /* Ensure that you free the an_packet when your done with it or you will leak memory */
+      an_packet_free(&anPacket);
+    }
   }
 
-  libusb_exit(NULL);
+}
+
+/**
+   * @fn Driver::Cleanup
+   * @brief Cleanup and close our connections.
+   * @return [int]: 0 = success, > 0 = warning, < 0 = failure
+*/
+int Driver::Cleanup()
+{
+  CloseComport();
   return 0;
 } //end: Cleanup()
+
+} // namespace kvh

@@ -95,7 +95,7 @@ generate_dynamic_reconfigure_options(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS include include/geo_fog_sdk include/rs232
   CATKIN_DEPENDS message_runtime dynamic_reconfigure roscpp std_msgs nodelet pluginlib
 )
 
@@ -107,17 +107,35 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  include/geo_fog_sdk
+  include/rs232
   ${catkin_INCLUDE_DIRS}
 )
 
+# Notes on the below:
+# I would like to build the sdk as a seperate library, instead of building it 
+# in with the ros library. When built seperately, I run into the issue of tcgetattribute
+# causing a segmentation fault. There must be some cmake way around this, but I do not 
+# know or want to spend time on it right now.
+
+#add_library(geo_fog_sdk
+#  geo_fog_sdk/an_packet_protocol.c
+#  geo_fog_sdk/spatial_packets.c
+#  geo_fog_sdk/rs232/rs232.c 
+#)
+
 add_library(${PROJECT_NAME}
   src/kvh_geo_fog_3d_driver.cpp
+  #src/once.tpp
+  geo_fog_sdk/an_packet_protocol.c
+  geo_fog_sdk/spatial_packets.c
+  geo_fog_sdk/rs232/rs232.c 
 )
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
-  usb-1.0
+  #geo_fog_sdk
 )
 
 add_library(${PROJECT_NAME}_nodelet 

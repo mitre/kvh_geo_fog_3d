@@ -8,51 +8,87 @@
 #pragma once
 
 #include <vector>
-#include <cstdint>
-#include <string>
+#include <map>
+#include <memory>
+#include <functional>
+#include <iostream>
 
-extern "C"
-{
-#include "libusb-1.0/libusb.h"
-}
+// GEO-FOG SDK
+#include "rs232.h"
+#include "an_packet_protocol.h"
+#include "spatial_packets.h"
 
 namespace kvh
 {
-  /**
+/**
    * @ingroup kvh
    * @brief Enumeration of KVH messages, based on the Packet ID.
    *
    * This enumeration should only include messages supported
    * by this interface.
    */
-  enum MessageType
+enum MessageType
+{
+  PACKET_SYSTEM_STATE = 20
+}; //end: MessageType
+
+// template<typename T>
+// struct packetRequest
+// {
+//   T packet;
+//   MessageType packetType;
+// };
+
+// Tripping points:
+// Not all packets have encoding functions
+// restore_factory_settings_packet and reset_packet encoding have no parameters
+template <typename T>
+struct PacketInfo
+{
+  packet_id_e packetId;
+  int (*decodeFn)(T *, an_packet_t *);
+  an_packet_t *(*encodeFn)(T *);
+
+  PacketInfo(packet_id_e packetId,
+             int (*decodeFn)(T *, an_packet_t *),
+             an_packet_t *(*encondFn)(T *) = nullptr) : packetId(packetId),
+                                                        decodeFn(decodeFn),
+                                                        encodeFn(encodeFn)
   {
-    PACKET_SYSTEM_STATE = 20
-  }; //end: MessageType
-  /**
+  }
+};
+
+/**
    * @class Driver
    * @ingroup kvh
    * @brief Driver worker class for the KVH Geo Fog 3D.
    */
-  class Driver
+class Driver
+{
+public:
+  Driver();
+  ~Driver();
+
+  // Documentation here is about using interface. Implementation documentation in source
+
+  int Init();
+  // int Once(kvh::MessageType* _messageType, std::vector<uint8_t>* _data);
+  // int Once(system_state_packet_t&);
+  int Once(std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>>&);
+  int Cleanup();
+
+private:
+  bool connected_; ///< If we're connected to the localization unit
+  char port_[13];
+  int baud_{115200};
+  an_decoder_t anDecoder_;
+
+  // Map linking packet types to id's and their decoding and enconding functions
+  std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =
   {
-  public:
-    Driver();
-    // ~Driver();
+    {packet_id_system_state, std::make_shared<PacketInfo<system_state_packet_t>>(packet_id_system_state, decode_system_state_packet)}
+  };
 
-    // Documentation here is about using interface. Implementation documentation in source
+}; //end: class Driver
 
-    int Init();
-    int Once(kvh::MessageType* _messageType, std::vector<uint8_t>* _data);
-    int Cleanup();
-
-  private:
-    const std::string kvhDeviceIdString_{"FTDI - USB-RS422 Cable - FT0NIR20"}; ///< Unique id string for kvh-geofog.
-      ///< @attention Is not truly unique, so may run into name collisions with other kvh software, be aware.
-    bool connected_; ///< If we're connected to the localization unit
-    libusb_device_handle* kvhHandle_{NULL}; ///< Handle to the kvh geo fog device
-
-    static int GetDeviceIdString(std::string&, libusb_device_handle *, libusb_device_descriptor&);
-    int GetDeviceHandle(libusb_device_handle *);
-  }; //end: class Driver  
-} //end: namespace kvh
+} // namespace kvh
