@@ -20,6 +20,8 @@
 
 namespace kvh
 {
+
+  typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPackageMap;
 /**
    * @ingroup kvh
    * @brief Enumeration of KVH messages, based on the Packet ID.
@@ -42,21 +44,21 @@ enum MessageType
 // Tripping points:
 // Not all packets have encoding functions
 // restore_factory_settings_packet and reset_packet encoding have no parameters
-template <typename T>
-struct PacketInfo
-{
-  packet_id_e packetId;
-  int (*decodeFn)(T *, an_packet_t *);
-  an_packet_t *(*encodeFn)(T *);
+// template <typename T>
+// struct PacketInfo
+// {
+//   packet_id_e packetId;
+//   int (*decodeFn)(T *, an_packet_t *);
+//   an_packet_t *(*encodeFn)(T *);
 
-  PacketInfo(packet_id_e packetId,
-             int (*decodeFn)(T *, an_packet_t *),
-             an_packet_t *(*encondFn)(T *) = nullptr) : packetId(packetId),
-                                                        decodeFn(decodeFn),
-                                                        encodeFn(encodeFn)
-  {
-  }
-};
+//   PacketInfo(packet_id_e packetId,
+//              int (*decodeFn)(T *, an_packet_t *),
+//              an_packet_t *(*encondFn)(T *) = nullptr) : packetId(packetId),
+//                                                         decodeFn(decodeFn),
+//                                                         encodeFn(encodeFn)
+//   {
+//   }
+// };
 
 /**
    * @class Driver
@@ -72,9 +74,8 @@ public:
   // Documentation here is about using interface. Implementation documentation in source
 
   int Init();
-  // int Once(kvh::MessageType* _messageType, std::vector<uint8_t>* _data);
-  // int Once(system_state_packet_t&);
-  int Once(std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>>&);
+  int Once(KvhPackageMap&);
+  int CreatePacketMap(KvhPackageMap&, std::vector<packet_id_e>);
   int Cleanup();
 
 private:
@@ -84,10 +85,10 @@ private:
   an_decoder_t anDecoder_;
 
   // Map linking packet types to id's and their decoding and enconding functions
-  std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =
-  {
-    {packet_id_system_state, std::make_shared<PacketInfo<system_state_packet_t>>(packet_id_system_state, decode_system_state_packet)}
-  };
+  // std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =
+  // {
+  //   {packet_id_system_state, std::make_shared<PacketInfo<system_state_packet_t>>(packet_id_system_state, decode_system_state_packet)}
+  // };
 
 }; //end: class Driver
 

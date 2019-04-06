@@ -95,18 +95,22 @@ int Driver::Init()
    * the size they passed in are the same? That might prevent seg faults but would still be open to other
    * errors.
    */
-int Driver::Once(std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> &_packetMap)
+int Driver::Once(KvhPackageMap& _packetMap)
 {
   // Request packets
-  // an_packet_t *requestPacket = an_packet_allocate(_packetMap.size(), packet_id_request);
-  // int i = 0;
-  // for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
-  // {
-  //   printf("Adding request for: %d\n", it->first);
-  //   requestPacket->data[i] = it->first;
-  //   i++;
-  // }
-  // an_packet_encode(requestPacket);
+  an_packet_t *requestPacket = an_packet_allocate(_packetMap.size(), packet_id_request);
+  int i = 0;
+  for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
+  {
+    // Add to requests
+    printf("Adding request for: %d\n", it->first);
+    requestPacket->data[i] = it->first;
+    i++; // Increment package position
+
+    // Set all updates to false
+    _packetMap[it->first].first = false;
+  }
+  an_packet_encode(requestPacket);
 
   // Attempt to send our request packet
   // printf("Size of packet: %d\n", (int)sizeof(*requestPacket));
@@ -155,6 +159,8 @@ int Driver::Once(std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> &
             /* this allows easy access to all the different values             */
             if (decode_system_state_packet((system_state_packet_t *)_packetMap[packet_id_system_state].second.get(), anPacket) == 0)
             {
+              // Notify that we have updated packet
+              _packetMap[packet_id_system_state].first = true;
               system_state_packet_t system_state_packet = *(system_state_packet_t *)_packetMap[packet_id_system_state].second.get();
               printf("System State Packet:\n");
               printf("\tLatitude = %f, Longitude = %f, Height = %f\n", system_state_packet.latitude * RADIANS_TO_DEGREES, system_state_packet.longitude * RADIANS_TO_DEGREES, system_state_packet.height);
@@ -183,7 +189,29 @@ int Driver::Once(std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> &
       an_packet_free(&anPacket);
     }
   }
+}
 
+// Helper function to create map for users of driver
+// TODO: Check that we support the id before adding, if we don't return a warning int (e.g. > 0)
+int Driver::CreatePacketMap(KvhPackageMap& _packMap, std::vector<packet_id_e> _packRequest)
+{
+  int unsupported = 0;
+  for(packet_id_e &packEnum : _packRequest)
+  {
+    bool updated = false;
+
+    switch (packEnum)
+    {
+      case packet_id_system_state:
+        _packMap[packet_id_system_state] = std::make_pair(updated, std::make_shared<system_state_packet_t>());
+        break;
+      default:
+        unsupported += 1;
+    }
+  }
+
+  // Will return 0 if we support all, or the number of entered id's we don't support if >0
+  return unsupported;
 }
 
 /**
