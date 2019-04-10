@@ -44,6 +44,8 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   KvhGeoFog3DSystemState.msg
+  KvhGeoFog3DSatellites.msg 
+  KvhGeoFog3DDetailSatellites.msg
 )
 
 ## Generate services in the 'srv' folder

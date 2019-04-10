@@ -48,7 +48,8 @@ int main(int argc, char **argv)
             ROS_INFO("System state packet has updated. Publishing...");
             // Have to cast the shared_ptr to the correct type and then dereference. 
             // TODO: Looking for ways to simplify this statement for driver users.
-            systemStatePacket = *(system_state_packet_t *)packetMap[packet_id_system_state].second.get();
+            // Static cast
+            systemStatePacket = *static_cast<system_state_packet_t*>(packetMap[packet_id_system_state].second.get());
 
             kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState sysStateMsg;
             std_msgs::Header header;

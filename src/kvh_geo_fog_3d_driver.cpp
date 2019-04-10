@@ -97,6 +97,7 @@ int Driver::Init()
    * errors.
    */
 // TODO: Probably split into multiple functions: Request packets, Receive, Decode
+// TODO: Do we need to request each packet every time?
 int Driver::Once(KvhPackageMap &_packetMap)
 {
   // Request packets
