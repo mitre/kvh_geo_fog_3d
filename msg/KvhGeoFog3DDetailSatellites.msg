@@ -22,13 +22,13 @@ Header header
 #   7 - Starfire
 #   8 - Omnistar 
 #
-uint8 satellite_system
+uint8[] satellite_system
 
 #
 # Not fully familiar, but seems to be an editable id of 
 # the satellite
 #
-uint8 satellite_number
+uint8[] satellite_number
 
 #
 # Each bit represents a different satellite frequency
@@ -42,22 +42,22 @@ uint8 satellite_number
 #   6 - L2 M 
 #   7 - L5
 #
-int8 satellite_frequencies
+int8[] satellite_frequencies
 
 #
 # Measurement of the eleveation angle in degrees.
 # Elevation angle is the degree between the horizontal
 # plane and the line of sight in the vertical plane.
 #
-uint8 elevation_deg
+uint8[] elevation_deg
 
 #
 # Measurement of azimuth in degrees.
 # The azimuth is the angle between a body and North. 
 #
-uint16 azimuth_deg
+uint16[] azimuth_deg
 
 #
 # Signal to noise ratio in decibels
 #
-uint8 snr_decibal
+uint8[] snr_decibal

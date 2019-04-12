@@ -205,6 +205,35 @@ int Driver::Once(KvhPackageMap &_packetMap)
               }
             }
           }
+          // TODO: PACKET ID'S satellites, satellites_detailed, local_magnetics, utm_position
+          else if (anPacket->id == packet_id_satellites)
+          {
+            if (decode_satellites_packet(static_cast<satellites_packet_t*>(_packetMap[packet_id_satellites].second.get()), anPacket))
+            {
+              _packetMap[packet_id_satellites].first = true;
+            }
+          }
+          else if (anPacket->id == packet_id_satellites_detailed)
+          {
+            if (decode_detailed_satellites_packet(static_cast<detailed_satellites_packet_t*>(_packetMap[packet_id_satellites_detailed].second.get()), anPacket))
+            {
+              _packetMap[packet_id_satellites_detailed].first = true;
+            }
+          }
+          else if (anPacket->id == packet_id_local_magnetics)
+          {
+            if (decode_local_magnetics_packet(static_cast<local_magnetics_packet_t*>(_packetMap[packet_id_local_magnetics].second.get()), anPacket))
+            {
+              _packetMap[packet_id_local_magnetics].first = true;
+            }
+          }
+          else if (anPacket->id == packet_id_utm_position)
+          {
+            if (decode_utm_position_packet(static_cast<utm_position_packet_t*>(_packetMap[packet_id_utm_position].second.get()), anPacket))
+            {
+              _packetMap[packet_id_utm_position].first = true;
+            }
+          }
           else
           {
             printf("Packet ID %u of Length %u\n", anPacket->id, anPacket->length);
@@ -237,6 +266,18 @@ int Driver::CreatePacketMap(KvhPackageMap &_packMap, std::vector<packet_id_e> _p
       break;
     case packet_id_raw_sensors:
       _packMap[packet_id_raw_sensors] = std::make_pair(updated, std::make_shared<raw_sensors_packet_t>());
+      break;
+    case packet_id_satellites:
+      _packMap[packet_id_satellites] = std::make_pair(updated, std::make_shared<satellites_packet_t>());
+      break;
+    case packet_id_satellites_detailed:
+      _packMap[packet_id_satellites_detailed] = std::make_pair(updated, std::make_shared<detailed_satellites_packet_t>());
+      break;
+    case packet_id_local_magnetics:
+      _packMap[packet_id_local_magnetics] = std::make_pair(updated, std::make_shared<local_magnetics_packet_t>());
+      break;
+    case packet_id_utm_position:
+      _packMap[packet_id_utm_position] = std::make_pair(updated, std::make_shared<utm_position_packet_t>());
       break;
     default:
       unsupported += 1;

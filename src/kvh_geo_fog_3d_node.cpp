@@ -9,6 +9,11 @@
 #include "unistd.h"
 #include "spatial_packets.h"
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DSystemState.h>
+#include <kvh_geo_fog_3d_driver/KvhGeoFog3DSatellites.h>
+#include <kvh_geo_fog_3d_driver/KvhGeoFog3DDetailSatellites.h>
+#include <kvh_geo_fog_3d_driver/KvhGeoFog3DLocalMagneticField.h>
+#include <kvh_geo_fog_3d_driver/KvhGeoFog3DUTMPosition.h>
+
 
 int main(int argc, char **argv)
 {
@@ -26,21 +31,36 @@ int main(int argc, char **argv)
     // See documentation for all id's. TODO: Put all id's in our documentation, is in KVH's
     std::vector<packet_id_e> packetRequest
     {
-        packet_id_system_state, 
-        packet_id_unix_time, 
-        packet_id_raw_sensors
+        packet_id_system_state,
+        packet_id_satellites,
+        packet_id_satellites_detailed,
+        packet_id_local_magnetics,
+        packet_id_utm_position
     };
     // Create a map, this will hold all of our data and status changes (if the packets were updated)
     kvh::KvhPackageMap packetMap;
     // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
     // std::map<packet_id_e, std::pair<bool, std::shared_pointer<void>>>, so best not to deal with it if possible
-    kvhDriver.CreatePacketMap(packetMap, packetRequest);
+    int unsupported = kvhDriver.CreatePacketMap(packetMap, packetRequest);
+    if (unsupported > 0)
+    {
+        ROS_WARN("Warning: %d requested packets are unsupported and will not be available.", unsupported);
+    }
 
     system_state_packet_t systemStatePacket;
+    satellites_packet_t satellitesPacket;
+    detailed_satellites_packet_t detailSatellitesPacket;
+    local_magnetics_packet_t localMagPacket;
+    utm_position_packet_t utmPosPacket;
 
     while (ros::ok())
     {
+        // Collect packet data
         kvhDriver.Once(packetMap);
+        
+        // Create header we will use for all messages. Important to have timestamp the same
+        std_msgs::Header header;
+        header.stamp = ros::Time::now();
 
         // If the sytem state packet has been updated
         if (packetMap[packet_id_system_state].first)
@@ -52,8 +72,6 @@ int main(int argc, char **argv)
             systemStatePacket = *static_cast<system_state_packet_t*>(packetMap[packet_id_system_state].second.get());
 
             kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState sysStateMsg;
-            std_msgs::Header header;
-            header.stamp = ros::Time::now();
             sysStateMsg.header = header;
             sysStateMsg.system_status = systemStatePacket.system_status.r;
             sysStateMsg.filter_status = systemStatePacket.filter_status.r;
@@ -80,16 +98,6 @@ int main(int argc, char **argv)
             sysStateMsg.height_stddev_m = systemStatePacket.standard_deviation[2];
 
             pub.publish(sysStateMsg);
-        }
-
-        if (packetMap[packet_id_unix_time].first)
-        {
-            ROS_INFO("Unix packet has updated.");
-        }
-
-        if (packetMap[packet_id_raw_sensors].first)
-        {
-            ROS_INFO("Raw sensors packet has updated.");
         }
 
         usleep(100000);
