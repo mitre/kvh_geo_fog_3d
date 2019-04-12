@@ -10,36 +10,38 @@
 Header header
 
 #
-# TODO: Enter comment on what hdop is
+# Horizontal dilution of precision (HDOP). Describes
+# the strength of current satellite configuration.
 #
 float32 hdop
 
 #
-# TODO: Enter comment on what vdop is
+# Vertical dilution of precision (VDOP). Describes
+# the strength of current satellite configuration.
 #
 float32 vdop
 
 #
-# Number of total satellites seen
+# Number of total satellites in sight
 #
 uint8 gps_satellites
 
 #
-# Number of glonass satellites seen
+# Number of glonass satellites in sight
 #
 uint8 glonass_satellites
 
 #
-# Number of beidou satellites seen
+# Number of beidou satellites in sight
 #
 uint8 beidou_satellites
 
 #
-# Number of galileo satellites seen
+# Number of galileo satellites in sight
 #
 uint8 galileo_satellites
 
 #
-# Number of sbas satellites seen
+# Number of sbas satellites in sight
 #
 uint8 sbas_satellites

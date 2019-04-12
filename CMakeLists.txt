@@ -46,6 +46,8 @@ add_message_files(
   KvhGeoFog3DSystemState.msg
   KvhGeoFog3DSatellites.msg 
   KvhGeoFog3DDetailSatellites.msg
+  KvhGeoFog3DLocalMagneticField.msg 
+  KvhGeoFog3DUTMPosition.msg
 )
 
 ## Generate services in the 'srv' folder

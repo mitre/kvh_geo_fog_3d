@@ -2,6 +2,11 @@
 # Detailed satellites message for KVG GEO FOG 3D detailed satellites packet
 ##############################
 
+#
+# ROS message header.
+# header.stamp specifies the ROS time for this measurement. Satellite
+# time is reported as unix_time_s and unix_time_us.
+#
 Header header 
 
 #
@@ -20,7 +25,8 @@ Header header
 uint8 satellite_system
 
 #
-# TODO: Lookup PRN and use as comment
+# Not fully familiar, but seems to be an editable id of 
+# the satellite
 #
 uint8 satellite_number
 
@@ -39,16 +45,19 @@ uint8 satellite_number
 int8 satellite_frequencies
 
 #
-# TODO: Look up elevation degree and use as comment
+# Measurement of the eleveation angle in degrees.
+# Elevation angle is the degree between the horizontal
+# plane and the line of sight in the vertical plane.
 #
 uint8 elevation_deg
 
 #
-# TODO: Lookup azimuth and use as comment
+# Measurement of azimuth in degrees.
+# The azimuth is the angle between a body and North. 
 #
 uint16 azimuth_deg
 
 #
-# TODO: Lookup snr and use as comment
+# Signal to noise ratio in decibels
 #
-uint8 snr
+uint8 snr_decibal
