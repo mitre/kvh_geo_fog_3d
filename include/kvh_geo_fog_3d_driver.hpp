@@ -85,6 +85,7 @@ private:
   an_decoder_t anDecoder_;
   bool verbose_{false};
 
+  int DecodePacket(an_packet_t*, KvhPackageMap&);
   // Map linking packet types to id's and their decoding and enconding functions
   // std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =
   // {
