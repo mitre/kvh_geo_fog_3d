@@ -211,6 +211,7 @@ int Driver::Once(KvhPackageMap &_packetMap)
             if (decode_satellites_packet(static_cast<satellites_packet_t*>(_packetMap[packet_id_satellites].second.get()), anPacket))
             {
               _packetMap[packet_id_satellites].first = true;
+              if (verbose_) printf("Collected satellites packet.\n");
             }
           }
           else if (anPacket->id == packet_id_satellites_detailed)
@@ -218,6 +219,7 @@ int Driver::Once(KvhPackageMap &_packetMap)
             if (decode_detailed_satellites_packet(static_cast<detailed_satellites_packet_t*>(_packetMap[packet_id_satellites_detailed].second.get()), anPacket))
             {
               _packetMap[packet_id_satellites_detailed].first = true;
+              if (verbose_) printf("Collected detailed satellites packet.\n");
             }
           }
           else if (anPacket->id == packet_id_local_magnetics)
@@ -225,6 +227,7 @@ int Driver::Once(KvhPackageMap &_packetMap)
             if (decode_local_magnetics_packet(static_cast<local_magnetics_packet_t*>(_packetMap[packet_id_local_magnetics].second.get()), anPacket))
             {
               _packetMap[packet_id_local_magnetics].first = true;
+              if (verbose_) printf("Collected local magnetics packet.\n");
             }
           }
           else if (anPacket->id == packet_id_utm_position)
@@ -232,6 +235,23 @@ int Driver::Once(KvhPackageMap &_packetMap)
             if (decode_utm_position_packet(static_cast<utm_position_packet_t*>(_packetMap[packet_id_utm_position].second.get()), anPacket))
             {
               _packetMap[packet_id_utm_position].first = true;
+              if (verbose_) printf("Collected utm position packet.\n");
+            }
+          }
+          else if (anPacket->id == packet_id_ecef_position)
+          {
+            if (decode_ecef_position_packet(static_cast<ecef_position_packet_t*>(_packetMap[packet_id_ecef_position].second.get()), anPacket))
+            {
+              _packetMap[packet_id_ecef_position].first = true;
+              if (verbose_) printf("Collected ecef position packet.\n");
+            }
+          }
+          else if (anPacket->id == packet_id_north_seeking_status)
+          {
+            if (decode_north_seeking_status_packet(static_cast<north_seeking_status_packet_t*>(_packetMap[packet_id_north_seeking_status].second.get()), anPacket))
+            {
+              _packetMap[packet_id_north_seeking_status].first = true;
+              if (verbose_) printf("Collected north seeking status packet.\n");
             }
           }
           else
@@ -249,37 +269,46 @@ int Driver::Once(KvhPackageMap &_packetMap)
 
 // Helper function to create map for users of driver
 // TODO: Check that we support the id before adding, if we don't return a warning int (e.g. > 0)
-int Driver::CreatePacketMap(KvhPackageMap &_packMap, std::vector<packet_id_e> _packRequest)
+int Driver::CreatePacketMap(KvhPackageMap &_packetMap, std::vector<packet_id_e> _packRequest)
 {
   int unsupported = 0;
   for (packet_id_e &packEnum : _packRequest)
   {
-    bool updated = false;
-
+    /**
+     * General form for below:
+     *  case (packetId):
+     *    _packetMap[packetId] = pair(false, shared_ptr(packet_struct_t))
+     **/
     switch (packEnum)
     {
     case packet_id_system_state:
-      _packMap[packet_id_system_state] = std::make_pair(updated, std::make_shared<system_state_packet_t>());
+      _packetMap[packet_id_system_state] = std::make_pair(false, std::make_shared<system_state_packet_t>());
       break;
     case packet_id_unix_time:
-      _packMap[packet_id_unix_time] = std::make_pair(updated, std::make_shared<unix_time_packet_t>());
+      _packetMap[packet_id_unix_time] = std::make_pair(false, std::make_shared<unix_time_packet_t>());
       break;
     case packet_id_raw_sensors:
-      _packMap[packet_id_raw_sensors] = std::make_pair(updated, std::make_shared<raw_sensors_packet_t>());
+      _packetMap[packet_id_raw_sensors] = std::make_pair(false, std::make_shared<raw_sensors_packet_t>());
       break;
     case packet_id_satellites:
-      _packMap[packet_id_satellites] = std::make_pair(updated, std::make_shared<satellites_packet_t>());
+      _packetMap[packet_id_satellites] = std::make_pair(false, std::make_shared<satellites_packet_t>());
       break;
     case packet_id_satellites_detailed:
-      _packMap[packet_id_satellites_detailed] = std::make_pair(updated, std::make_shared<detailed_satellites_packet_t>());
+      _packetMap[packet_id_satellites_detailed] = std::make_pair(false, std::make_shared<detailed_satellites_packet_t>());
       break;
     case packet_id_local_magnetics:
-      _packMap[packet_id_local_magnetics] = std::make_pair(updated, std::make_shared<local_magnetics_packet_t>());
+      _packetMap[packet_id_local_magnetics] = std::make_pair(false, std::make_shared<local_magnetics_packet_t>());
       break;
     case packet_id_utm_position:
-      _packMap[packet_id_utm_position] = std::make_pair(updated, std::make_shared<utm_position_packet_t>());
+      _packetMap[packet_id_utm_position] = std::make_pair(false, std::make_shared<utm_position_packet_t>());
       break;
+    case packet_id_ecef_position:
+      _packetMap[packet_id_ecef_position] = std::make_pair(false, std::make_shared<ecef_position_packet_t>());
+      break;
+    case packet_id_north_seeking_status:
+      _packetMap[packet_id_north_seeking_status] = std::make_pair(false, std::make_shared<north_seeking_status_packet_t>());
     default:
+      // If the packet id is not in the list above it is unsupported
       unsupported += 1;
     }
   }

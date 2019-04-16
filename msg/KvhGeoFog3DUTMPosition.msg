@@ -26,10 +26,10 @@ float64 height_m
 
 #
 # Zone number
-#
-uint8 zone_number
+# (Does not seem to exist in the spatial_packets.h header file, only in the documentation)
+# uint8 zone_number
 
 #
 # Zone character
 #
-int8 zone_character
+char zone_character

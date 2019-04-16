@@ -4,15 +4,23 @@
  * @author Trevor Bostic
  */
 
-#include "ros/ros.h"
-#include "kvh_geo_fog_3d_driver.hpp"
+// STD
 #include "unistd.h"
+#include <map>
+
+// KVH GEO FOG
+#include "kvh_geo_fog_3d_driver.hpp"
 #include "spatial_packets.h"
+
+// ROS
+#include "ros/ros.h"
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DSystemState.h>
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DSatellites.h>
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DDetailSatellites.h>
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DLocalMagneticField.h>
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DUTMPosition.h>
+#include <kvh_geo_fog_3d_driver/KvhGeoFog3DECEFPos.h>
+#include <kvh_geo_fog_3d_driver/KvhGeoFog3DNorthSeekingInitStatus.h>
 
 
 int main(int argc, char **argv)
@@ -20,12 +28,6 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "kvh_geo_fog_3d_driver");
 
     ros::NodeHandle node;
-    ros::Publisher pub;
-    pub = node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState>("kvhsytemstate", 1);
-
-    // Can pass true to this constructor to get print outs. Is currently messy but usable
-    kvh::Driver kvhDriver;
-    kvhDriver.Init();
 
     // To get packets from the driver, we first create a vector of the packet id's we want
     // See documentation for all id's. TODO: Put all id's in our documentation, is in KVH's
@@ -35,8 +37,28 @@ int main(int argc, char **argv)
         packet_id_satellites,
         packet_id_satellites_detailed,
         packet_id_local_magnetics,
-        packet_id_utm_position
+        packet_id_utm_position,
+        packet_id_ecef_position,
+        packet_id_north_seeking_status
     };
+
+    // Map containing publishers for each type of message we want to send out
+    std::map<packet_id_e, ros::Publisher> kvhPubMap
+    {
+        {packet_id_system_state, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState>("kvh_system_state", 1)},
+        {packet_id_satellites, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DSatellites>("kvh_satellites", 1)},
+        {packet_id_satellites_detailed, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DDetailSatellites>("kvh_detailed_satellites", 1)},
+        {packet_id_local_magnetics, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DLocalMagneticField>("kvh_local_magnetics", 1)},
+        {packet_id_utm_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition>("kvh_utm_position", 1)},
+        {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos>("kvh_ecef_pso", 1)},
+        {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}
+    };
+
+    // Can pass true to this constructor to get print outs. Is currently messy but usable
+    kvh::Driver kvhDriver;
+    kvhDriver.Init();
+
+ 
     // Create a map, this will hold all of our data and status changes (if the packets were updated)
     kvh::KvhPackageMap packetMap;
     // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
@@ -52,12 +74,14 @@ int main(int argc, char **argv)
     detailed_satellites_packet_t detailSatellitesPacket;
     local_magnetics_packet_t localMagPacket;
     utm_position_packet_t utmPosPacket;
+    ecef_position_packet_t ecefPosPacket;
+    north_seeking_status_packet_t northSeekingStatPacket;
 
     while (ros::ok())
     {
         // Collect packet data
         kvhDriver.Once(packetMap);
-        
+
         // Create header we will use for all messages. Important to have timestamp the same
         std_msgs::Header header;
         header.stamp = ros::Time::now();
@@ -97,8 +121,127 @@ int main(int argc, char **argv)
             sysStateMsg.longitude_stddev_m = systemStatePacket.standard_deviation[1];
             sysStateMsg.height_stddev_m = systemStatePacket.standard_deviation[2];
 
-            pub.publish(sysStateMsg);
+            kvhPubMap[packet_id_system_state].publish(sysStateMsg);
         }
+
+
+
+        if (packetMap[packet_id_satellites].first)
+        {
+            ROS_INFO("Satellites packet updated. Publishing...");
+            satellitesPacket = *static_cast<satellites_packet_t*>(packetMap[packet_id_satellites].second.get());
+            kvh_geo_fog_3d_driver::KvhGeoFog3DSatellites satellitesMsg;
+
+            satellitesMsg.header = header;
+            satellitesMsg.hdop = satellitesPacket.hdop;
+            satellitesMsg.vdop = satellitesPacket.vdop;
+            satellitesMsg.gps_satellites = satellitesPacket.gps_satellites;
+            satellitesMsg.glonass_satellites = satellitesPacket.glonass_satellites;
+            satellitesMsg.beidou_satellites = satellitesPacket.beidou_satellites;
+            satellitesMsg.galileo_satellites = satellitesPacket.sbas_satellites;
+
+            kvhPubMap[packet_id_satellites].publish(satellitesMsg);
+        }
+
+        if (packetMap[packet_id_satellites_detailed].first)
+        {
+            ROS_INFO("Detailed satellites packet updated. Publishing...");
+            detailSatellitesPacket = *static_cast<detailed_satellites_packet_t*>(packetMap[packet_id_satellites_detailed].second.get());
+            kvh_geo_fog_3d_driver::KvhGeoFog3DDetailSatellites detailSatellitesMsg;
+
+            detailSatellitesMsg.header = header;
+
+            // MAXIMUM_DETAILED_SATELLITES is defined as 32 in spatial_packets.h
+            // We must check if each field equals 0 as that denotes the end of the array
+            for (int i = 0; i < MAXIMUM_DETAILED_SATELLITES; i++)
+            {
+                satellite_t satellite = detailSatellitesPacket.satellites[i];
+                
+                // Check if all fields = 0, if so then we should end our loop
+                if (satellite.satellite_system == 0 && satellite.number == 0 &&
+                    satellite.frequencies.r == 0 && satellite.elevation == 0 &&
+                    satellite.azimuth == 0 && satellite.snr == 0)
+                {
+                    break;
+                }
+
+                // Otherwise continue adding to our message
+                detailSatellitesMsg.satellite_system.push_back(satellite.satellite_system);
+                detailSatellitesMsg.satellite_number.push_back(satellite.number);
+                detailSatellitesMsg.satellite_frequencies.push_back(satellite.frequencies.r);
+                detailSatellitesMsg.elevation_deg.push_back(satellite.elevation);
+                detailSatellitesMsg.azimuth_deg.push_back(satellite.azimuth);
+                detailSatellitesMsg.snr_decibal.push_back(satellite.snr);
+            }
+
+            kvhPubMap[packet_id_satellites_detailed].publish(detailSatellitesMsg);
+        }
+
+        if (packetMap[packet_id_local_magnetics].first)
+        {
+            ROS_INFO("Local magnetics packet updated. Publishing...");
+            localMagPacket = *static_cast<local_magnetics_packet_t*>(packetMap[packet_id_local_magnetics].second.get());
+            kvh_geo_fog_3d_driver::KvhGeoFog3DLocalMagneticField localMagFieldMsg;
+            
+            localMagFieldMsg.header = header;
+            localMagFieldMsg.loc_mag_field_x_mG = localMagPacket.magnetic_field[0];
+            localMagFieldMsg.loc_mag_field_y_mG = localMagPacket.magnetic_field[1];
+            localMagFieldMsg.loc_mag_field_z_mG = localMagPacket.magnetic_field[2];
+
+            kvhPubMap[packet_id_local_magnetics].publish(localMagFieldMsg);
+        }
+
+        if (packetMap[packet_id_utm_position].first)
+        {
+            ROS_INFO("UTM Position packet updated. Publishing...");
+            utmPosPacket = *static_cast<utm_position_packet_t*>(packetMap[packet_id_utm_position].second.get());
+            kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition utmPosMsg;
+
+            utmPosMsg.header = header;
+            utmPosMsg.northing_m = utmPosPacket.position[0];
+            utmPosMsg.easting_m = utmPosPacket.position[1];
+            utmPosMsg.height_m = utmPosPacket.position[2];
+            utmPosMsg.zone_character = utmPosPacket.zone;
+
+            kvhPubMap[packet_id_utm_position].publish(utmPosMsg);
+        }
+
+        if (packetMap[packet_id_ecef_position].first)
+        {
+            ROS_INFO("ECEF position packet updated. Publishing...");
+            ecefPosPacket = *static_cast<ecef_position_packet_t*>(packetMap[packet_id_ecef_position].second.get());
+            kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos ecefPosMsg;
+
+            ecefPosMsg.header = header;
+            ecefPosMsg.ecef_x_m = ecefPosPacket.position[0];
+            ecefPosMsg.ecef_y_m = ecefPosPacket.position[1];
+            ecefPosMsg.ecef_z_m = ecefPosPacket.position[2];
+
+            kvhPubMap[packet_id_ecef_position].publish(ecefPosMsg);
+        }
+
+        if (packetMap[packet_id_north_seeking_status].first)
+        {
+            ROS_INFO("North seeking status packet updated. Publishing...");
+            northSeekingStatPacket = *static_cast<north_seeking_status_packet_t*>(packetMap[packet_id_north_seeking_status].second.get());
+            kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus northSeekInitStatMsg;
+
+            northSeekInitStatMsg.header = header;
+            northSeekInitStatMsg.flags = northSeekingStatPacket.north_seeking_status.r;
+            northSeekInitStatMsg.quadrant_1_data_per = northSeekingStatPacket.quadrant_data_collection_progress[0];
+            northSeekInitStatMsg.quadrant_2_data_per = northSeekingStatPacket.quadrant_data_collection_progress[1];
+            northSeekInitStatMsg.quadrant_3_data_per = northSeekingStatPacket.quadrant_data_collection_progress[2];
+            northSeekInitStatMsg.quadrant_4_data_per = northSeekingStatPacket.quadrant_data_collection_progress[3];
+            northSeekInitStatMsg.current_rotation_angle_rad = northSeekingStatPacket.current_rotation_angle;
+            northSeekInitStatMsg.current_gyro_bias_sol_x_rad_s = northSeekingStatPacket.current_gyroscope_bias_solution[0];
+            northSeekInitStatMsg.current_gyro_bias_sol_y_rad_s = northSeekingStatPacket.current_gyroscope_bias_solution[1];
+            northSeekInitStatMsg.current_gyro_bias_sol_z_rad_s = northSeekingStatPacket.current_gyroscope_bias_solution[2];
+            northSeekInitStatMsg.current_gyro_bias_sol_error_per = northSeekingStatPacket.current_gyroscope_bias_solution_error;
+
+            kvhPubMap[packet_id_north_seeking_status].publish(northSeekInitStatMsg);
+        }
+        
+
 
         usleep(100000);
     }
