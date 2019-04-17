@@ -50,12 +50,12 @@ int main(int argc, char **argv)
         {packet_id_satellites_detailed, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DDetailSatellites>("kvh_detailed_satellites", 1)},
         {packet_id_local_magnetics, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DLocalMagneticField>("kvh_local_magnetics", 1)},
         {packet_id_utm_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition>("kvh_utm_position", 1)},
-        {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos>("kvh_ecef_pso", 1)},
+        {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos>("kvh_ecef_pos", 1)},
         {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}
     };
 
     // Can pass true to this constructor to get print outs. Is currently messy but usable
-    kvh::Driver kvhDriver(true);
+    kvh::Driver kvhDriver;
     kvhDriver.Init(packetRequest);
 
  
@@ -242,6 +242,7 @@ int main(int argc, char **argv)
         }
         
         usleep(100000);
+        ROS_INFO("----------------------------------------");
     }
 
     kvhDriver.Cleanup();

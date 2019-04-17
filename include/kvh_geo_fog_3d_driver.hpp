@@ -82,7 +82,7 @@ private:
   bool connected_; ///< If we're connected to the localization unit
   char port_[13];
   int baud_{115200};
-  const uint32_t PACKET_PERIOD{10};
+  const uint32_t PACKET_PERIOD{50};
   an_decoder_t anDecoder_;
   bool verbose_{false};
   std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve 
