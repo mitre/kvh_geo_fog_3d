@@ -20,6 +20,8 @@
 
 namespace kvh
 {
+
+  typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPackageMap;
 /**
    * @ingroup kvh
    * @brief Enumeration of KVH messages, based on the Packet ID.
@@ -42,21 +44,21 @@ enum MessageType
 // Tripping points:
 // Not all packets have encoding functions
 // restore_factory_settings_packet and reset_packet encoding have no parameters
-template <typename T>
-struct PacketInfo
-{
-  packet_id_e packetId;
-  int (*decodeFn)(T *, an_packet_t *);
-  an_packet_t *(*encodeFn)(T *);
+// template <typename T>
+// struct PacketInfo
+// {
+//   packet_id_e packetId;
+//   int (*decodeFn)(T *, an_packet_t *);
+//   an_packet_t *(*encodeFn)(T *);
 
-  PacketInfo(packet_id_e packetId,
-             int (*decodeFn)(T *, an_packet_t *),
-             an_packet_t *(*encondFn)(T *) = nullptr) : packetId(packetId),
-                                                        decodeFn(decodeFn),
-                                                        encodeFn(encodeFn)
-  {
-  }
-};
+//   PacketInfo(packet_id_e packetId,
+//              int (*decodeFn)(T *, an_packet_t *),
+//              an_packet_t *(*encondFn)(T *) = nullptr) : packetId(packetId),
+//                                                         decodeFn(decodeFn),
+//                                                         encodeFn(encodeFn)
+//   {
+//   }
+// };
 
 /**
    * @class Driver
@@ -66,28 +68,33 @@ struct PacketInfo
 class Driver
 {
 public:
-  Driver();
+  Driver(bool verbose = false);
   ~Driver();
 
   // Documentation here is about using interface. Implementation documentation in source
 
-  int Init();
-  // int Once(kvh::MessageType* _messageType, std::vector<uint8_t>* _data);
-  // int Once(system_state_packet_t&);
-  int Once(std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>>&);
+  int Init(std::vector<packet_id_e>);
+  int Once(KvhPackageMap&);
+  int CreatePacketMap(KvhPackageMap&, std::vector<packet_id_e>);
   int Cleanup();
 
 private:
   bool connected_; ///< If we're connected to the localization unit
   char port_[13];
   int baud_{115200};
+  const uint32_t PACKET_PERIOD{50};
   an_decoder_t anDecoder_;
+  bool verbose_{false};
+  std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve 
+    ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay problem where the packet is already gone by the time this function is called)
 
+  int DecodePacket(an_packet_t*, KvhPackageMap&);
+  int SendPacket(an_packet_t*);
   // Map linking packet types to id's and their decoding and enconding functions
-  std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =
-  {
-    {packet_id_system_state, std::make_shared<PacketInfo<system_state_packet_t>>(packet_id_system_state, decode_system_state_packet)}
-  };
+  // std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =
+  // {
+  //   {packet_id_system_state, std::make_shared<PacketInfo<system_state_packet_t>>(packet_id_system_state, decode_system_state_packet)}
+  // };
 
 }; //end: class Driver
 
