@@ -73,7 +73,7 @@ public:
 
   // Documentation here is about using interface. Implementation documentation in source
 
-  int Init();
+  int Init(std::vector<packet_id_e>);
   int Once(KvhPackageMap&);
   int CreatePacketMap(KvhPackageMap&, std::vector<packet_id_e>);
   int Cleanup();
@@ -82,10 +82,14 @@ private:
   bool connected_; ///< If we're connected to the localization unit
   char port_[13];
   int baud_{115200};
+  const uint32_t PACKET_PERIOD{10};
   an_decoder_t anDecoder_;
   bool verbose_{false};
+  std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve 
+    ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay problem where the packet is already gone by the time this function is called)
 
   int DecodePacket(an_packet_t*, KvhPackageMap&);
+  int SendPacket(an_packet_t*);
   // Map linking packet types to id's and their decoding and enconding functions
   // std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =
   // {
