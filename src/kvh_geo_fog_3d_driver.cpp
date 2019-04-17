@@ -40,128 +40,141 @@ Driver::~Driver()
 
 // PRIVATE FUNCTIONS
 
-int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
+int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap &_packetMap)
 {
 
-  // Check if the packet id is in our map
-  for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
+  // See if packet id is in our map
+  if ((_packetMap.count(static_cast<packet_id_e>(_anPacket->id))) == 0)
   {
-    if (_anPacket->id == it->first)
+    // If packet is not in our map, print out the id and length and return as unsupported
+    printf("Packet ID %u of Length %u\n", _anPacket->id, _anPacket->length);
+    return -1;
+  }
+
+  // The packet id is in our map, so decode the packet with the appropriate function
+  // The list of supported packets below should match with Driver::CreatePacketMap
+  if (_anPacket->id == packet_id_system_state) /* system state packet */
+  {
+    /* copy all the binary data into the typedef struct for the packet */
+    /* this allows easy access to all the different values             */
+    if (decode_system_state_packet((system_state_packet_t*)_packetMap[packet_id_system_state].second.get(), _anPacket) == 0)
     {
-      // If the packet id is in our map, figure out which particular packet it is
-      if (_anPacket->id == packet_id_system_state) /* system state packet */
-      {
-        /* copy all the binary data into the typedef struct for the packet */
-        /* this allows easy access to all the different values             */
-        if (decode_system_state_packet((system_state_packet_t *)_packetMap[packet_id_system_state].second.get(), _anPacket) == 0)
-        {
-          // Notify that we have updated packet
-          _packetMap[packet_id_system_state].first = true;
+      // Notify that we have updated packet
+      _packetMap[packet_id_system_state].first = true;
 
-          if (verbose_)
-          {
-            system_state_packet_t system_state_packet = *(system_state_packet_t *)_packetMap[packet_id_system_state].second.get();
-            printf("System State Packet:\n");
-            printf("\tLatitude = %f, Longitude = %f, Height = %f\n", system_state_packet.latitude * RADIANS_TO_DEGREES, system_state_packet.longitude * RADIANS_TO_DEGREES, system_state_packet.height);
-            printf("\tRoll = %f, Pitch = %f, Heading = %f\n", system_state_packet.orientation[0] * RADIANS_TO_DEGREES, system_state_packet.orientation[1] * RADIANS_TO_DEGREES, system_state_packet.orientation[2] * RADIANS_TO_DEGREES);
-          }
-        }
-      }
-      else if (_anPacket->id == packet_id_unix_time)
+      if (verbose_)
       {
-        if (decode_unix_time_packet((unix_time_packet_t *)_packetMap[packet_id_unix_time].second.get(), _anPacket) == 0)
-        {
-          _packetMap[packet_id_unix_time].first = true;
+        system_state_packet_t system_state_packet = *(system_state_packet_t *)_packetMap[packet_id_system_state].second.get();
+        printf("System State Packet:\n");
+        printf("\tLatitude = %f, Longitude = %f, Height = %f\n", system_state_packet.latitude * RADIANS_TO_DEGREES, system_state_packet.longitude * RADIANS_TO_DEGREES, system_state_packet.height);
+        printf("\tRoll = %f, Pitch = %f, Heading = %f\n", system_state_packet.orientation[0] * RADIANS_TO_DEGREES, system_state_packet.orientation[1] * RADIANS_TO_DEGREES, system_state_packet.orientation[2] * RADIANS_TO_DEGREES);
+      }
+    }
+  }
+  else if (_anPacket->id == packet_id_unix_time)
+  {
+    if (decode_unix_time_packet((unix_time_packet_t *)_packetMap[packet_id_unix_time].second.get(), _anPacket) == 0)
+    {
+      _packetMap[packet_id_unix_time].first = true;
 
-          if (verbose_)
-          {
-            unix_time_packet_t unix_time_packet = *(unix_time_packet_t *)_packetMap[packet_id_unix_time].second.get();
-            printf("Unix Time Packet:\n");
-            printf("Unix Time Seconds: %u, Unix Time Microseconds %u\n", unix_time_packet.unix_time_seconds, unix_time_packet.microseconds);
-          }
-        }
-      }
-      else if (_anPacket->id == packet_id_raw_sensors) /* raw sensors packet */
+      if (verbose_)
       {
-        /* copy all the binary data into the typedef struct for the packet */
-        /* this allows easy access to all the different values             */
-        if (decode_raw_sensors_packet((raw_sensors_packet_t *)_packetMap[packet_id_raw_sensors].second.get(), _anPacket) == 0)
-        {
-          _packetMap[packet_id_raw_sensors].first = true;
+        unix_time_packet_t unix_time_packet = *(unix_time_packet_t *)_packetMap[packet_id_unix_time].second.get();
+        printf("Unix Time Packet:\n");
+        printf("Unix Time Seconds: %u, Unix Time Microseconds %u\n", unix_time_packet.unix_time_seconds, unix_time_packet.microseconds);
+      }
+    }
+  }
+  else if (_anPacket->id == packet_id_raw_sensors) /* raw sensors packet */
+  {
+    /* copy all the binary data into the typedef struct for the packet */
+    /* this allows easy access to all the different values             */
+    if (decode_raw_sensors_packet((raw_sensors_packet_t *)_packetMap[packet_id_raw_sensors].second.get(), _anPacket) == 0)
+    {
+      _packetMap[packet_id_raw_sensors].first = true;
 
-          if (verbose_)
-          {
-            raw_sensors_packet_t raw_sensors_packet = *(raw_sensors_packet_t *)_packetMap[packet_id_raw_sensors].second.get();
-            printf("Raw Sensors Packet:\n");
-            printf("\tAccelerometers X: %f Y: %f Z: %f\n", raw_sensors_packet.accelerometers[0], raw_sensors_packet.accelerometers[1], raw_sensors_packet.accelerometers[2]);
-            printf("\tGyroscopes X: %f Y: %f Z: %f\n", raw_sensors_packet.gyroscopes[0] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[1] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[2] * RADIANS_TO_DEGREES);
-          }
-        }
-      }
-      // TODO: PACKET ID'S satellites, satellites_detailed, local_magnetics, utm_position
-      else if (_anPacket->id == packet_id_satellites)
+      if (verbose_)
       {
-        if (decode_satellites_packet(static_cast<satellites_packet_t *>(_packetMap[packet_id_satellites].second.get()), _anPacket))
-        {
-          _packetMap[packet_id_satellites].first = true;
-          if (verbose_)
-            printf("Collected satellites packet.\n");
-        }
+        raw_sensors_packet_t raw_sensors_packet = *(raw_sensors_packet_t *)_packetMap[packet_id_raw_sensors].second.get();
+        printf("Raw Sensors Packet:\n");
+        printf("\tAccelerometers X: %f Y: %f Z: %f\n", raw_sensors_packet.accelerometers[0], raw_sensors_packet.accelerometers[1], raw_sensors_packet.accelerometers[2]);
+        printf("\tGyroscopes X: %f Y: %f Z: %f\n", raw_sensors_packet.gyroscopes[0] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[1] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[2] * RADIANS_TO_DEGREES);
       }
-      else if (_anPacket->id == packet_id_satellites_detailed)
-      {
-        if (decode_detailed_satellites_packet(static_cast<detailed_satellites_packet_t *>(_packetMap[packet_id_satellites_detailed].second.get()), _anPacket))
-        {
-          _packetMap[packet_id_satellites_detailed].first = true;
-          if (verbose_)
-            printf("Collected detailed satellites packet.\n");
-        }
-      }
-      else if (_anPacket->id == packet_id_local_magnetics)
-      {
-        if (decode_local_magnetics_packet(static_cast<local_magnetics_packet_t *>(_packetMap[packet_id_local_magnetics].second.get()), _anPacket))
-        {
-          _packetMap[packet_id_local_magnetics].first = true;
-          if (verbose_)
-            printf("Collected local magnetics packet.\n");
-        }
-      }
-      else if (_anPacket->id == packet_id_utm_position)
-      {
-        if (decode_utm_position_packet(static_cast<utm_position_packet_t *>(_packetMap[packet_id_utm_position].second.get()), _anPacket))
-        {
-          _packetMap[packet_id_utm_position].first = true;
-          if (verbose_)
-            printf("Collected utm position packet.\n");
-        }
-      }
-      else if (_anPacket->id == packet_id_ecef_position)
-      {
-        if (decode_ecef_position_packet(static_cast<ecef_position_packet_t *>(_packetMap[packet_id_ecef_position].second.get()), _anPacket))
-        {
-          _packetMap[packet_id_ecef_position].first = true;
-          if (verbose_)
-            printf("Collected ecef position packet.\n");
-        }
-      }
-      else if (_anPacket->id == packet_id_north_seeking_status)
-      {
-        if (decode_north_seeking_status_packet(static_cast<north_seeking_status_packet_t *>(_packetMap[packet_id_north_seeking_status].second.get()), _anPacket))
-        {
-          _packetMap[packet_id_north_seeking_status].first = true;
-          if (verbose_)
-            printf("Collected north seeking status packet.\n");
-        }
-      }
-      else
-      {
-        printf("Packet ID %u of Length %u\n", _anPacket->id, _anPacket->length);
-        return -1;
-      }
+    }
+  }
+  // TODO: PACKET ID'S satellites, satellites_detailed, local_magnetics, utm_position
+  else if (_anPacket->id == packet_id_satellites)
+  {
+    if (decode_satellites_packet(static_cast<satellites_packet_t *>(_packetMap[packet_id_satellites].second.get()), _anPacket))
+    {
+      _packetMap[packet_id_satellites].first = true;
+      if (verbose_)
+        printf("Collected satellites packet.\n");
+    }
+  }
+  else if (_anPacket->id == packet_id_satellites_detailed)
+  {
+    if (decode_detailed_satellites_packet(static_cast<detailed_satellites_packet_t *>(_packetMap[packet_id_satellites_detailed].second.get()), _anPacket))
+    {
+      _packetMap[packet_id_satellites_detailed].first = true;
+      if (verbose_)
+        printf("Collected detailed satellites packet.\n");
+    }
+  }
+  else if (_anPacket->id == packet_id_local_magnetics)
+  {
+    if (decode_local_magnetics_packet(static_cast<local_magnetics_packet_t *>(_packetMap[packet_id_local_magnetics].second.get()), _anPacket))
+    {
+      _packetMap[packet_id_local_magnetics].first = true;
+      if (verbose_)
+        printf("Collected local magnetics packet.\n");
+    }
+  }
+  else if (_anPacket->id == packet_id_utm_position)
+  {
+    if (decode_utm_position_packet(static_cast<utm_position_packet_t *>(_packetMap[packet_id_utm_position].second.get()), _anPacket))
+    {
+      _packetMap[packet_id_utm_position].first = true;
+      if (verbose_)
+        printf("Collected utm position packet.\n");
+    }
+  }
+  else if (_anPacket->id == packet_id_ecef_position)
+  {
+    if (decode_ecef_position_packet(static_cast<ecef_position_packet_t *>(_packetMap[packet_id_ecef_position].second.get()), _anPacket))
+    {
+      _packetMap[packet_id_ecef_position].first = true;
+      if (verbose_)
+        printf("Collected ecef position packet.\n");
+    }
+  }
+  else if (_anPacket->id == packet_id_north_seeking_status)
+  {
+    if (decode_north_seeking_status_packet(static_cast<north_seeking_status_packet_t *>(_packetMap[packet_id_north_seeking_status].second.get()), _anPacket))
+    {
+      _packetMap[packet_id_north_seeking_status].first = true;
+      if (verbose_)
+        printf("Collected north seeking status packet.\n");
     }
   }
 
   return 0;
+}
+
+int Driver::SendPacket(an_packet_t* _anPacket)
+{
+   // Attempt to send our packet periods packet
+  if (SendBuf(an_packet_pointer(_anPacket), an_packet_size(_anPacket)))
+  {
+    if (verbose_) printf("Packet succesfully sent!\n");
+    packetRequests_.push_back(static_cast<packet_id_e>(_anPacket->id));
+    return 0;
+  }
+  else
+  {
+    if (verbose_) printf("Unable to send packet.\n");
+    return -1;
+  }
 }
 
 // PUBLIC FUNCTIONS
@@ -189,34 +202,35 @@ int Driver::Init(std::vector<packet_id_e> _packetsRequested)
   packet_periods_packet_t packetPeriods;
   // We will reset the periods each time, so doesn't matter
   packetPeriods.permanent = 0;
+  // Clear all exisiting packet periods and replace with new ones
   packetPeriods.clear_existing_packets = 1;
-  int i;
-  for (i = 0; i < _packetsRequested.size(); i++)
-  {
-    // packet_period_t period = {packet id, period}
-    // See documentation for how period is use dot calculate Hz
-    packet_period_t period = {_packetsRequested[i], PACKET_PERIOD};
-    packetPeriods.packet_periods[i] = period;
-  }
+  packet_period_t packetPeriod;
+  packetPeriod.packet_id = packet_id_utm_position;
+  packetPeriod.period = PACKET_PERIOD;
+  packetPeriods.packet_periods[0] = packetPeriod;
+  // int i;
+  // for (i = 0; i < _packetsRequested.size(); i++)
+  // {
+  //   // packet_period_t period = {packet id, period}
+  //   // See documentation for how period is use dot calculate Hz
+  //   packet_period_t period = {_packetsRequested[i], PACKET_PERIOD};
+  //   packetPeriods.packet_periods[i] = period;
+  // }
   // Make sure we end our inputs with a zeroed struct
-  memset(&packetPeriods.packet_periods[i], 0, sizeof(packet_period_t));
+  // memset(&packetPeriods.packet_periods[i], 0, sizeof(packet_period_t));
   an_packet_t *requestPacket = encode_packet_periods_packet(&packetPeriods);
 
-  // Attempt to send our request packet
-  if (SendBuf(an_packet_pointer(requestPacket), an_packet_size(requestPacket)))
-  {
-    if (verbose_)
-      printf("Packet succesfully sent!\n");
-  }
-  else
-  {
-    if (verbose_)
-      printf("We may have a problem.\n");
-  }
-  an_packet_free(&requestPacket);
-  requestPacket = nullptr;
+  // Send and then free packet
+  printf("Sending packet.");
+  int packetError = SendPacket(requestPacket);
+  // an_packet_free(&requestPacket);
+  // requestPacket = nullptr;
 
-  // TODO: Figure out best way to deal with acknowledge packets
+  // Check if the packet was successfully sent
+  if (packetError != 0)
+  {
+    return -2;
+  }
 
   printf("Initializing decoder.");
   an_decoder_initialise(&anDecoder_);
@@ -276,12 +290,15 @@ int Driver::Once(KvhPackageMap &_packetMap)
     /* decode all the packets in the buffer */
     while ((anPacket = an_packet_decode(&anDecoder_)) != NULL)
     {
+      // I think I should keep a list of packets I send, and then mark them successful when the acknowledge packet
+      // for it comes back
       if (anPacket->id == packet_id_acknowledge)
       {
-        acknowledge_packet_t *ackP;
-        if (decode_acknowledge_packet(ackP, anPacket) == 0)
+        acknowledge_packet_t ackP;
+        if (decode_acknowledge_packet(&ackP, anPacket) == 0)
         {
-          printf("Acknowledging packet from packet id: %d\n", ackP->packet_id);
+          printf("Acknowledging packet from packet id: %d\n", ackP.packet_id);
+
         }
       }
       else
@@ -336,8 +353,10 @@ int Driver::CreatePacketMap(KvhPackageMap &_packetMap, std::vector<packet_id_e> 
       break;
     case packet_id_north_seeking_status:
       _packetMap[packet_id_north_seeking_status] = std::make_pair(false, std::make_shared<north_seeking_status_packet_t>());
+      break;
     default:
       // If the packet id is not in the list above it is unsupported
+      if (verbose_) printf("Packet with id: %d unsupported", packEnum);
       unsupported += 1;
     }
   }
