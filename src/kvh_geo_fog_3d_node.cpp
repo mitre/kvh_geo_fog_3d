@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
     // Can pass true to this constructor to get print outs. Is currently messy but usable
     kvh::Driver kvhDriver;
-    kvhDriver.Init();
+    kvhDriver.Init(packetRequest);
 
  
     // Create a map, this will hold all of our data and status changes (if the packets were updated)
@@ -241,8 +241,6 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_north_seeking_status].publish(northSeekInitStatMsg);
         }
         
-
-
         usleep(100000);
     }
 

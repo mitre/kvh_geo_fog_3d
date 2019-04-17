@@ -40,17 +40,8 @@ Driver::~Driver()
 
 // PRIVATE FUNCTIONS
 
-int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
+int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
 {
-  if (_anPacket->id == packet_id_acknowledge)
-  {
-    acknowledge_packet_t *ackP;
-    if (decode_acknowledge_packet(ackP, _anPacket) == 0)
-    {
-      printf("Acknowledging packet from packet id: %d\n", ackP->packet_id);
-    }
-    return 0; // Don't need to try the below for this packet
-  }
 
   // Check if the packet id is in our map
   for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
@@ -165,9 +156,12 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
       else
       {
         printf("Packet ID %u of Length %u\n", _anPacket->id, _anPacket->length);
+        return -1;
       }
     }
   }
+
+  return 0;
 }
 
 // PUBLIC FUNCTIONS
@@ -179,7 +173,7 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
    * 
    * Initialize the serial connection to the KVH GEO FOG 3D.
    */
-int Driver::Init()
+int Driver::Init(std::vector<packet_id_e> _packetsRequested)
 {
   // Open Comport
   // Make these class variables
@@ -190,6 +184,39 @@ int Driver::Init()
     return -1;
   }
   connected_ = true;
+
+  // Set the correct packets to output
+  packet_periods_packet_t packetPeriods;
+  // We will reset the periods each time, so doesn't matter
+  packetPeriods.permanent = 0;
+  packetPeriods.clear_existing_packets = 1;
+  int i;
+  for (i = 0; i < _packetsRequested.size(); i++)
+  {
+    // packet_period_t period = {packet id, period}
+    // See documentation for how period is use dot calculate Hz
+    packet_period_t period = {_packetsRequested[i], PACKET_PERIOD};
+    packetPeriods.packet_periods[i] = period;
+  }
+  // Make sure we end our inputs with a zeroed struct
+  memset(&packetPeriods.packet_periods[i], 0, sizeof(packet_period_t));
+  an_packet_t *requestPacket = encode_packet_periods_packet(&packetPeriods);
+
+  // Attempt to send our request packet
+  if (SendBuf(an_packet_pointer(requestPacket), an_packet_size(requestPacket)))
+  {
+    if (verbose_)
+      printf("Packet succesfully sent!\n");
+  }
+  else
+  {
+    if (verbose_)
+      printf("We may have a problem.\n");
+  }
+  an_packet_free(&requestPacket);
+  requestPacket = nullptr;
+
+  // TODO: Figure out best way to deal with acknowledge packets
 
   printf("Initializing decoder.");
   an_decoder_initialise(&anDecoder_);
@@ -230,39 +257,16 @@ int Driver::Init()
 // TODO: Do we need to request each packet every time?
 int Driver::Once(KvhPackageMap &_packetMap)
 {
-  // Request packets
-  // Have to build our request packet since the api function only allows a request of
-  // one at a time
-  an_packet_t *requestPacket = an_packet_allocate(_packetMap.size(), packet_id_request);
-  int i = 0;
+  // Set the updated value of each packet to false
   for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
   {
-    // Add to requests
-    // printf("Adding request for: %d\n", it->first);
-    requestPacket->data[i] = it->first;
-    i++; // Increment package position
-
     // Set all updates to false
     _packetMap[it->first].first = false;
   }
-  an_packet_encode(requestPacket);
-
-  // Attempt to send our request packet
-  if (SendBuf(an_packet_pointer(requestPacket), an_packet_size(requestPacket)))
-  {
-    if (verbose_)
-      printf("Packet succesfully sent!\n");
-  }
-  else
-  {
-    if (verbose_)
-      printf("We may have a problem.\n");
-  }
-  an_packet_free(&requestPacket);
-  requestPacket = nullptr;
 
   an_packet_t *anPacket;
   int bytesRec;
+  int unexpectedPackets = 0;
 
   if ((bytesRec = PollComport(an_decoder_pointer(&anDecoder_), an_decoder_size(&anDecoder_))) > 0)
   {
@@ -272,7 +276,19 @@ int Driver::Once(KvhPackageMap &_packetMap)
     /* decode all the packets in the buffer */
     while ((anPacket = an_packet_decode(&anDecoder_)) != NULL)
     {
-      DecodePacket(anPacket, _packetMap);
+      if (anPacket->id == packet_id_acknowledge)
+      {
+        acknowledge_packet_t *ackP;
+        if (decode_acknowledge_packet(ackP, anPacket) == 0)
+        {
+          printf("Acknowledging packet from packet id: %d\n", ackP->packet_id);
+        }
+      }
+      else
+      {
+        if (DecodePacket(anPacket, _packetMap) < 0)
+          unexpectedPackets++;
+      }
 
       /* Ensure that you free the an_packet when your done with it or you will leak memory */
       an_packet_free(&anPacket);
