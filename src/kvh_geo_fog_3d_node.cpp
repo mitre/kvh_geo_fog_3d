@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     };
 
     // Can pass true to this constructor to get print outs. Is currently messy but usable
-    kvh::Driver kvhDriver;
+    kvh::Driver kvhDriver(true);
     kvhDriver.Init();
 
  

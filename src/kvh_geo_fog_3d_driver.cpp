@@ -40,7 +40,7 @@ Driver::~Driver()
 
 // PRIVATE FUNCTIONS
 
-int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
+int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
 {
   if (_anPacket->id == packet_id_acknowledge)
   {
@@ -48,6 +48,11 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
     if (decode_acknowledge_packet(ackP, _anPacket) == 0)
     {
       printf("Acknowledging packet from packet id: %d\n", ackP->packet_id);
+    }
+    else
+    {
+      if (verbose_)
+        printf("Failed to decode system state packet properly.\n");
     }
     return 0; // Don't need to try the below for this packet
   }
@@ -75,6 +80,11 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
             printf("\tRoll = %f, Pitch = %f, Heading = %f\n", system_state_packet.orientation[0] * RADIANS_TO_DEGREES, system_state_packet.orientation[1] * RADIANS_TO_DEGREES, system_state_packet.orientation[2] * RADIANS_TO_DEGREES);
           }
         }
+        else
+        {
+          if (verbose_)
+            printf("Failed to decode system state packet properly.\n");
+        }
       }
       else if (_anPacket->id == packet_id_unix_time)
       {
@@ -88,6 +98,11 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
             printf("Unix Time Packet:\n");
             printf("Unix Time Seconds: %u, Unix Time Microseconds %u\n", unix_time_packet.unix_time_seconds, unix_time_packet.microseconds);
           }
+        }
+        else
+        {
+          if (verbose_)
+            printf("Failed to decode unix time packet properly.\n");
         }
       }
       else if (_anPacket->id == packet_id_raw_sensors) /* raw sensors packet */
@@ -106,8 +121,12 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
             printf("\tGyroscopes X: %f Y: %f Z: %f\n", raw_sensors_packet.gyroscopes[0] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[1] * RADIANS_TO_DEGREES, raw_sensors_packet.gyroscopes[2] * RADIANS_TO_DEGREES);
           }
         }
+        else
+        {
+          if (verbose_)
+            printf("Failed to decode raw sensors packet properly.\n");
+        }
       }
-      // TODO: PACKET ID'S satellites, satellites_detailed, local_magnetics, utm_position
       else if (_anPacket->id == packet_id_satellites)
       {
         if (decode_satellites_packet(static_cast<satellites_packet_t *>(_packetMap[packet_id_satellites].second.get()), _anPacket))
@@ -115,6 +134,10 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
           _packetMap[packet_id_satellites].first = true;
           if (verbose_)
             printf("Collected satellites packet.\n");
+        }
+        else
+        {
+          printf("Failed to decode satellites packet properly.\n");
         }
       }
       else if (_anPacket->id == packet_id_satellites_detailed)
@@ -125,6 +148,11 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
           if (verbose_)
             printf("Collected detailed satellites packet.\n");
         }
+        else
+        {
+          if (verbose_)
+            printf("Failed to decode detailed satellites packet properly.\n");
+        }
       }
       else if (_anPacket->id == packet_id_local_magnetics)
       {
@@ -133,6 +161,11 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
           _packetMap[packet_id_local_magnetics].first = true;
           if (verbose_)
             printf("Collected local magnetics packet.\n");
+        }
+        else
+        {
+          if (verbose_)
+            printf("Failed to decode local magnetics packet properly.\n");
         }
       }
       else if (_anPacket->id == packet_id_utm_position)
@@ -143,6 +176,11 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
           if (verbose_)
             printf("Collected utm position packet.\n");
         }
+        else
+        {
+          if (verbose_)
+            printf("Failed to decode utm position packet properly.\n");
+        }
       }
       else if (_anPacket->id == packet_id_ecef_position)
       {
@@ -152,6 +190,11 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
           if (verbose_)
             printf("Collected ecef position packet.\n");
         }
+        else
+        {
+          if (verbose_)
+            printf("Failed to decode ecef position packet properly.\n");
+        }
       }
       else if (_anPacket->id == packet_id_north_seeking_status)
       {
@@ -160,6 +203,10 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
           _packetMap[packet_id_north_seeking_status].first = true;
           if (verbose_)
             printf("Collected north seeking status packet.\n");
+        }
+        else
+        {
+          if (verbose_) printf("Failed to decode north seeking status packet properly.\n");
         }
       }
       else
@@ -178,6 +225,14 @@ int Driver::DecodePacket(an_packet_t* _anPacket, KvhPackageMap& _packetMap)
    * @return [int]: 0 = success, > 0 = warning, < 0 = failure
    * 
    * Initialize the serial connection to the KVH GEO FOG 3D.
+   * TODO: Possibly add code to calculate baud rate?
+   * 
+   * Current calculation for our packets:
+   * (105 (sys state) + 18 (satellites) +
+   * (5+(7*(1 for min or 5 for max))) (Detailed satellites) + 17 (local mag)
+   * + 30 (utm) + 29 (ecef) + 32) * rate (50hz default) * 11
+   * Supposedly minimum baud should be 133650, but state
+   * packet doesn't seem to be showing overflow?
    */
 int Driver::Init()
 {
@@ -238,7 +293,8 @@ int Driver::Once(KvhPackageMap &_packetMap)
   for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
   {
     // Add to requests
-    // printf("Adding request for: %d\n", it->first);
+    if (verbose_)
+      printf("Adding request for: %d\n", it->first);
     requestPacket->data[i] = it->first;
     i++; // Increment package position
 
