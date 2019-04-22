@@ -8,12 +8,12 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  message_generation
   dynamic_reconfigure
+  message_generation
+  nodelet
+  pluginlib
   roscpp
   std_msgs
-  nodelet 
-  pluginlib
 )
 
 ################################################
@@ -43,13 +43,13 @@ find_package(catkin REQUIRED COMPONENTS
 # Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  KvhGeoFog3DSystemState.msg
-  KvhGeoFog3DSatellites.msg 
   KvhGeoFog3DDetailSatellites.msg
-  KvhGeoFog3DLocalMagneticField.msg 
-  KvhGeoFog3DUTMPosition.msg
   KvhGeoFog3DECEFPos.msg
+  KvhGeoFog3DLocalMagneticField.msg 
   KvhGeoFog3DNorthSeekingInitStatus.msg 
+  KvhGeoFog3DSatellites.msg 
+  KvhGeoFog3DSystemState.msg
+  KvhGeoFog3DUTMPosition.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -88,7 +88,7 @@ generate_messages(
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
 generate_dynamic_reconfigure_options(
-  cfg/kvh_geo_fog_3d_driver.cfg
+  cfg/${PROJECT_NAME}.cfg
 )
 
 ###################################
@@ -102,7 +102,8 @@ generate_dynamic_reconfigure_options(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include include/geo_fog_sdk include/rs232
-  CATKIN_DEPENDS message_runtime dynamic_reconfigure roscpp std_msgs nodelet pluginlib
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS dynamic_reconfigure message_runtime nodelet pluginlib roscpp std_msgs
 )
 
 ###########
@@ -118,12 +119,11 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-# Notes on the below:
-# I would like to build the sdk as a seperate library, instead of building it 
-# in with the ros library. When built seperately, I run into the issue of tcgetattribute
-# causing a segmentation fault. There must be some cmake way around this, but I do not 
-# know or want to spend time on it right now.
-
+## Notes on the below:
+## I would like to build the sdk as a seperate library, instead of building it 
+## in with the ros library. When built seperately, I run into the issue of tcgetattribute
+## causing a segmentation fault. There must be some cmake way around this, but I do not 
+## know or want to spend time on it right now.
 #add_library(geo_fog_sdk
 #  geo_fog_sdk/an_packet_protocol.c
 #  geo_fog_sdk/spatial_packets.c
@@ -131,17 +131,15 @@ include_directories(
 #)
 
 add_library(${PROJECT_NAME}
-  src/kvh_geo_fog_3d_driver.cpp
-  #src/once.tpp
   geo_fog_sdk/an_packet_protocol.c
+  geo_fog_sdk/rs232/rs232.c
   geo_fog_sdk/spatial_packets.c
-  geo_fog_sdk/rs232/rs232.c 
+  src/kvh_geo_fog_3d_driver.cpp
 )
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
-  #geo_fog_sdk
 )
 
 add_library(${PROJECT_NAME}_nodelet 
@@ -150,36 +148,36 @@ add_library(${PROJECT_NAME}_nodelet
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-#add_dependencies(kvh_geo_fog_3d_driver_nodelet
-#  ${PROJECT_NAME}_gencfg
-#)
-
-### Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_nodelet
-  ${catkin_LIBRARIES}
-  kvh_geo_fog_3d_driver
+add_dependencies(${PROJECT_NAME}_nodelet
+  ${PROJECT_NAME}_gencfg
 )
 
-
-## Declare a C++ library
-#add_library(${PROJECT_NAME}
-#  ${FLIR_DRIVER_FILES}
-#  ${FLIR_LIBRARY_FILES}
-#)
+## Specify libraries to link a library or executable target against
+target_link_libraries(${PROJECT_NAME}_nodelet
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-#add_dependencies(${PROJECT_NAME} 
-#  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-#  ${catkin_EXPORTED_TARGETS}
-#  ${PROJECT_NAME}_gencfg
-#)
+add_dependencies(${PROJECT_NAME} 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_gencfg
+)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/kvh_geo_fog_3d_node.cpp)
+
+## Add cmake target dependencies of the executable
+## same as for the library above
+add_dependencies(${PROJECT_NAME}_node
+  ${PROJECT_NAME}
+  ${PROJECT_NAME}_gencfg
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -191,7 +189,7 @@ add_executable(${PROJECT_NAME}_node src/kvh_geo_fog_3d_node.cpp)
 ### Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
-  kvh_geo_fog_3d_driver
+  ${PROJECT_NAME}
 )
 
 ## Add cmake target dependencies of the executable
@@ -201,8 +199,6 @@ target_link_libraries(${PROJECT_NAME}_node
 #  ${catkin_EXPORTED_TARGETS}
 #  ${PROJECT_NAME}_gencfg
 #)
-
-
 
 #configure_file(settings/equalization_preset.yaml ${CMAKE_CURRENT_BINARY_DIR}/equalization_preset.yaml COPYONLY)
 #file(COPY settings DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/flir_adk_driver_node.dir/src)
@@ -222,26 +218,36 @@ target_link_libraries(${PROJECT_NAME}_node
 # )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS kvh_geo_fog_3d_driver
+install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node ${PROJECT_NAME}_nodelet
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-
-## Mark cpp header files for installation
+## Install our header files into the root include directory
 install(DIRECTORY include/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.hpp"
   PATTERN ".svn" EXCLUDE
+  )
+## Install KVH SDK headers as well
+install(DIRECTORY include/geo_fog_sdk
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}/geo_fog_sdk
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+  )
+## Install RS232 header as well
+install(DIRECTORY include/rs232
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}/rs232
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
 )
-
+## Make sure we get everything in launch installed
 install(DIRECTORY launch 
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
+## Install our nodelet_plugins.xml for nodelet support
 install(FILES
-  plugins/nodelet_plugins.xml
+  nodelet_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 

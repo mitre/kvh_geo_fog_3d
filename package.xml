@@ -1,19 +1,18 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>kvh_geo_fog_3d_driver</name>
-  <version>0.0.0</version>
-  <description>The kvh_geo_fog_3d_driver package</description>
+  <version>1.0.0</version>
+  <description>A ROS driver for the KVH Geo Fog 3D INS family of systems.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="zlacelle@mitre.org">Zach LaCelle</maintainer>
 
-
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>Proprietary</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
@@ -26,7 +25,9 @@
   <!-- Authors do not have to be maintainers, but could be -->
   <!-- Example: -->
   <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
-
+  <author email="tbostic@mitre.org">Trevor Bostic</author>
+  <author email="zlacelle@mitre.org">Zach LaCelle</author>
+  
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <!-- Examples: -->
@@ -48,17 +49,18 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>message_generation</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>std_msgs</build_depend>
+  <build_depend>message_generation</build_depend>
   <build_depend>nodelet</build_depend>
   <build_depend>pluginlib</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
   <build_export_depend>dynamic_reconfigure</build_export_depend>
   <build_export_depend>message_generation</build_export_depend>
+  <build_export_depend>nodelet</build_export_depend>
+  <build_export_depend>pluginlib</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
-  <build_export_depend>nodelet</build_export_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>dynamic_reconfigure</exec_depend>
   <exec_depend>roscpp</exec_depend>
