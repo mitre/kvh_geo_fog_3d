@@ -134,6 +134,7 @@ add_library(${PROJECT_NAME}
   geo_fog_sdk/an_packet_protocol.c
   geo_fog_sdk/rs232/rs232.c
   geo_fog_sdk/spatial_packets.c
+  src/kvh_diagnostics_container.cpp
   src/kvh_geo_fog_3d_driver.cpp
 )
 

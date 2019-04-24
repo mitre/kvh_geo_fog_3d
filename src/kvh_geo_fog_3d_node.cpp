@@ -2,6 +2,8 @@
  * @file kvh_geo_fog_3d_node.cpp
  * @brief Contains code using the kvh driver and eventually the nodelet
  * @author Trevor Bostic
+ *
+ * @todo Switch publishers to DiagnosticPublisher, which will let us track frequencies (see http://docs.ros.org/api/diagnostic_updater/html/classdiagnostic__updater_1_1DiagnosedPublisher.html)
  */
 
 // STD
@@ -11,6 +13,8 @@
 // KVH GEO FOG
 #include "kvh_geo_fog_3d_driver.hpp"
 #include "spatial_packets.h"
+#include "kvh_diagnostics_container.hpp"
+#include <diagnostic_updater/diagnostic_updater.h>
 
 // ROS
 #include "ros/ros.h"
@@ -22,12 +26,25 @@
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DECEFPos.h>
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DNorthSeekingInitStatus.h>
 
+void SetupUpdater(diagnostic_updater::Updater* _diagnostics, mitre::KVH::DiagnosticsContainer* _diagContainer)
+{
+  _diagnostics->setHardwareID("KVH GEO FOG 3D"); ///< @todo This should probably contain the serial number of the unit, but we only get that after a message read
+  /**
+   * @todo Add a diagnostics expected packet frequency for important packets and verify
+   */
+  _diagnostics->add("KVH System", _diagContainer, &mitre::KVH::DiagnosticsContainer::UpdateSystemStatus);
+  _diagnostics->add("KVH Filters", _diagContainer, &mitre::KVH::DiagnosticsContainer::UpdateFilterStatus);
+}
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "kvh_geo_fog_3d_driver");
 
     ros::NodeHandle node;
+
+    diagnostic_updater::Updater diagnostics;
+    mitre::KVH::DiagnosticsContainer diagContainer;
+    SetupUpdater(&diagnostics, &diagContainer);
 
     // To get packets from the driver, we first create a vector of the packet id's we want
     // See documentation for all id's. TODO: Put all id's in our documentation, is in KVH's
@@ -121,6 +138,10 @@ int main(int argc, char **argv)
             sysStateMsg.longitude_stddev_m = systemStatePacket.standard_deviation[1];
             sysStateMsg.height_stddev_m = systemStatePacket.standard_deviation[2];
 
+            //Update diagnostics container from this message
+            diagContainer.SetSystemStatus(systemStatePacket.system_status.r);
+            diagContainer.SetFilterStatus(systemStatePacket.filter_status.r);
+            
             kvhPubMap[packet_id_system_state].publish(sysStateMsg);
         }
 
@@ -240,10 +261,13 @@ int main(int argc, char **argv)
 
             kvhPubMap[packet_id_north_seeking_status].publish(northSeekInitStatMsg);
         }
+
+        diagnostics.update();
         
         usleep(100000);
         ROS_INFO("----------------------------------------");
     }
 
+    diagnostics.broadcast(diagnostic_msgs::DiagnosticStatus::WARN, "Shutting down the KVH driver");
     kvhDriver.Cleanup();
 }
