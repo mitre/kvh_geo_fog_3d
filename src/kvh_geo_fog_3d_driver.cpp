@@ -24,15 +24,17 @@ namespace kvh
 {
 
 /**
-   * @fn Driver::Driver
-   * @brief Default contstructor.
-   */
-Driver::Driver(bool verbose) : connected_(false),
-                               port_("/dev/ttyUSB0"),
-                               verbose_(verbose)
+ * @fn Driver::Driver
+ * @brief Default contstructor.
+ */
+Driver::Driver(bool verbose) :
+  connected_(false),
+  port_("/dev/ttyUSB0"),
+  verbose_(verbose)
 {
 } //end: Driver()
 
+  
 Driver::~Driver()
 {
   Cleanup();
@@ -244,12 +246,15 @@ int Driver::SendPacket(an_packet_t *_anPacket)
    * + 30 (utm) + 29 (ecef) + 32) * rate (50hz default) * 11
    * Minimum baud all packets at 100hz for worst case scenario is 644600, TODO: Find setting of baud needed for this
    */
-int Driver::Init(std::vector<packet_id_e> _packetsRequested)
+int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequested)
 {
   // Open Comport
   // Make these class variables
   printf("Opening comport\n");
-  if (OpenComport(port_, baud_) != 0)
+  port_ = _port;
+  char portArr[4096];
+  strncpy(portArr, port_.c_str(), 4096);
+  if (OpenComport(portArr, baud_) != 0)
   {
     printf("Unable to establish connection.\n");
     return -1;

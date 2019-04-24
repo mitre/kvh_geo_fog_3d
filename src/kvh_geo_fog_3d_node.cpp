@@ -72,8 +72,17 @@ int main(int argc, char **argv)
     };
 
     // Can pass true to this constructor to get print outs. Is currently messy but usable
+    std::string kvhPort("/dev/ttyUSB0");
     kvh::Driver kvhDriver;
-    kvhDriver.Init(packetRequest);
+    if( node.getParam("port", kvhPort) )
+    {
+      ROS_INFO_STREAM("Connecting to KVH on port " << kvhPort);
+    }
+    else
+    {
+      ROS_WARN("No port specified by param, defaulting to USB0!");
+    }
+    kvhDriver.Init(kvhPort, packetRequest);
 
  
     // Create a map, this will hold all of our data and status changes (if the packets were updated)
