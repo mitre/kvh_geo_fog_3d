@@ -282,7 +282,7 @@ int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequ
   an_packet_t *requestPacket = encode_packet_periods_packet(&packetPeriods);
 
   // Send and then free packet
-  printf("Sending packet.");
+  printf("Sending packet.\n");
   int packetError = SendPacket(requestPacket);
   an_packet_free(&requestPacket);
   requestPacket = nullptr;
@@ -293,7 +293,7 @@ int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequ
     return -2;
   }
 
-  printf("Initializing decoder.");
+  printf("Initializing decoder.\n");
   an_decoder_initialise(&anDecoder_);
 
 } //end: Init()
@@ -345,6 +345,7 @@ int Driver::Once(KvhPackageMap &_packetMap)
 
   if ((bytesRec = PollComport(an_decoder_pointer(&anDecoder_), an_decoder_size(&anDecoder_))) > 0)
   {
+    printf("Bytes received!\n");
     /* increment the decode buffer length by the number of bytes received */
     an_decoder_increment(&anDecoder_, bytesRec);
 
