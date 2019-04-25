@@ -24,15 +24,17 @@ namespace kvh
 {
 
 /**
-   * @fn Driver::Driver
-   * @brief Default contstructor.
-   */
-Driver::Driver(bool verbose) : connected_(false),
-                               port_("/dev/ttyUSB0"),
-                               verbose_(verbose)
+ * @fn Driver::Driver
+ * @brief Default contstructor.
+ */
+Driver::Driver(bool verbose) :
+  connected_(false),
+  port_("/dev/ttyUSB0"),
+  verbose_(verbose)
 {
 } //end: Driver()
 
+  
 Driver::~Driver()
 {
   Cleanup();
@@ -244,12 +246,15 @@ int Driver::SendPacket(an_packet_t *_anPacket)
    * + 30 (utm) + 29 (ecef) + 32) * rate (50hz default) * 11
    * Minimum baud all packets at 100hz for worst case scenario is 644600, TODO: Find setting of baud needed for this
    */
-int Driver::Init(std::vector<packet_id_e> _packetsRequested)
+int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequested)
 {
   // Open Comport
   // Make these class variables
   printf("Opening comport\n");
-  if (OpenComport(port_, baud_) != 0)
+  port_ = _port;
+  char portArr[4096];
+  strncpy(portArr, port_.c_str(), 4096);
+  if (OpenComport(portArr, baud_) != 0)
   {
     printf("Unable to establish connection.\n");
     return -1;
@@ -277,7 +282,7 @@ int Driver::Init(std::vector<packet_id_e> _packetsRequested)
   an_packet_t *requestPacket = encode_packet_periods_packet(&packetPeriods);
 
   // Send and then free packet
-  printf("Sending packet.");
+  printf("Sending packet.\n");
   int packetError = SendPacket(requestPacket);
   an_packet_free(&requestPacket);
   requestPacket = nullptr;
@@ -288,7 +293,7 @@ int Driver::Init(std::vector<packet_id_e> _packetsRequested)
     return -2;
   }
 
-  printf("Initializing decoder.");
+  printf("Initializing decoder.\n");
   an_decoder_initialise(&anDecoder_);
 
 } //end: Init()
@@ -340,6 +345,7 @@ int Driver::Once(KvhPackageMap &_packetMap)
 
   if ((bytesRec = PollComport(an_decoder_pointer(&anDecoder_), an_decoder_size(&anDecoder_))) > 0)
   {
+    printf("Bytes received!\n");
     /* increment the decode buffer length by the number of bytes received */
     an_decoder_increment(&anDecoder_, bytesRec);
 

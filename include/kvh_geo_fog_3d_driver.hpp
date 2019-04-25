@@ -68,19 +68,19 @@ enum MessageType
 class Driver
 {
 public:
-  Driver(bool verbose = false);
+  Driver(bool _verbose = false);
   ~Driver();
 
   // Documentation here is about using interface. Implementation documentation in source
 
-  int Init(std::vector<packet_id_e>);
+  int Init(const std::string& _port, std::vector<packet_id_e>);
   int Once(KvhPackageMap&);
   int CreatePacketMap(KvhPackageMap&, std::vector<packet_id_e>);
   int Cleanup();
 
 private:
   bool connected_; ///< If we're connected to the localization unit
-  char port_[13];
+  std::string port_;
   int baud_{115200};
   const uint32_t PACKET_PERIOD{50};
   an_decoder_t anDecoder_;
