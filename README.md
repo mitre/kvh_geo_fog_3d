@@ -10,3 +10,7 @@ TODO
 
 By default, the serial port is owned by root.dialout. To run this driver
 without root privileges, you must add your user to the dialout group.
+
+# Packaging
+
+For information on packaging and releasing this package at MITRE, see PACKAGING.md
