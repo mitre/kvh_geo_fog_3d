@@ -85,6 +85,12 @@ catkin_prepare_release --bump {major,minor,patch}
 
 IMPORTANT: Your version that you bump **TO** must match the version you set in your CHANGELOG.rst in step 1!
 
+After completing your prepared release, you must push your new tags!
+
+```
+git push --tags
+```
+
 ### Releasing
 
 The script packaging/release.sh will perform the bloom-release command for you, which will do a ROS-style repository release.
@@ -119,4 +125,4 @@ This will create a debian package in the directory above your current directory.
 
 ## Uploading Packages
 
-TODO
+TODO How to upload to Aptly?

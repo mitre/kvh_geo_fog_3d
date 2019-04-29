@@ -13,14 +13,12 @@ done
 
 echo "OK, proceeding!"
 
-echo "Is this your first release?"
 FIRST_RELEASE=0
-select yn in "Yes" "No"; do
-    case $yn in
-        Yes ) FIRST_RELEASE=1;; break;;
-        No ) exit;;
-    esac
-done
+read -r -p "Is this your first release? [y/N] " response
+response=${response,,}    # tolower
+if [[ "$response" =~ ^(yes|y)$ ]]; then
+   FIRST_RELEASE=1
+fi
 
 # Get into the base directory of the package, assuming this script is located
 # one directory deep
