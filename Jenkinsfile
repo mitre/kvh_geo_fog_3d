@@ -149,6 +149,14 @@ pipeline
 	    {
             archiveArtifacts 'catkin_ws/src/*.deb'
     	}
+        failure
+        {
+            SendEmail()
+        }
+        fixed
+        {
+            SendEmail()
+        }
     }
 } //end: pipeline
 
@@ -243,4 +251,11 @@ void PackageDebian()
         source /opt/ros/kinetic/setup.bash
         fakeroot debian/rules binary
     '''
+}
+
+void SendEmail()
+{
+    emailext body: "${currentBuild.currentResult}: Job ${env.JOB_NAME} build ${env.BUILD_NUMBER}\n More info at: ${env.BUILD_URL}",
+                recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']],
+                subject: "Jenkins Build ${currentBuild.currentResult}: Job ${env.JOB_NAME}", to: 'zlacelle, tbostic'
 }
