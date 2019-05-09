@@ -264,7 +264,8 @@ int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequ
   // Set the correct packets to output
   packet_periods_packet_t packetPeriods;
   // We will reset the periods each time, so doesn't matter
-  packetPeriods.permanent = 0;
+  // Make permanent in case it has a hot reset
+  packetPeriods.permanent = 1;
   // Clear all exisiting packet periods and replace with new ones
   packetPeriods.clear_existing_packets = 1;
   int i;

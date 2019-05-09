@@ -9,6 +9,7 @@
 // STD
 #include "unistd.h"
 #include <map>
+#include <cmath>
 
 // KVH GEO FOG
 #include "kvh_geo_fog_3d_driver.hpp"
@@ -26,14 +27,23 @@
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DECEFPos.h>
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DNorthSeekingInitStatus.h>
 
-void SetupUpdater(diagnostic_updater::Updater* _diagnostics, mitre::KVH::DiagnosticsContainer* _diagContainer)
+// Standard ROS msgs
+#include "sensor_msgs/Imu.h"
+#include "sensor_msgs/NavSatFix.h"
+#include "sensor_msgs/NavSatStatus.h"
+#include "sensor_msgs/MagneticField.h"
+#include "nav_msgs/Odometry.h"
+#include "geometry_msgs/Quaternion.h"
+#include "geometry_msgs/Vector3.h"
+
+void SetupUpdater(diagnostic_updater::Updater *_diagnostics, mitre::KVH::DiagnosticsContainer *_diagContainer)
 {
-  _diagnostics->setHardwareID("KVH GEO FOG 3D"); ///< @todo This should probably contain the serial number of the unit, but we only get that after a message read
-  /**
+    _diagnostics->setHardwareID("KVH GEO FOG 3D"); ///< @todo This should probably contain the serial number of the unit, but we only get that after a message read
+    /**
    * @todo Add a diagnostics expected packet frequency for important packets and verify
    */
-  _diagnostics->add("KVH System", _diagContainer, &mitre::KVH::DiagnosticsContainer::UpdateSystemStatus);
-  _diagnostics->add("KVH Filters", _diagContainer, &mitre::KVH::DiagnosticsContainer::UpdateFilterStatus);
+    _diagnostics->add("KVH System", _diagContainer, &mitre::KVH::DiagnosticsContainer::UpdateSystemStatus);
+    _diagnostics->add("KVH Filters", _diagContainer, &mitre::KVH::DiagnosticsContainer::UpdateFilterStatus);
 }
 
 int main(int argc, char **argv)
@@ -48,43 +58,44 @@ int main(int argc, char **argv)
 
     // To get packets from the driver, we first create a vector of the packet id's we want
     // See documentation for all id's. TODO: Put all id's in our documentation, is in KVH's
-    std::vector<packet_id_e> packetRequest
-    {
+    std::vector<packet_id_e> packetRequest{
         packet_id_system_state,
         packet_id_satellites,
         packet_id_satellites_detailed,
         packet_id_local_magnetics,
         packet_id_utm_position,
         packet_id_ecef_position,
-        packet_id_north_seeking_status
-    };
+        packet_id_north_seeking_status};
 
     // Map containing publishers for each type of message we want to send out
-    std::map<packet_id_e, ros::Publisher> kvhPubMap
-    {
+    std::map<packet_id_e, ros::Publisher> kvhPubMap{
         {packet_id_system_state, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState>("kvh_system_state", 1)},
         {packet_id_satellites, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DSatellites>("kvh_satellites", 1)},
         {packet_id_satellites_detailed, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DDetailSatellites>("kvh_detailed_satellites", 1)},
         {packet_id_local_magnetics, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DLocalMagneticField>("kvh_local_magnetics", 1)},
         {packet_id_utm_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition>("kvh_utm_position", 1)},
         {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos>("kvh_ecef_pos", 1)},
-        {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}
-    };
+        {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}};
+
+    // Publishers for standard ros messages
+    ros::Publisher imuPub = node.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
+    ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
+    ros::Publisher magFieldPub = node.advertise<sensor_msgs::MagneticField>("mag", 1);
+    ros::Publisher odomPub = node.advertise<nav_msgs::Odometry>("gps/utm", 1);
 
     // Can pass true to this constructor to get print outs. Is currently messy but usable
     std::string kvhPort("/dev/ttyUSB0");
     kvh::Driver kvhDriver;
-    if( node.getParam("port", kvhPort) )
+    if (node.getParam("port", kvhPort))
     {
-      ROS_INFO_STREAM("Connecting to KVH on port " << kvhPort);
+        ROS_INFO_STREAM("Connecting to KVH on port " << kvhPort);
     }
     else
     {
-      ROS_WARN("No port specified by param, defaulting to USB0!");
+        ROS_WARN("No port specified by param, defaulting to USB0!");
     }
     kvhDriver.Init(kvhPort, packetRequest);
 
- 
     // Create a map, this will hold all of our data and status changes (if the packets were updated)
     kvh::KvhPackageMap packetMap;
     // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
@@ -116,10 +127,10 @@ int main(int argc, char **argv)
         if (packetMap[packet_id_system_state].first)
         {
             ROS_INFO("System state packet has updated. Publishing...");
-            // Have to cast the shared_ptr to the correct type and then dereference. 
+            // Have to cast the shared_ptr to the correct type and then dereference.
             // TODO: Looking for ways to simplify this statement for driver users.
             // Static cast
-            systemStatePacket = *static_cast<system_state_packet_t*>(packetMap[packet_id_system_state].second.get());
+            systemStatePacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
 
             kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState sysStateMsg;
             sysStateMsg.header = header;
@@ -150,16 +161,14 @@ int main(int argc, char **argv)
             //Update diagnostics container from this message
             diagContainer.SetSystemStatus(systemStatePacket.system_status.r);
             diagContainer.SetFilterStatus(systemStatePacket.filter_status.r);
-            
+
             kvhPubMap[packet_id_system_state].publish(sysStateMsg);
         }
-
-
 
         if (packetMap[packet_id_satellites].first)
         {
             ROS_INFO("Satellites packet updated. Publishing...");
-            satellitesPacket = *static_cast<satellites_packet_t*>(packetMap[packet_id_satellites].second.get());
+            satellitesPacket = *static_cast<satellites_packet_t *>(packetMap[packet_id_satellites].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DSatellites satellitesMsg;
 
             satellitesMsg.header = header;
@@ -176,7 +185,7 @@ int main(int argc, char **argv)
         if (packetMap[packet_id_satellites_detailed].first)
         {
             ROS_INFO("Detailed satellites packet updated. Publishing...");
-            detailSatellitesPacket = *static_cast<detailed_satellites_packet_t*>(packetMap[packet_id_satellites_detailed].second.get());
+            detailSatellitesPacket = *static_cast<detailed_satellites_packet_t *>(packetMap[packet_id_satellites_detailed].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DDetailSatellites detailSatellitesMsg;
 
             detailSatellitesMsg.header = header;
@@ -186,7 +195,7 @@ int main(int argc, char **argv)
             for (int i = 0; i < MAXIMUM_DETAILED_SATELLITES; i++)
             {
                 satellite_t satellite = detailSatellitesPacket.satellites[i];
-                
+
                 // Check if all fields = 0, if so then we should end our loop
                 if (satellite.satellite_system == 0 && satellite.number == 0 &&
                     satellite.frequencies.r == 0 && satellite.elevation == 0 &&
@@ -210,9 +219,9 @@ int main(int argc, char **argv)
         if (packetMap[packet_id_local_magnetics].first)
         {
             ROS_INFO("Local magnetics packet updated. Publishing...");
-            localMagPacket = *static_cast<local_magnetics_packet_t*>(packetMap[packet_id_local_magnetics].second.get());
+            localMagPacket = *static_cast<local_magnetics_packet_t *>(packetMap[packet_id_local_magnetics].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DLocalMagneticField localMagFieldMsg;
-            
+
             localMagFieldMsg.header = header;
             localMagFieldMsg.loc_mag_field_x_mG = localMagPacket.magnetic_field[0];
             localMagFieldMsg.loc_mag_field_y_mG = localMagPacket.magnetic_field[1];
@@ -224,7 +233,7 @@ int main(int argc, char **argv)
         if (packetMap[packet_id_utm_position].first)
         {
             ROS_INFO("UTM Position packet updated. Publishing...");
-            utmPosPacket = *static_cast<utm_position_packet_t*>(packetMap[packet_id_utm_position].second.get());
+            utmPosPacket = *static_cast<utm_position_packet_t *>(packetMap[packet_id_utm_position].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition utmPosMsg;
 
             utmPosMsg.header = header;
@@ -239,7 +248,7 @@ int main(int argc, char **argv)
         if (packetMap[packet_id_ecef_position].first)
         {
             ROS_INFO("ECEF position packet updated. Publishing...");
-            ecefPosPacket = *static_cast<ecef_position_packet_t*>(packetMap[packet_id_ecef_position].second.get());
+            ecefPosPacket = *static_cast<ecef_position_packet_t *>(packetMap[packet_id_ecef_position].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos ecefPosMsg;
 
             ecefPosMsg.header = header;
@@ -253,7 +262,7 @@ int main(int argc, char **argv)
         if (packetMap[packet_id_north_seeking_status].first)
         {
             ROS_INFO("North seeking status packet updated. Publishing...");
-            northSeekingStatPacket = *static_cast<north_seeking_status_packet_t*>(packetMap[packet_id_north_seeking_status].second.get());
+            northSeekingStatPacket = *static_cast<north_seeking_status_packet_t *>(packetMap[packet_id_north_seeking_status].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus northSeekInitStatMsg;
 
             northSeekInitStatMsg.header = header;
@@ -271,8 +280,102 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_north_seeking_status].publish(northSeekInitStatMsg);
         }
 
+        // Standard ros messages. There may be multiple ways to create the same packet so we have each method listed here
+        // If we have the system state packet we have the data for the imu and navsatfix packets
+        if (packetMap[packet_id_system_state].first)
+        {
+
+            sensor_msgs::Imu imuMsg;
+            sensor_msgs::NavSatFix navSatFixMsg;
+            system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
+
+            // IMU msg
+            imuMsg.header = header;
+            imuMsg.header.frame_id = "imu";
+            imuMsg.orientation.x = sysPacket.orientation[0];
+            imuMsg.orientation.y = sysPacket.orientation[1];
+            imuMsg.orientation.z = sysPacket.orientation[2];
+            imuMsg.angular_velocity.x = sysPacket.angular_velocity[0];
+            imuMsg.angular_velocity.y = sysPacket.angular_velocity[1];
+            imuMsg.angular_velocity.z = sysPacket.angular_velocity[2];
+            imuMsg.linear_acceleration.x = sysPacket.body_acceleration[0];
+            imuMsg.linear_acceleration.y = sysPacket.body_acceleration[1];
+            imuMsg.linear_acceleration.z = sysPacket.body_acceleration[2];
+
+            imuPub.publish(imuMsg);
+
+            // NavSatFix msg
+            navSatFixMsg.header = header;
+            navSatFixMsg.frame_id = "gps";
+
+            // Set nav sat status
+            int status = sysPacket.filter_status.b.gnss_fix_type;
+            switch (status)
+            {
+                case 0: 
+                    navSatFixMsg.status.status = navSatFixMsg.status.STATUS_NO_FIX;
+                    break;
+                case 1:
+                case 2:
+                    navSatFixMsg.status.status = navSatFixMsg.status.STATUS_FIX;
+                    break;
+                case 3:
+                    navSatFixMsg.status.status = navSatFixMsg.status.STATUS_SBAS_FIX;
+                    break;
+                default:
+                    navSatFixMsg.status.status = navSatFixMsg.status.STATUS_GBAS_FIX;
+            }
+
+            navSatFixMsg.latitude = sysPacket.latitude;
+            navSatFixMsg.longitude = sysPacket.longitude;
+            navSatFixMsg.altitude = sysPacket.height;
+            navSatFixMsg.position_covariance_type = navSatFixMsg.COVARIANCE_TYPE_DIAGONAL_KNOWN;
+            // They use ENU for mat for this matrix. To me it makes sense that we should use
+            // the longitude standard deviation for east.
+            navSatFixMsg.position_covariance[0] = pow(sysPacket.standard_deviation[1], 2);
+            navSatFixMsg.position_covariance[4] = pow(sysPacket.standard_deviation[0], 2);
+            navSatFixMsg.position_covariance[8] = pow(sysPacket.standard_deviation[2], 2);
+
+            navSatFixPub.publish(navSatFixMsg);
+
+            // If we have system state and utm position we can publish odometry
+            if (packetMap[packet_id_utm_position].first)
+            {
+                nav_msgs::Odometry odomMsg;
+                utm_position_packet_t utmPacket = *static_cast<utm_position_packet_t *>(packetMap[packet_id_utm_position].second.get());
+
+                odomMsg.header = header;
+                odomMsg.header.frame_id = "gps";
+                odomMsg.pose.pose.position.x = utmPacket.position[0];
+                odomMsg.pose.pose.position.y = utmPacket.position[1];
+                odomMsg.pose.pose.position.z = utmPacket.position[2];
+                odomMsg.pose.pose.orientation.x = sysPacket.orientation[0];
+                odomMsg.pose.pose.orientation.y = sysPacket.orientation[1];
+                odomMsg.pose.pose.orientation.z = sysPacket.orientation[2];
+                odomMsg.twist.twist.angular.x = sysPacket.velocity[0];
+                odomMsg.twist.twist.angular.y = sysPacket.velocity[1];
+                odomMsg.twist.twist.angular.z = sysPacket.velocity[2];
+
+                odomPub.publish(odomMsg);
+            }
+        }
+
+        if (packetMap[packet_id_local_magnetics].first)
+        {
+            sensor_msgs::MagneticField magFieldMsg;
+            local_magnetics_packet_t localMagPacket = *static_cast<local_magnetics_packet_t *>(packetMap[packet_id_local_magnetics].second.get());
+
+            magFieldMsg.header = header;
+            magFieldMsg.header.frame_id = "imu";
+            magFieldMsg.magnetic_field.x = localMagPacket.magnetic_field[0];
+            magFieldMsg.magnetic_field.y = localMagPacket.magnetic_field[1];
+            magFieldMsg.magnetic_field.z = localMagPacket.magnetic_field[2];
+
+            magFieldPub.publish(magFieldMsg);
+        }
+
         diagnostics.update();
-        
+
         usleep(100000);
         ROS_INFO("----------------------------------------");
     }
