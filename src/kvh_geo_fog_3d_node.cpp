@@ -6,6 +6,14 @@
  * @todo Switch publishers to DiagnosticPublisher, which will let us track frequencies (see http://docs.ros.org/api/diagnostic_updater/html/classdiagnostic__updater_1_1DiagnosedPublisher.html)
  */
 
+/*****
+ * Frame id's for messages:
+ * IMU - IMU
+ * NavSat - GPS
+ * Odom - GPS
+ * MagField - IMU
+ */
+
 // STD
 #include "unistd.h"
 #include <map>
@@ -306,7 +314,7 @@ int main(int argc, char **argv)
 
             // NavSatFix msg
             navSatFixMsg.header = header;
-            navSatFixMsg.frame_id = "gps";
+            navSatFixMsg.header.frame_id = "gps";
 
             // Set nav sat status
             int status = sysPacket.filter_status.b.gnss_fix_type;
