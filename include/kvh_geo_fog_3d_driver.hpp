@@ -1,5 +1,5 @@
 /**
- * @file driver.hpp
+ * @file kvh_geo_fog_3d_driver.hpp
  * @brief KVH Geo Fog 3D driver class header.
  *
  * This is the header file for the KVH Geo Fog 3D driver, responsible
@@ -7,6 +7,7 @@
  */
 #pragma once
 
+// STD
 #include <vector>
 #include <map>
 #include <memory>
@@ -20,81 +21,95 @@
 
 namespace kvh
 {
-
-  typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPackageMap;
-/**
-   * @ingroup kvh
-   * @brief Enumeration of KVH messages, based on the Packet ID.
-   *
-   * This enumeration should only include messages supported
-   * by this interface.
+  /**
+   * @typedef KvhPackageMap
+   * Defines mapping from packet id's given in spatial_packets.h to a pair
+   * that contains a pointer to a struct of the type represented by the id, and a boolean
+   * denoting if the struct has been changed (for use when the map is passed to the
+   * Driver::Once function).
+   * 
+   * @attention If possible, use Driver::CreatePacketMap function
+   * to create and populate this map properly
    */
-enum MessageType
-{
-  PACKET_SYSTEM_STATE = 20
-}; //end: MessageType
-
-// template<typename T>
-// struct packetRequest
-// {
-//   T packet;
-//   MessageType packetType;
-// };
-
-// Tripping points:
-// Not all packets have encoding functions
-// restore_factory_settings_packet and reset_packet encoding have no parameters
-// template <typename T>
-// struct PacketInfo
-// {
-//   packet_id_e packetId;
-//   int (*decodeFn)(T *, an_packet_t *);
-//   an_packet_t *(*encodeFn)(T *);
-
-//   PacketInfo(packet_id_e packetId,
-//              int (*decodeFn)(T *, an_packet_t *),
-//              an_packet_t *(*encondFn)(T *) = nullptr) : packetId(packetId),
-//                                                         decodeFn(decodeFn),
-//                                                         encodeFn(encodeFn)
-//   {
-//   }
-// };
+  typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPacketMap;
 
 /**
    * @class Driver
    * @ingroup kvh
    * @brief Driver worker class for the KVH Geo Fog 3D.
+   * 
+   * @todo Add functions for changing output packets and packet rate
+   * @todo Make packet output rate variable
    */
 class Driver
 {
-public:
-  Driver(bool _verbose = false);
+private:
+  bool connected_; ///< True if we're connected to the localization unit.
+  std::string port_; ///< Port to connect to the kvh through. Ex. "/dev/ttyUSB0"
+  int baud_{115200}; ///< Baud rate for communicating with kvh
+  const uint32_t PACKET_PERIOD{50}; ///< Setting for determining packet rate. **Note**: Does not
+    ///< equal packet frequency. See manual for equation on how Packet Period affects packet rate. 
+  an_decoder_t anDecoder_; ///< Decoder for decoding incoming AN encoded packets.
+  bool debug_{false}; ///< Set true to print debug statements
+  std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve 
+    ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay 
+    ///< problem where the packet is already gone by the time this function is called) 
+
+  // Private functions, see implementation for detailed comments
+  int DecodePacket(an_packet_t*, KvhPacketMap&);
+  int SendPacket(an_packet_t*);
+
+  public:
+  Driver(bool _debug = false);
   ~Driver();
 
-  // Documentation here is about using interface. Implementation documentation in source
-
+  /**
+   * \code
+   * std::vector<packet_id_e> packetRequest{packet_id_system_state, packet_id_satellites}; 
+   * std::string kvhPort("/dev/ttyUSB0");
+   * kvh::Driver kvhDriver;
+   * kvhDriver.Init(kvhPort, packetRequest);  * 
+   * \endcode
+   */
   int Init(const std::string& _port, std::vector<packet_id_e>);
-  int Once(KvhPackageMap&);
-  int CreatePacketMap(KvhPackageMap&, std::vector<packet_id_e>);
+
+  /**
+   * \code 
+   * std::vector<packet_id_e> packetRequest{packet_id_system_state, packet_id_satellites};
+   * KvhPacketMap packetMap;
+   * kvh::Driver kvhDriver;
+   * kvhDriver.CreatePacketMap(packetMap, packetRequest); // Populate map
+   * kvhDriver.Once(kvhDriver); // Collect data
+   * // Check if a packet was retrieved
+   * if (packetMap[packet_id_system_state].first)
+   * {
+   *    system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
+   *    .... // Do stuff with the retrived packet
+   * }
+   */
+  int Once(KvhPacketMap&);
+
+  /**
+   * \code
+   * KvhPacketMap packetMap;
+   * kvh::Driver kvhDriver;
+   * // Populates map with packet id -> pair {boolean updated, pointer to struct}
+   * // Ex packet_id_e_system_state -> {bool, system_state_packet*}
+   * kvhDriver.CreatePacketMap(packetMap, packetRequest);
+   * // To retrieve the struct:
+   * system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
+   * \endcode
+   */
+  int CreatePacketMap(KvhPacketMap&, std::vector<packet_id_e>);
+
+  /**
+   * \code
+   * kvh::Driver kvhDriver
+   * // Initialize and use driver
+   * kvhDriver.Cleanup();
+   * \endcode
+   */
   int Cleanup();
-
-private:
-  bool connected_; ///< If we're connected to the localization unit
-  std::string port_;
-  int baud_{115200};
-  const uint32_t PACKET_PERIOD{50};
-  an_decoder_t anDecoder_;
-  bool verbose_{false};
-  std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve 
-    ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay problem where the packet is already gone by the time this function is called)
-
-  int DecodePacket(an_packet_t*, KvhPackageMap&);
-  int SendPacket(an_packet_t*);
-  // Map linking packet types to id's and their decoding and enconding functions
-  // std::map<packet_id_e, std::shared_ptr<void>> packetInfoMap_ =
-  // {
-  //   {packet_id_system_state, std::make_shared<PacketInfo<system_state_packet_t>>(packet_id_system_state, decode_system_state_packet)}
-  // };
 
 }; //end: class Driver
 

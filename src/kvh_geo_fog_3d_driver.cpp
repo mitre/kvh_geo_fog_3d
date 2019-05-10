@@ -2,9 +2,10 @@
  * @file kvh_geo_fog_3d_driver.cpp
  * @brief KVH Geo Fog 3D driver class definitions.
  *
- * This is the class definitions file for the KVH Geo Fog 3D driver,
- * responsible for interfacing to the unit over the serial connection.
+ * This file implements all functions defined in kvh_geo_fog_3d_driver.hpp. The driver 
+ * is used for for interfacing with KVH GEO FOG over serial connection.
  */
+
 //STD includes
 #include <cstdio>
 #include <string>
@@ -16,6 +17,7 @@
 // RS232
 #include "rs232.h"
 
+// KVH Includes
 #include "kvh_geo_fog_3d_driver.hpp"
 
 #define RADIANS_TO_DEGREES (180.0 / M_PI)
@@ -25,16 +27,21 @@ namespace kvh
 
 /**
  * @fn Driver::Driver
- * @brief Default contstructor.
+ * @brief Initializes connected status, port to use, and if debug printing is turned on.
+ * 
+ * @param _debug [in] Determines if debug statements are printed.
  */
-Driver::Driver(bool verbose) :
+Driver::Driver(bool _debug) :
   connected_(false),
   port_("/dev/ttyUSB0"),
-  verbose_(verbose)
+  debug_(_debug)
 {
 } //end: Driver()
 
-  
+/**
+ * @fn Driver::~Driver
+ * @brief Destructor. Will automatically cleanup the driver.
+ */
 Driver::~Driver()
 {
   Cleanup();
@@ -42,7 +49,17 @@ Driver::~Driver()
 
 // PRIVATE FUNCTIONS
 
-int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
+/**
+ * @fn Driver::DecodePacket
+ * @param _anPacket [in] The packet to decode into a Kvh packet type
+ * @param _packetMap [out] Map that the decoded packet will be placed in
+ * 
+ * @return [int]:
+ *    0 = success,
+ *    -1 = Unsupported packet type,
+ *    -2 = Unable to decode packet
+ */
+int Driver::DecodePacket(an_packet_t *_anPacket, KvhPacketMap &_packetMap)
 {
 
   // See if packet id is in our map
@@ -64,7 +81,7 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
       // Notify that we have updated packet
       _packetMap[packet_id_system_state].first = true;
 
-      if (verbose_)
+      if (debug_)
       {
         system_state_packet_t system_state_packet = *(system_state_packet_t *)_packetMap[packet_id_system_state].second.get();
         printf("System State Packet:\n");
@@ -74,8 +91,10 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     }
     else
     {
-      if (verbose_)
+      if (debug_)
         printf("Failed to decode system state packet properly.\n");
+
+      return -2;
     }
   }
   else if (_anPacket->id == packet_id_unix_time)
@@ -84,7 +103,7 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     {
       _packetMap[packet_id_unix_time].first = true;
 
-      if (verbose_)
+      if (debug_)
       {
         unix_time_packet_t unix_time_packet = *(unix_time_packet_t *)_packetMap[packet_id_unix_time].second.get();
         printf("Unix Time Packet:\n");
@@ -93,8 +112,10 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     }
     else
     {
-      if (verbose_)
+      if (debug_)
         printf("Failed to decode unix time packet properly.\n");
+
+      return -2;
     }
   }
   else if (_anPacket->id == packet_id_raw_sensors) /* raw sensors packet */
@@ -105,7 +126,7 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     {
       _packetMap[packet_id_raw_sensors].first = true;
 
-      if (verbose_)
+      if (debug_)
       {
         raw_sensors_packet_t raw_sensors_packet = *(raw_sensors_packet_t *)_packetMap[packet_id_raw_sensors].second.get();
         printf("Raw Sensors Packet:\n");
@@ -115,8 +136,10 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     }
     else
     {
-      if (verbose_)
+      if (debug_)
         printf("Failed to decode raw sensors packet properly.\n");
+
+      return -2;
     }
   }
   else if (_anPacket->id == packet_id_satellites)
@@ -124,12 +147,15 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     if (decode_satellites_packet(static_cast<satellites_packet_t *>(_packetMap[packet_id_satellites].second.get()), _anPacket) == 0)
     {
       _packetMap[packet_id_satellites].first = true;
-      if (verbose_)
+      if (debug_)
         printf("Collected satellites packet.\n");
     }
     else
     {
-      printf("Failed to decode satellites packet properly.\n");
+      if (debug_)
+        printf("Failed to decode satellites packet properly.\n");
+      
+      return -2;
     }
   }
   else if (_anPacket->id == packet_id_satellites_detailed)
@@ -137,13 +163,15 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     if (decode_detailed_satellites_packet(static_cast<detailed_satellites_packet_t *>(_packetMap[packet_id_satellites_detailed].second.get()), _anPacket) == 0)
     {
       _packetMap[packet_id_satellites_detailed].first = true;
-      if (verbose_)
+      if (debug_)
         printf("Collected detailed satellites packet.\n");
     }
     else
     {
-      if (verbose_)
+      if (debug_)
         printf("Failed to decode detailed satellites packet properly.\n");
+
+      return -2;
     }
   }
   else if (_anPacket->id == packet_id_local_magnetics)
@@ -151,18 +179,21 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     if (decode_local_magnetics_packet(static_cast<local_magnetics_packet_t *>(_packetMap[packet_id_local_magnetics].second.get()), _anPacket) == 0)
     {
       _packetMap[packet_id_local_magnetics].first = true;
-      if (verbose_)
+      if (debug_)
         printf("Collected local magnetics packet.\n");
     }
     else
     {
-      if (verbose_)
+      if (debug_)
         printf("Failed to decode local magnetics packet properly.\n");
+
+      return -2;
     }
   }
   else if (_anPacket->id == packet_id_utm_position)
   {
     // Below is a risky hack, they have inconsistencies with the length and fields of this packet
+    /** \todo Fix utm_position_packet_t to follow data provided by kvh instead of what they have defined.*/
     _anPacket->data[24] = _anPacket->data[25];
     _anPacket->data[25] = 0;
     _anPacket->length = 25;
@@ -170,13 +201,15 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     if (decode_utm_position_packet(static_cast<utm_position_packet_t *>(_packetMap[packet_id_utm_position].second.get()), _anPacket) == 0)
     {
       _packetMap[packet_id_utm_position].first = true;
-      if (verbose_)
+      if (debug_)
         printf("Collected utm position packet.\n");
     }
     else
     {
-      // if (verbose_)
+       if (debug_)
         printf("Failed to decode utm position packet properly.\n");
+
+      return -2;
     }
   }
   else if (_anPacket->id == packet_id_ecef_position)
@@ -184,13 +217,15 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     if (decode_ecef_position_packet(static_cast<ecef_position_packet_t *>(_packetMap[packet_id_ecef_position].second.get()), _anPacket) == 0)
     {
       _packetMap[packet_id_ecef_position].first = true;
-      if (verbose_)
+      if (debug_)
         printf("Collected ecef position packet.\n");
     }
     else
     {
-      if (verbose_)
+      if (debug_)
         printf("Failed to decode ecef position packet properly.\n");
+
+      return -2;
     }
   }
   else if (_anPacket->id == packet_id_north_seeking_status)
@@ -198,13 +233,15 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPackageMap &_packetMap)
     if (decode_north_seeking_status_packet(static_cast<north_seeking_status_packet_t *>(_packetMap[packet_id_north_seeking_status].second.get()), _anPacket) == 0)
     {
       _packetMap[packet_id_north_seeking_status].first = true;
-      if (verbose_)
+      if (debug_)
         printf("Collected north seeking status packet.\n");
     }
     else
     {
-      if (verbose_)
+      if (debug_)
         printf("Failed to decode north seeking status packet properly.\n");
+
+      return -2;
     }
   }
 
@@ -217,14 +254,14 @@ int Driver::SendPacket(an_packet_t *_anPacket)
   an_packet_encode(_anPacket);
   if (SendBuf(an_packet_pointer(_anPacket), an_packet_size(_anPacket)))
   {
-    if (verbose_)
+    if (debug_)
       printf("Packet succesfully sent!\n");
     packetRequests_.push_back(static_cast<packet_id_e>(_anPacket->id));
     return 0;
   }
   else
   {
-    if (verbose_)
+    if (debug_)
       printf("Unable to send packet.\n");
     return -1;
   }
@@ -311,16 +348,14 @@ int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequ
    *   -2 = LRC failure
    * 
    * Single data packet read.
-   */
-/**
-   * This function is a bit of a mess, due to how their api has a different function
+   * 
+   * \attention This function is a bit of a mess, due to how their api has a different function
    * for every single type of packet. Our goal is to be able to deal with all of them simply
    * within one single function, but that brings a lot of typing problems into the mix. Namely
    * making sure that we have the correct type of struct, and then calling the correct decoding
    * function for that struct. If there is a good way to pass around types, so that I could 
    * correctly cast that would be nice, but I do not know of a solution yet. Possibly using
    * decltype might work.
-   * 
    * Assumptions:
    *  Since our map takes in a shared_ptr<void> to deal with having multiple types of structs
    * per function call, we have now way of knowing if they actually passed in the correct struct
@@ -329,9 +364,7 @@ int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequ
    * the size they passed in are the same? That might prevent seg faults but would still be open to other
    * errors.
    */
-// TODO: Probably split into multiple functions: Request packets, Receive, Decode
-// TODO: Do we need to request each packet every time?
-int Driver::Once(KvhPackageMap &_packetMap)
+int Driver::Once(KvhPacketMap &_packetMap)
 {
   // Set the updated value of each packet to false
   for (auto it = _packetMap.cbegin(); it != _packetMap.cend(); it++)
@@ -379,18 +412,24 @@ int Driver::Once(KvhPackageMap &_packetMap)
   }
 }
 
-// Helper function to create map for users of driver
-// TODO: Check that we support the id before adding, if we don't return a warning int (e.g. > 0)
-int Driver::CreatePacketMap(KvhPackageMap &_packetMap, std::vector<packet_id_e> _packRequest)
+/**
+ * @fn Driver::CreatePacketMap
+ * @brief Correctly sets up a KvhPacketMap for the requested packets
+ * 
+ * @return [int]:
+ *    0 = Success,
+ *    >0 = Warning. Warning number denotes number of unsupported packets passed in.
+ */
+int Driver::CreatePacketMap(KvhPacketMap &_packetMap, std::vector<packet_id_e> _packRequest)
 {
   int unsupported = 0;
   for (packet_id_e &packEnum : _packRequest)
   {
-    /**
+    /*
      * General form for below:
      *  case (packetId):
      *    _packetMap[packetId] = pair(false, shared_ptr(packet_struct_t))
-     **/
+     */
     switch (packEnum)
     {
     case packet_id_system_state:
@@ -422,7 +461,7 @@ int Driver::CreatePacketMap(KvhPackageMap &_packetMap, std::vector<packet_id_e> 
       break;
     default:
       // If the packet id is not in the list above it is unsupported
-      if (verbose_)
+      if (debug_)
         printf("Packet with id: %d unsupported", packEnum);
       unsupported += 1;
     }

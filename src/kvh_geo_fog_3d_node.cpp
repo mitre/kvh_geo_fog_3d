@@ -17,6 +17,15 @@
  * 
  */
 
+/**
+* Messages
+* We want nav_msgs/Odometry, geometry_msgs/PoseWithCovarianceStamped, geometry_msgs/TwistWithCovarianceStamped,
+* sensor_msgs/Imu for our node
+* 
+* sensor_msgs::Imu -> imu/data_raw
+* nav_msgs/Odometry -> gps/utm
+*/
+
 // STD
 #include "unistd.h"
 #include <map>
@@ -88,15 +97,6 @@ int main(int argc, char **argv)
         {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos>("kvh_ecef_pos", 1)},
         {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}};
 
-    /**
-     * Messages
-     * We want nav_msgs/Odometry, geometry_msgs/PoseWithCovarianceStamped, geometry_msgs/TwistWithCovarianceStamped,
-     * sensor_msgs/Imu for our node
-     * 
-     * sensor_msgs::Imu -> imu/data_raw
-     * nav_msgs/Odometry -> gps/utm
-     */
-
     // Publishers for standard ros messages
     ros::Publisher imuPub = node.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
     ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
     kvhDriver.Init(kvhPort, packetRequest);
 
     // Create a map, this will hold all of our data and status changes (if the packets were updated)
-    kvh::KvhPackageMap packetMap;
+    kvh::KvhPacketMap packetMap;
     // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
     // std::map<packet_id_e, std::pair<bool, std::shared_pointer<void>>>, so best not to deal with it if possible
     int unsupported = kvhDriver.CreatePacketMap(packetMap, packetRequest);
@@ -332,18 +332,18 @@ int main(int argc, char **argv)
             int status = sysPacket.filter_status.b.gnss_fix_type;
             switch (status)
             {
-                case 0: 
-                    navSatFixMsg.status.status = navSatFixMsg.status.STATUS_NO_FIX;
-                    break;
-                case 1:
-                case 2:
-                    navSatFixMsg.status.status = navSatFixMsg.status.STATUS_FIX;
-                    break;
-                case 3:
-                    navSatFixMsg.status.status = navSatFixMsg.status.STATUS_SBAS_FIX;
-                    break;
-                default:
-                    navSatFixMsg.status.status = navSatFixMsg.status.STATUS_GBAS_FIX;
+            case 0:
+                navSatFixMsg.status.status = navSatFixMsg.status.STATUS_NO_FIX;
+                break;
+            case 1:
+            case 2:
+                navSatFixMsg.status.status = navSatFixMsg.status.STATUS_FIX;
+                break;
+            case 3:
+                navSatFixMsg.status.status = navSatFixMsg.status.STATUS_SBAS_FIX;
+                break;
+            default:
+                navSatFixMsg.status.status = navSatFixMsg.status.STATUS_GBAS_FIX;
             }
 
             navSatFixMsg.latitude = sysPacket.latitude;
