@@ -12,6 +12,9 @@
  * NavSat - GPS
  * Odom - GPS
  * MagField - IMU
+ * 
+ * Messages that we are creating
+ * 
  */
 
 // STD
@@ -84,6 +87,15 @@ int main(int argc, char **argv)
         {packet_id_utm_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition>("kvh_utm_position", 1)},
         {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos>("kvh_ecef_pos", 1)},
         {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}};
+
+    /**
+     * Messages
+     * We want nav_msgs/Odometry, geometry_msgs/PoseWithCovarianceStamped, geometry_msgs/TwistWithCovarianceStamped,
+     * sensor_msgs/Imu for our node
+     * 
+     * sensor_msgs::Imu -> imu/data_raw
+     * nav_msgs/Odometry -> gps/utm
+     */
 
     // Publishers for standard ros messages
     ros::Publisher imuPub = node.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
