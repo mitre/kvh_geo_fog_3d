@@ -372,9 +372,12 @@ int main(int argc, char **argv)
                 odomMsg.pose.pose.orientation.x = sysPacket.orientation[0];
                 odomMsg.pose.pose.orientation.y = sysPacket.orientation[1];
                 odomMsg.pose.pose.orientation.z = sysPacket.orientation[2];
-                odomMsg.twist.twist.angular.x = sysPacket.velocity[0];
-                odomMsg.twist.twist.angular.y = sysPacket.velocity[1];
-                odomMsg.twist.twist.angular.z = sysPacket.velocity[2];
+                odomMsg.twist.twist.linear.x = sysPacket.velocity[0];
+                odomMsg.twist.twist.linear.y = sysPacket.velocity[1];
+                odomMsg.twist.twist.linear.z = sysPacket.velocity[2];
+                odomMsg.twist.twist.angular.x = sysPacket.angular_velocity[0];
+                odomMsg.twist.twist.angular.y = sysPacket.angular_velocity[1];
+                odomMsg.twist.twist.angular.z = sysPacket.angular_velocity[2];
 
                 odomPub.publish(odomMsg);
             }
