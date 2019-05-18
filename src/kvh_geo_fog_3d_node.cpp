@@ -355,23 +355,23 @@ int main(int argc, char **argv)
             imuMsg.header.frame_id = "imu";
             
             // ORIENTATION
-            tf2::Quaternion orienQuat;
-            orienQuat.setRPY(
+            tf2::Quaternion orientQuat;
+            orientQuat.setRPY(
                 sysPacket.orientation[0],
                 sysPacket.orientation[1],
                 sysPacket.orientation[2]
             );
-            
-            float64 orientCov[3] = {
+
+            double orientCov[3] = {
                 pow(eulStdDevPack.standard_deviation[0], 2),
                 pow(eulStdDevPack.standard_deviation[1], 2),
                 pow(eulStdDevPack.standard_deviation[2], 2)
             };
 
-            imuMsg.orientation.x = orienQuat.x();
-            imuMsg.orientation.y = orienQuat.y();
-            imuMsg.orientation.z = orienQuat.z();
-            imuMsg.orientation.w = orienQuat.w();
+            imuMsg.orientation.x = orientQuat.x();
+            imuMsg.orientation.y = orientQuat.y();
+            imuMsg.orientation.z = orientQuat.z();
+            imuMsg.orientation.w = orientQuat.w();
             imuMsg.orientation_covariance[0] = orientCov[0];
             imuMsg.orientation_covariance[4] = orientCov[1];
             imuMsg.orientation_covariance[8] = orientCov[2];
