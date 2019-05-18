@@ -484,7 +484,7 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, std::vector<packet_id_e> _
       _packetMap[packet_id_north_seeking_status] = std::make_pair(false, std::make_shared<north_seeking_status_packet_t>());
       break;
     case packet_id_euler_orientation_standard_deviation:
-      _packetMap[packet_id_euler_orientation_standard_deviation] = std::make_pair(false, std::make_shred<euler_orientation_standard_deviation_packet_t>());
+      _packetMap[packet_id_euler_orientation_standard_deviation] = std::make_pair(false, std::make_shared<euler_orientation_standard_deviation_packet_t>());
       break;
     default:
       // If the packet id is not in the list above it is unsupported

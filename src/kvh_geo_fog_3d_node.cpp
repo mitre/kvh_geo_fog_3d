@@ -345,6 +345,8 @@ int main(int argc, char **argv)
             // uint8 position_covariance type
             sensor_msgs::NavSatFix navSatFixMsg;
             system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
+            euler_orientation_standard_deviation_packet_t eulStdDevPack = *static_cast<euler_orientation_standard_deviation_packet_t*>(
+                packetMap[packet_id_euler_orientation_standard_deviation].second.get());
 
             // IMU msg
             // \todo fill out covariance matrices for each of the below.
@@ -359,14 +361,20 @@ int main(int argc, char **argv)
                 sysPacket.orientation[1],
                 sysPacket.orientation[2]
             );
-            float64 orientCov[3] = {}
+            
+            float64 orientCov[3] = {
+                pow(eulStdDevPack.standard_deviation[0], 2),
+                pow(eulStdDevPack.standard_deviation[1], 2),
+                pow(eulStdDevPack.standard_deviation[2], 2)
+            };
+
             imuMsg.orientation.x = orienQuat.x();
             imuMsg.orientation.y = orienQuat.y();
             imuMsg.orientation.z = orienQuat.z();
             imuMsg.orientation.w = orienQuat.w();
-            // imuMsg.orientation_covariance[0] = 
-            // imuMsg.orientation_covariance[4] = 
-            // imuMsg.orientation_covariance[8] = 
+            imuMsg.orientation_covariance[0] = orientCov[0];
+            imuMsg.orientation_covariance[4] = orientCov[1];
+            imuMsg.orientation_covariance[8] = orientCov[2];
 
             // ANGULAR VELOCITY
             imuMsg.angular_velocity.x = sysPacket.angular_velocity[0];
@@ -447,9 +455,6 @@ int main(int argc, char **argv)
                 // \todo Fill covarience matrices for both of these
                 // Covariance matrices are 6x6 so we need to fill the diagonal at
                 // 0, 7, 14, 21, 28, 35
-                // We need:
-                // Velocity standard deviation packet for odomMsg.twist.covariance[0,7,15] this is North East Down acceleration though, so probably not
-                // Euler Orientation stddev packet or quaternion orientation stddev packet?
                 
                 // POSE
                 // Position
@@ -466,9 +471,10 @@ int main(int argc, char **argv)
                 odomMsg.pose.pose.orientation.y = orientQuat.y();
                 odomMsg.pose.pose.orientation.z = orientQuat.z();
                 odomMsg.pose.pose.orientation.w = orientQuat.w();
-                // odomMsg.pose.covariance[21] = 
-                // odomMsg.pose.covariance[28] = 
-                // odomMsg.pose.covariance[35] = 
+                // Use covariance array created earlier to fill out orientation covariance
+                odomMsg.pose.covariance[21] = orientCov[0];
+                odomMsg.pose.covariance[28] = orientCov[1];
+                odomMsg.pose.covariance[35] = orientCov[2];
 
                 // TWIST
                 // Linear
