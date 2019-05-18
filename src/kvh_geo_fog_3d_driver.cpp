@@ -191,13 +191,10 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPacketMap &_packetMap)
   }
   else if (_anPacket->id == packet_id_utm_position)
   {
-    // Below is a risky hack, they have inconsistencies with the length and fields of this packet
+    // Below we had to create a modified decode function since 
     /** \todo Fix utm_position_packet_t to follow data provided by kvh instead of what they have defined.*/
-    _anPacket->data[24] = _anPacket->data[25];
-    _anPacket->data[25] = 0;
-    _anPacket->length = 25;
 
-    if (decode_utm_position_packet(static_cast<utm_position_packet_t *>(_packetMap[packet_id_utm_position].second.get()), _anPacket) == 0)
+    if (DecodeUtmFix(static_cast<utm_fix *>(_packetMap[packet_id_utm_position].second.get()), _anPacket) == 0)
     {
       _packetMap[packet_id_utm_position].first = true;
       if (debug_)
@@ -260,6 +257,18 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPacketMap &_packetMap)
 
   return 0;
 } // END DecodePacket()
+
+int Driver::DecodeUtmFix(utm_fix* _utmPacket, an_packet_t* _anPacket)
+{
+	if(_anPacket->id == packet_id_utm_position && _anPacket->length == 26)
+	{
+		memcpy(&_utmPacket->position, &_anPacket->data[0], 3*sizeof(double));
+		_utmPacket->zone_num = _anPacket->data[24];
+    _utmPacket->zone = _anPacket->data[25];
+		return 0;
+	}
+	else return 1;
+}
 
 /**
  * @fn Driver::SendPacket
@@ -475,7 +484,7 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, std::vector<packet_id_e> _
       _packetMap[packet_id_local_magnetics] = std::make_pair(false, std::make_shared<local_magnetics_packet_t>());
       break;
     case packet_id_utm_position:
-      _packetMap[packet_id_utm_position] = std::make_pair(false, std::make_shared<utm_position_packet_t>());
+      _packetMap[packet_id_utm_position] = std::make_pair(false, std::make_shared<utm_fix>());
       break;
     case packet_id_ecef_position:
       _packetMap[packet_id_ecef_position] = std::make_pair(false, std::make_shared<ecef_position_packet_t>());

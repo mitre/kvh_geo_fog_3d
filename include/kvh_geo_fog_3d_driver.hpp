@@ -33,6 +33,12 @@ namespace kvh
    */
   typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPacketMap;
 
+  // Fixing utm packet
+  struct utm_fix : utm_position_packet_t
+  {
+    uint8_t zone_num;
+  };
+
 /**
    * @class Driver
    * @ingroup kvh
@@ -57,6 +63,7 @@ private:
 
   // Private functions, see implementation for detailed comments
   int DecodePacket(an_packet_t*, KvhPacketMap&);
+  int DecodeUtmFix(utm_fix*, an_packet_t*); // Special decode since their utm api is incorrect
   int SendPacket(an_packet_t*);
 
   public:
