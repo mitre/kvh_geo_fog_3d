@@ -33,6 +33,8 @@ namespace kvh
    */
   typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPacketMap;
 
+  typedef std::vector<std::pair<packet_id_e, int>> KvhPacketRequest;
+
   // Fixing utm packet
   struct utm_fix : utm_position_packet_t
   {
@@ -60,6 +62,19 @@ private:
   std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve 
     ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay 
     ///< problem where the packet is already gone by the time this function is called) 
+  
+  std::map<packet_id_e, int> _packetSize {
+    {packet_id_system_state, sizeof(system_state_packet_t)},
+    {packet_id_unix_time, sizeof(unix_time_packet_t)},
+    {packet_id_raw_sensors, sizeof(raw_sensors_packet_t)},
+    {packet_id_satellites, sizeof(satellites_packet_t)},
+    {packet_id_satellites_detailed, sizeof(detailed_satellites_packet_t)},
+    {packet_id_local_magnetics, sizeof(local_magnetics_packet_t)},
+    {packet_id_utm_position, sizeof(utm_position_packet_t)},
+    {packet_id_ecef_position, sizeof(ecef_position_packet_t)},
+    {packet_id_north_seeking_status, sizeof(north_seeking_status_packet_t)},
+    {packet_id_euler_orientation_standard_deviation, sizeof(euler_orientation_standard_deviation_packet_t)}
+  }; ///< Map relating packet id's to the associated struct size. Used for baudrate calculation
 
   // Private functions, see implementation for detailed comments
   int DecodePacket(an_packet_t*, KvhPacketMap&);
@@ -78,7 +93,7 @@ private:
    * kvhDriver.Init(kvhPort, packetRequest);  * 
    * \endcode
    */
-  int Init(const std::string& _port, std::vector<packet_id_e>);
+  int Init(const std::string& _port, KvhPacketRequest, bool _gnssEnabled = true);
 
   /**
    * \code 
@@ -107,7 +122,7 @@ private:
    * system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
    * \endcode
    */
-  int CreatePacketMap(KvhPacketMap&, std::vector<packet_id_e>);
+  int CreatePacketMap(KvhPacketMap&, KvhPacketRequest);
 
   /**
    * \code

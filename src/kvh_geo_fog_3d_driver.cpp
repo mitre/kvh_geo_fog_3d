@@ -13,6 +13,7 @@
 #include <functional>
 #include <termios.h>
 #include <typeinfo>
+#include <set>
 
 // RS232
 #include "rs232.h"
@@ -317,10 +318,97 @@ int Driver::SendPacket(an_packet_t *_anPacket)
    * Minimum baud all packets at 100hz for worst case scenario is 644600
    * \todo: Find setting of baud needed for this
    */
-int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequested)
+int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, bool _gnssEnabled)
 {
-  // Open Comport
+
+  ///////////////////////////////////////
+  // SETTING PACKET OUTPUT AND FREQUENCY
+  // CALCULATE REQUIRED BAUDRATE BEFORE CONNECTING
+  ///////////////////////////////////////
+
+  packet_periods_packet_t packetPeriods;
+
+  // Make permanent in case it has a hot reset, otherwise an error is likely
+  packetPeriods.permanent = 1;
+  // Clear all exisiting packet periods and replace with new ones
+  packetPeriods.clear_existing_packets = 1;
+
+  /* 
+  * In the section below, we need to calculate the desired packet periods
+  * given the desired packet rate (Hz) from the user. Additionally, we need to calculate
+  * the necessary baud rate to make sure we have enough bandwidth for everything.
+  * 
+  * PACKET RATE -> PACKET PERIOD
+  * Formula for how packet frequency relates to packet period:
+  * Packet Rate = 1000000/(Packet Period * Packet Timer Period)Hz - From Manual
+  * 
+  * Packet Timer Period can also be set, but we will use its default of 1000us for now
+  * So, given packet rate, the packet period we need to input is
+  * 
+  * 1000000/(Packet Rate * 1000) = Packet Period
+  * 1000/Packet Rate = Packet Period
+  * 
+  * 
+  * CALCULATING BAUDRATE:
+  * 
+  * Data throughput = (packet_length + 5 (for fixed packet overhead)) * rate
+  * Minimum baud = data throughput * 11
+  * -> Find closest baud
+  * 
+  */
+  
+  std::set<packet_id_e> packetIdList; // To hold list of already added packet id's
+  int returnValue = 0; // Will hold number of duplicated id's
+
+  int baudRequired = 0;
+  int i;
+  for (i = 0; i < _packetsRequested.size(); i++)
+  {
+    std::pair<packet_id_e, int> packet = _packetsRequested.at(i);
+
+    if (packetIdList.count(packet.first) > 0)
+    {
+      returnValue++; // Found duplicate, increase counter
+    }
+
+    // packet_period_t period = {packet id, period}
+    packet_period_t period;
+    period.packet_id = _packetsRequested.at(i).first;
+    period.period = 1000/_packetsRequested.at(i).second; // Using formulate for rate to period derived above
+    packetPeriods.packet_periods[i] = period;
+
+    // Add this as part of our baudrate calculation
+    // Increase required baudrate by (struct_size + 5) * rate
+    baudRequired += (_packetSize[packet.first] + 5) * packet.second;
+  }
+
+  //\todo Decision to make, we have calculated the required baud, should we try to be
+  //\todo be close to it or should we pad for some extra space?
+  //
+  // I am going to pad my space for now by adding 10% on top
+
+  baud_ = baudRequired * 1.1;
+
+  ///////////////////////////////////////
+  // SETTING UP KALMAN FILTER OPTIONS
+  ///////////////////////////////////////
+
+  filter_options_packet_t filterOptions;
+
+	filterOptions.permanent = true;
+	filterOptions.vehicle_type = vehicle_type_car;
+	filterOptions.internal_gnss_enabled = _gnssEnabled; // Set if we want to test using gps or not
+	filterOptions.atmospheric_altitude_enabled = true;
+	filterOptions.velocity_heading_enabled = true;
+	filterOptions.reversing_detection_enabled = true;
+	filterOptions.motion_analysis_enabled = true;
+
+  ////////////////////////////////////////
+  // CONNECTING TO KVH
+  ////////////////////////////////////////
+
   if (debug_) printf("Opening comport\n");
+
   port_ = _port;
   char portArr[4096];
   strncpy(portArr, port_.c_str(), 4096);
@@ -332,40 +420,42 @@ int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequ
   // We are connected to the KVH!
   connected_ = true;
 
-  // Set the correct packets to output
-  packet_periods_packet_t packetPeriods;
-  // We will reset the periods each time, so doesn't matter
-  // Make permanent in case it has a hot reset, otherwise an error is likely
-  packetPeriods.permanent = 1;
-  // Clear all exisiting packet periods and replace with new ones
-  packetPeriods.clear_existing_packets = 1;
-  int i;
-  for (i = 0; i < _packetsRequested.size(); i++)
-  {
-    // packet_period_t period = {packet id, period}
-    // See documentation for how period is use dot calculate Hz
-    packet_period_t period;
-    period.packet_id = _packetsRequested.at(i);
-    period.period = PACKET_PERIOD;
-    packetPeriods.packet_periods[i] = period;
-  }
-  // Make sure we end our inputs with a zeroed struct
-  an_packet_t *requestPacket = encode_packet_periods_packet(&packetPeriods);
+  
+  ////////////////////////////////
+  // SENDING CONFIGURATION PACKETS
+  ////////////////////////////////
 
-  // Send and then free packet
-  if (debug_) printf("Sending packet.\n");
+  if (debug_) printf("Sending packet_periods.\n");
+
+  an_packet_t *requestPacket = encode_packet_periods_packet(&packetPeriods);
   int packetError = SendPacket(requestPacket);
   an_packet_free(&requestPacket);
+  requestPacket = nullptr;
+  if (packetError){
+    return -2;
+  }
+
+  // Encode and send packet
+  if (debug_) printf("Sending filter options packet.");
+
+  requestPacket = encode_filter_options_packet(&filterOptions);
+  packetError = SendPacket(requestPacket);
   requestPacket = nullptr;
 
   // Check if the packet was successfully sent
   if (packetError != 0)
   {
-    return -2;
+    return -3;
   }
+
+  /////////////////////////////////////
+  // INITIALISE AN DECODER
+  /////////////////////////////////////
 
   if (debug_) printf("Initializing decoder.\n");
   an_decoder_initialise(&anDecoder_);
+
+  return returnValue;
 
 } // END Init()
 
@@ -453,11 +543,13 @@ int Driver::Once(KvhPacketMap &_packetMap)
  *    0 = Success,
  *    >0 = Warning. Warning number denotes number of unsupported packets passed in.
  */
-int Driver::CreatePacketMap(KvhPacketMap &_packetMap, std::vector<packet_id_e> _packRequest)
+int Driver::CreatePacketMap(KvhPacketMap &_packetMap, KvhPacketRequest _packRequest)
 {
   int unsupported = 0;
-  for (packet_id_e &packEnum : _packRequest)
+  int i;
+  for (i = 0; i < _packRequest.size(); i++)
   {
+    packet_id_e packEnum = _packRequest.at(i).first;
     /*
      * General form for below:
      *  case (packetId):
