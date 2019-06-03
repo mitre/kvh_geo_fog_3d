@@ -360,7 +360,7 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
   std::set<packet_id_e> packetIdList; // To hold list of already added packet id's
   int returnValue = 0; // Will hold number of duplicated id's
 
-  int baudRequired = 0;
+  int dataThroughput = 0;
   int i;
   for (i = 0; i < _packetsRequested.size(); i++)
   {
@@ -379,15 +379,66 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
 
     // Add this as part of our baudrate calculation
     // Increase required baudrate by (struct_size + 5) * rate
-    baudRequired += (_packetSize[packet.first] + 5) * packet.second;
+    dataThroughput += (_packetSize[packet.first] + 5) * packet.second;
   }
+
+  ////////////////////////////////
+  // SETTING BUAD RATE
+  ////////////////////////////////
 
   //\todo Decision to make, we have calculated the required baud, should we try to be
   //\todo be close to it or should we pad for some extra space?
   //
-  // I am going to pad my space for now by adding 10% on top
+  // I am going to pad my space for now by adding 5% on top
+  // With the added padding we effectively operate at ~9000000 baud or below
 
-  baud_ = baudRequired * 1.1;
+  // dataThroughput from above, 11 from their equation, 1.05 as a buffering factor
+  int minBaud = dataThroughput * 11 * 1.05;
+  if (debug_) printf("Calculated baud rate: %d\n", minBaud);
+
+  // Find smallest baud rate that will suffice
+  if (minBaud > 10000000)
+  {
+    if (debug_) printf("Required baud rate too high!\n");
+    return -1;
+  }
+  else if (minBaud > 921600)
+  {
+    baud_ = 10000000;
+  }
+  else if (minBaud > 576000)
+  {
+    baud_ = 921600;
+  }
+  else if (minBaud > 500000)
+  {
+    baud_ = 576000;
+  }
+  else if (minBaud > 460800)
+  {
+    baud_ = 500000;
+  }
+  else if (minBaud > 230400)
+  {
+    baud_ = 460800;
+  }
+  else if (minBaud > 115200)
+  {
+    baud_ = 230400;
+  }
+  else
+  {
+    baud_ = 115200;
+  }
+
+  if (debug_) printf("Baud set to: %d\n", baud_);
+
+  baud_rates_packet_t baudRatePacket; 
+  baudRatePacket.permanent = 1;
+  baudRatePacket.primary_baud_rate = baud_;
+  baudRatePacket.gpio_1_2_baud_rate = baud_;
+  baudRatePacket.auxiliary_baud_rate = baud_;
+
 
   ///////////////////////////////////////
   // SETTING UP KALMAN FILTER OPTIONS
@@ -425,9 +476,9 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
   // SENDING CONFIGURATION PACKETS
   ////////////////////////////////
 
-  if (debug_) printf("Sending packet_periods.\n");
+  if (debug_) printf("Sending baud rate packet.\n");
 
-  an_packet_t *requestPacket = encode_packet_periods_packet(&packetPeriods);
+  an_packet_t* requestPacket = encode_baud_rates_packet(&baudRatePacket);
   int packetError = SendPacket(requestPacket);
   an_packet_free(&requestPacket);
   requestPacket = nullptr;
@@ -435,17 +486,24 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
     return -2;
   }
 
-  // Encode and send packet
+  if (debug_) printf("Sending packet_periods.\n");
+
+  requestPacket = encode_packet_periods_packet(&packetPeriods);
+  packetError = SendPacket(requestPacket);
+  an_packet_free(&requestPacket);
+  requestPacket = nullptr;
+  if (packetError){
+    return -2;
+  }
+
   if (debug_) printf("Sending filter options packet.");
 
   requestPacket = encode_filter_options_packet(&filterOptions);
   packetError = SendPacket(requestPacket);
   requestPacket = nullptr;
-
-  // Check if the packet was successfully sent
   if (packetError != 0)
   {
-    return -3;
+    return -2;
   }
 
   /////////////////////////////////////

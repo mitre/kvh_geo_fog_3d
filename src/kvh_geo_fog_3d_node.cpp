@@ -484,8 +484,8 @@ int main(int argc, char **argv)
 
                 // POSE
                 // Position
-                odomMsg.pose.pose.position.x = utmPacket.position[0];
-                odomMsg.pose.pose.position.y = utmPacket.position[1];
+                odomMsg.pose.pose.position.x = utmPacket.position[1];
+                odomMsg.pose.pose.position.y = utmPacket.position[0];
                 odomMsg.pose.pose.position.z = utmPacket.position[2];
                 // odomMsg.pose.covariance[0] =
                 // odomMsg.pose.covariance[7] =
@@ -523,26 +523,26 @@ int main(int argc, char **argv)
                 odomPub.publish(odomMsg);
 
                 // BROADCAST TRANSFORM TO BASE LINK
-                static tf2_ros::TransformBroadcaster br;
-                geometry_msgs::TransformStamped transformStamped;
+                // static tf2_ros::TransformBroadcaster br;
+                // geometry_msgs::TransformStamped transformStamped;
 
-                transformStamped.header.stamp = ros::Time::now();
-                transformStamped.header.frame_id = "world";
-                transformStamped.child_frame_id = "base_link";
+                // transformStamped.header.stamp = ros::Time::now();
+                // transformStamped.header.frame_id = "world";
+                // transformStamped.child_frame_id = "base_link";
 
-                // UTM is base_link's position within the world frame
-                // I think the ordering is correct since they have x = east and y = north, utm is North, East, Hieght
-                transformStamped.transform.translation.x = utmPacket.position[1];
-                transformStamped.transform.translation.y = utmPacket.position[0];
-                transformStamped.transform.translation.z = utmPacket.position[2];
+                // // UTM is base_link's position within the world frame
+                // // I think the ordering is correct since they have x = east and y = north, utm is North, East, Hieght
+                // transformStamped.transform.translation.x = utmPacket.position[1];
+                // transformStamped.transform.translation.y = utmPacket.position[0];
+                // transformStamped.transform.translation.z = utmPacket.position[2];
 
-                // Set to quaternion calculated above for the odometry packet
-                transformStamped.transform.rotation.x = orientQuat.x();
-                transformStamped.transform.rotation.y = orientQuat.y();
-                transformStamped.transform.rotation.z = orientQuat.z();
-                transformStamped.transform.rotation.w = orientQuat.w();
+                // // Set to quaternion calculated above for the odometry packet
+                // transformStamped.transform.rotation.x = orientQuat.x();
+                // transformStamped.transform.rotation.y = orientQuat.y();
+                // transformStamped.transform.rotation.z = orientQuat.z();
+                // transformStamped.transform.rotation.w = orientQuat.w();
 
-                br.sendTransform(transformStamped);
+                // br.sendTransform(transformStamped);
                 
                 // Only have to track change between odom and base_link
                 // This would be based off of intertial sensing
