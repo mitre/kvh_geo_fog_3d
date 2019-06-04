@@ -76,6 +76,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "kvh_geo_fog_3d_driver");
 
     ros::NodeHandle node;
+    ros::Rate rate(50); // 50hz by defaul, may eventually may settable parameter
 
     diagnostic_updater::Updater diagnostics;
     mitre::KVH::DiagnosticsContainer diagContainer;
@@ -112,7 +113,8 @@ int main(int argc, char **argv)
     ros::Publisher imuPub = node.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
     ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
     ros::Publisher magFieldPub = node.advertise<sensor_msgs::MagneticField>("mag", 1);
-    ros::Publisher odomPub = node.advertise<nav_msgs::Odometry>("gps/utm", 1);
+    ros::Publisher odomPubNED = node.advertise<nav_msgs::Odometry>("gps/utm_ned", 1);
+    ros::Publisher odomPubENU = node.advertise<nav_msgs::Odometry>("gps/utm_enu", 1);
 
     std::string kvhPort("/dev/ttyUSB0");
     // Can pass true to this constructor to get print outs. Is currently messy but usable
@@ -471,56 +473,98 @@ int main(int argc, char **argv)
                 // -->-->Vector3 linear
                 // -->-->Vector3 angular
                 // -->float64[36] covariance // 6x6 order is [x, y, z, x axis rot, y axis rot, z axis rot]
-                nav_msgs::Odometry odomMsg;
+
+                // Since UTM is by default NED, we will publish a message like that and a message using
+                // the ros ENU standard
+                nav_msgs::Odometry odomMsgENU;
+                nav_msgs::Odometry odomMsgNED;
                 utm_position_packet_t utmPacket = *static_cast<utm_position_packet_t *>(packetMap[packet_id_utm_position].second.get());
 
-                odomMsg.header = header;
-                odomMsg.header.frame_id = "gps";
-                // odomMsg.child_frame_id = "base_link";
+                odomMsgENU.header = header;
+                odomMsgENU.header.frame_id = "gps";
+
+                odomMsgNED.header = header;
+                odomMsgNED.header.frame_id = "gps";
 
                 // \todo Fill covarience matrices for both of these
                 // Covariance matrices are 6x6 so we need to fill the diagonal at
                 // 0, 7, 14, 21, 28, 35
 
                 // POSE
-                // Position
-                odomMsg.pose.pose.position.x = utmPacket.position[1];
-                odomMsg.pose.pose.position.y = utmPacket.position[0];
-                odomMsg.pose.pose.position.z = utmPacket.position[2];
+                // Position ENU
+                odomMsgENU.pose.pose.position.x = utmPacket.position[1];
+                odomMsgENU.pose.pose.position.y = utmPacket.position[0];
+                odomMsgENU.pose.pose.position.z = utmPacket.position[2];
                 // odomMsg.pose.covariance[0] =
                 // odomMsg.pose.covariance[7] =
                 // odomMsg.pose.covariance[14] =
 
-                // Orientation
+                // Position NED
+                odomMsgNED.pose.pose.position.x = utmPacket.position[0];
+                odomMsgNED.pose.pose.position.y = utmPacket.position[1];
+                odomMsgNED.pose.pose.position.z = utmPacket.position[2];
+                // odomMsg.pose.covariance[0] =
+                // odomMsg.pose.covariance[7] =
+                // odomMsg.pose.covariance[14] =
+
+                // Orientation ENU
                 // Use orientation quaternion we created earlier
-                odomMsg.pose.pose.orientation.x = orientQuat.x();
-                odomMsg.pose.pose.orientation.y = orientQuat.y();
-                odomMsg.pose.pose.orientation.z = orientQuat.z();
-                odomMsg.pose.pose.orientation.w = orientQuat.w();
+                odomMsgENU.pose.pose.orientation.x = orientQuat.x();
+                odomMsgENU.pose.pose.orientation.y = orientQuat.y();
+                odomMsgENU.pose.pose.orientation.z = orientQuat.z();
+                odomMsgENU.pose.pose.orientation.w = orientQuat.w();
                 // Use covariance array created earlier to fill out orientation covariance
-                odomMsg.pose.covariance[21] = orientCov[0];
-                odomMsg.pose.covariance[28] = orientCov[1];
-                odomMsg.pose.covariance[35] = orientCov[2];
+                odomMsgENU.pose.covariance[21] = orientCov[0];
+                odomMsgENU.pose.covariance[28] = orientCov[1];
+                odomMsgENU.pose.covariance[35] = orientCov[2];
+
+                // Orientation NED
+                odomMsgNED.pose.pose.orientation.x = orientQuat.x();
+                odomMsgNED.pose.pose.orientation.y = orientQuat.y();
+                odomMsgNED.pose.pose.orientation.z = orientQuat.z();
+                odomMsgNED.pose.pose.orientation.w = orientQuat.w();
+                // Use covariance array created earlier to fill out orientation covariance
+                odomMsgNED.pose.covariance[21] = orientCov[0];
+                odomMsgNED.pose.covariance[28] = orientCov[1];
+                odomMsgNED.pose.covariance[35] = orientCov[2];
 
                 // TWIST
-                // Linear
-                odomMsg.twist.twist.linear.x = sysPacket.velocity[0];
-                odomMsg.twist.twist.linear.y = sysPacket.velocity[1];
-                odomMsg.twist.twist.linear.z = sysPacket.velocity[2];
-                odomMsg.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
+                // Linear ENU
+                odomMsgENU.twist.twist.linear.x = sysPacket.velocity[0];
+                odomMsgENU.twist.twist.linear.y = sysPacket.velocity[1];
+                odomMsgENU.twist.twist.linear.z = sysPacket.velocity[2];
+                odomMsgENU.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
                 // odomMsg.twist.covariance[0] =
                 // odomMsg.twist.covariance[7] =
                 // odomMsg.twist.covariance[14] =
 
-                // Angular
-                odomMsg.twist.twist.angular.x = sysPacket.angular_velocity[0];
-                odomMsg.twist.twist.angular.y = sysPacket.angular_velocity[1];
-                odomMsg.twist.twist.angular.z = sysPacket.angular_velocity[2];
+                // Linear NED
+                odomMsgNED.twist.twist.linear.x = sysPacket.velocity[0];
+                odomMsgNED.twist.twist.linear.y = sysPacket.velocity[1];
+                odomMsgNED.twist.twist.linear.z = sysPacket.velocity[2];
+                odomMsgNED.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
+                // odomMsg.twist.covariance[0] =
+                // odomMsg.twist.covariance[7] =
+                // odomMsg.twist.covariance[14] =
+
+                // Angular ENU
+                odomMsgENU.twist.twist.angular.x = sysPacket.angular_velocity[0];
+                odomMsgENU.twist.twist.angular.y = sysPacket.angular_velocity[1];
+                odomMsgENU.twist.twist.angular.z = sysPacket.angular_velocity[2];
                 // odomMsg.twist.covariance[21] =
                 // odomMsg.twist.covariance[28] =
                 // odomMsg.twist.covariance[35] =
 
-                odomPub.publish(odomMsg);
+                // Angular NED
+                odomMsgNED.twist.twist.angular.x = sysPacket.angular_velocity[0];
+                odomMsgNED.twist.twist.angular.y = sysPacket.angular_velocity[1];
+                odomMsgNED.twist.twist.angular.z = sysPacket.angular_velocity[2];
+                // odomMsg.twist.covariance[21] =
+                // odomMsg.twist.covariance[28] =
+                // odomMsg.twist.covariance[35] =
+
+                odomPubENU.publish(odomMsgENU);
+                odomPubNED.publish(odomMsgNED);
 
                 // BROADCAST TRANSFORM TO BASE LINK
                 // static tf2_ros::TransformBroadcaster br;
@@ -565,9 +609,20 @@ int main(int argc, char **argv)
             magFieldPub.publish(magFieldMsg);
         }
 
+        // Set the "first" of all packets to false to denote they have not been updated
+        packetMap[packet_id_system_state].first = false;
+        packetMap[packet_id_satellites].first = false;
+        packetMap[packet_id_satellites_detailed].first = false;
+        packetMap[packet_id_utm_position].first = false;
+        packetMap[packet_id_ecef_position].first = false;
+        packetMap[packet_id_north_seeking_status].first = false;
+        packetMap[packet_id_local_magnetics].first = false;
+        packetMap[packet_id_euler_orientation_standard_deviation].first = false;
+
         diagnostics.update();
 
-        usleep(100000);
+        ros::spinOnce();
+        rate.sleep();
         ROS_INFO("----------------------------------------");
     }
 
