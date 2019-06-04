@@ -202,7 +202,7 @@ target_link_libraries(${PROJECT_NAME}_node
 #  ${PROJECT_NAME}_gencfg
 #)
 
-#configure_file(settings/equalization_preset.yaml ${CMAKE_CURRENT_BINARY_DIR}/equalization_preset.yaml COPYONLY)
+#configure_file(src/config.txt ${CMAKE_CURRENT_BINARY_DIR}/config.txt COPYONLY)
 #file(COPY settings DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/flir_adk_driver_node.dir/src)
 
 #############

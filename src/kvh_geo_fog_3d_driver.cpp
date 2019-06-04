@@ -14,6 +14,8 @@
 #include <termios.h>
 #include <typeinfo>
 #include <set>
+#include <iostream>
+#include <fstream>
 
 // RS232
 #include "rs232.h"
@@ -309,14 +311,16 @@ int Driver::SendPacket(an_packet_t *_anPacket)
    * @return [int]: 0 = success, > 0 = warning, < 0 = failure
    * 
    * Initialize the serial connection to the KVH GEO FOG 3D.
-   * \todo: Possibly add code to calculate baud rate?
    * 
    * Current calculation for our packets:
    * (105 (sys state) + 18 (satellites) +
    * (5+(7*(1 for min or 50 for max))) (Detailed satellites) + 17 (local mag)
    * + 30 (utm) + 29 (ecef) + 32) * rate (50hz default) * 11
    * Minimum baud all packets at 100hz for worst case scenario is 644600
-   * \todo: Find setting of baud needed for this
+   * 
+   * @warning When connecting we make the massive assumption that the kvh starts
+   * with a baud rate of 115200. The workflow here is Open comport -> Set baud to required
+   * -> Close comport -> Open comport with baud required
    */
 int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, bool _gnssEnabled)
 {
@@ -433,11 +437,15 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
 
   if (debug_) printf("Baud set to: %d\n", baud_);
 
+  // Testing
+  // baud_ = 230400;
+
   baud_rates_packet_t baudRatePacket; 
   baudRatePacket.permanent = 1;
   baudRatePacket.primary_baud_rate = baud_;
   baudRatePacket.gpio_1_2_baud_rate = baud_;
   baudRatePacket.auxiliary_baud_rate = baud_;
+  baudRatePacket.reserved = 0;
 
 
   ///////////////////////////////////////
@@ -458,12 +466,18 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
   // CONNECTING TO KVH
   ////////////////////////////////////////
 
-  if (debug_) printf("Opening comport\n");
+  if (debug_) printf("Opening comport at 115200 baud.\n");
 
   port_ = _port;
   char portArr[4096];
   strncpy(portArr, port_.c_str(), 4096);
-  if (OpenComport(portArr, baud_) != 0)
+  ///////////////////////////////////////
+  // MASSIVE ASSUMPTION
+  // The kvh will always start with 115200 baud rate
+  // We may change it, and then revert the change when 
+  // the driver is exited
+  //////////////////////////////////////
+  if (OpenComport(portArr, 115200) != 0)
   {
     if (debug_) printf("Unable to establish connection.\n");
     return -1;
@@ -485,6 +499,21 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
   if (packetError){
     return -2;
   }
+
+  // Need to close then reopen the comport
+  CloseComport();
+  connected_ = false;
+
+  if (debug_) printf("Opening comport at %d baud\n", baud_);
+
+  if (OpenComport(portArr, baud_) != 0)
+  {
+    if (debug_) printf("Unable to establish connection at %d baud.\n", baud_);
+    return -1;
+  }
+  // We are connected to the KVH!
+  connected_ = true;
+  
 
   if (debug_) printf("Sending packet_periods.\n");
 
@@ -574,7 +603,11 @@ int Driver::Once(KvhPacketMap &_packetMap)
         acknowledge_packet_t ackP;
         if (decode_acknowledge_packet(&ackP, anPacket) == 0)
         {
-          if (debug_) printf("Acknowledging packet from packet id: %d\n", ackP.packet_id);
+          if (debug_) {
+            printf("*********************************\n"
+            "Acknowledging packet from packet id: %d\n Result of packet %d\n"
+            "********************************\n", ackP.packet_id, ackP.acknowledge_result);
+          }
         }
         else
         {
@@ -664,6 +697,24 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, KvhPacketRequest _packRequ
 */
 int Driver::Cleanup()
 {
+  // Before closing comport set the KVH back to 115200 baud
+  baud_rates_packet_t baudRatePacket; 
+  baudRatePacket.permanent = 1;
+  baudRatePacket.primary_baud_rate = 115200;
+  baudRatePacket.gpio_1_2_baud_rate = 115200;
+  baudRatePacket.auxiliary_baud_rate = 115200;
+  baudRatePacket.reserved = 0;
+
+  if (debug_) printf("Sending baud rate packet before finishing up.\n");
+
+  an_packet_t* requestPacket = encode_baud_rates_packet(&baudRatePacket);
+  int packetError = SendPacket(requestPacket);
+  an_packet_free(&requestPacket);
+  requestPacket = nullptr;
+  if (packetError){
+    return -1;
+  }
+
   CloseComport();
   return 0;
 } // END Cleanup()
