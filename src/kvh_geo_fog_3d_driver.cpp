@@ -346,7 +346,10 @@ int Driver::Init(const std::string& _port, KvhPacketRequest& _packetsRequested, 
 
   /* 
   * In the section below, we need to calculate the desired packet periods
-  * given the desired packet rate (Hz) from the user. Additionally, we need to calculate
+  * given the desired packet rat+
+  * 
+  * 
+  * ++e (Hz) from the user. Additionally, we need to calculate
   * the necessary baud rate to make sure we have enough bandwidth for everything.
   * 
   * PACKET RATE -> PACKET PERIOD

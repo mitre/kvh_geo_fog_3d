@@ -143,7 +143,9 @@ int main(int argc, char **argv)
     {
         ROS_WARN("No port specified by param, defaulting to USB0!");
     }
-    kvhDriver.Init(kvhPort, packetRequest);
+    kvh::KvhInitOptions initOptions;
+    initOptions.baudRate = 115200;
+    kvhDriver.Init(kvhPort, packetRequest, initOptions);
     
     // Declare these for reuse
     system_state_packet_t systemStatePacket;
