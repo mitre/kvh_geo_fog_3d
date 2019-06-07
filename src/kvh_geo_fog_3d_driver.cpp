@@ -346,7 +346,10 @@ int Driver::Once(KvhPackageMap &_packetMap)
 
   if ((bytesRec = PollComport(an_decoder_pointer(&anDecoder_), an_decoder_size(&anDecoder_))) > 0)
   {
-    printf("Bytes received!\n");
+    if( verbose_ )
+    {
+      printf("Bytes received!\n");
+    }
     /* increment the decode buffer length by the number of bytes received */
     an_decoder_increment(&anDecoder_, bytesRec);
 
