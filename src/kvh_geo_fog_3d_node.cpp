@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "kvh_geo_fog_3d_driver");
 
-    ros::NodeHandle node;
+    ros::NodeHandle node("~");
 
     diagnostic_updater::Updater diagnostics;
     mitre::KVH::DiagnosticsContainer diagContainer;
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
         // If the sytem state packet has been updated
         if (packetMap[packet_id_system_state].first)
         {
-            ROS_INFO("System state packet has updated. Publishing...");
+            ROS_DEBUG("System state packet has updated. Publishing...");
             // Have to cast the shared_ptr to the correct type and then dereference.
             // TODO: Looking for ways to simplify this statement for driver users.
             // Static cast
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 
         if (packetMap[packet_id_satellites].first)
         {
-            ROS_INFO("Satellites packet updated. Publishing...");
+            ROS_DEBUG("Satellites packet updated. Publishing...");
             satellitesPacket = *static_cast<satellites_packet_t *>(packetMap[packet_id_satellites].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DSatellites satellitesMsg;
 
@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 
         if (packetMap[packet_id_satellites_detailed].first)
         {
-            ROS_INFO("Detailed satellites packet updated. Publishing...");
+            ROS_DEBUG("Detailed satellites packet updated. Publishing...");
             detailSatellitesPacket = *static_cast<detailed_satellites_packet_t *>(packetMap[packet_id_satellites_detailed].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DDetailSatellites detailSatellitesMsg;
 
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 
         if (packetMap[packet_id_local_magnetics].first)
         {
-            ROS_INFO("Local magnetics packet updated. Publishing...");
+            ROS_DEBUG("Local magnetics packet updated. Publishing...");
             localMagPacket = *static_cast<local_magnetics_packet_t *>(packetMap[packet_id_local_magnetics].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DLocalMagneticField localMagFieldMsg;
 
@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 
         if (packetMap[packet_id_utm_position].first)
         {
-            ROS_INFO("UTM Position packet updated. Publishing...");
+            ROS_DEBUG("UTM Position packet updated. Publishing...");
             utmPosPacket = *static_cast<utm_position_packet_t *>(packetMap[packet_id_utm_position].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition utmPosMsg;
 
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 
         if (packetMap[packet_id_ecef_position].first)
         {
-            ROS_INFO("ECEF position packet updated. Publishing...");
+            ROS_DEBUG("ECEF position packet updated. Publishing...");
             ecefPosPacket = *static_cast<ecef_position_packet_t *>(packetMap[packet_id_ecef_position].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos ecefPosMsg;
 
@@ -269,7 +269,7 @@ int main(int argc, char **argv)
 
         if (packetMap[packet_id_north_seeking_status].first)
         {
-            ROS_INFO("North seeking status packet updated. Publishing...");
+            ROS_DEBUG("North seeking status packet updated. Publishing...");
             northSeekingStatPacket = *static_cast<north_seeking_status_packet_t *>(packetMap[packet_id_north_seeking_status].second.get());
             kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus northSeekInitStatMsg;
 
@@ -385,7 +385,7 @@ int main(int argc, char **argv)
         diagnostics.update();
 
         usleep(100000);
-        ROS_INFO("----------------------------------------");
+        ROS_DEBUG("----------------------------------------");
     }
 
     diagnostics.broadcast(diagnostic_msgs::DiagnosticStatus::WARN, "Shutting down the KVH driver");
