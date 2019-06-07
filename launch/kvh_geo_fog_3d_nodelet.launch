@@ -1,6 +1,12 @@
 <launch>
-  <node pkg="nodelet" type="nodelet" name="kvh_geo_fog"  args="manager" output="screen"/>
+  <arg name="spawn_manager" default="true" />
+  <arg name="nodelet_name" default="kvh_geo_fog" />
+  <arg name="manager_name" value="$(arg nodelet_name)_manager" />
 
-  <node pkg="nodelet" type="nodelet" name="kvg_geo_fog" args="load kvh_geo_fog_3d_driver/GEO_FOG_Nodelet kvh_geo_fog" output="screen">
+  <!-- If requested, spawn manager -->
+  <node if="$(arg spawn_manager)" pkg="nodelet" type="nodelet" name="$(arg manager_name)"  args="manager" output="screen"/>
+
+  <!-- Spawn the nodelet -->
+  <node pkg="nodelet" type="nodelet" name="$(arg nodelet_name)" args="load kvh_geo_fog_3d_driver/GEO_FOG_Nodelet $(arg manager_name)" output="screen">
   </node>
 </launch>
