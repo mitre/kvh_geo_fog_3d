@@ -194,6 +194,16 @@ target_link_libraries(${PROJECT_NAME}_node
   ${PROJECT_NAME}
 )
 
+# For determine_baud_node.cpp
+add_executable(determine_baud_node src/utility/determine_baud_node.cpp)
+add_dependencies(determine_baud_node
+  ${PROJECT_NAME}
+)
+target_link_libraries(determine_baud_node
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 #add_dependencies(${PROJECT_NAME}_node
@@ -202,7 +212,7 @@ target_link_libraries(${PROJECT_NAME}_node
 #  ${PROJECT_NAME}_gencfg
 #)
 
-#configure_file(settings/equalization_preset.yaml ${CMAKE_CURRENT_BINARY_DIR}/equalization_preset.yaml COPYONLY)
+#configure_file(src/config.txt ${CMAKE_CURRENT_BINARY_DIR}/config.txt COPYONLY)
 #file(COPY settings DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/flir_adk_driver_node.dir/src)
 
 #############

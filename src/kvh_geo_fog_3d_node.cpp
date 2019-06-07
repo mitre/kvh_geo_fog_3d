@@ -39,6 +39,11 @@
 
 // ROS
 #include "ros/ros.h"
+#include "tf2/LinearMath/Quaternion.h"
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
+
+// Custom ROS msgs
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DSystemState.h>
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DSatellites.h>
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DDetailSatellites.h>
@@ -71,21 +76,11 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "kvh_geo_fog_3d_driver");
 
     ros::NodeHandle node("~");
+    ros::Rate rate(50); // 50hz by defaul, may eventually may settable parameter
 
     diagnostic_updater::Updater diagnostics;
     mitre::KVH::DiagnosticsContainer diagContainer;
     SetupUpdater(&diagnostics, &diagContainer);
-
-    // To get packets from the driver, we first create a vector of the packet id's we want
-    // See documentation for all id's. TODO: Put all id's in our documentation, is in KVH's
-    std::vector<packet_id_e> packetRequest{
-        packet_id_system_state,
-        packet_id_satellites,
-        packet_id_satellites_detailed,
-        packet_id_local_magnetics,
-        packet_id_utm_position,
-        packet_id_ecef_position,
-        packet_id_north_seeking_status};
 
     // Map containing publishers for each type of message we want to send out
     std::map<packet_id_e, ros::Publisher> kvhPubMap{
@@ -101,11 +96,45 @@ int main(int argc, char **argv)
     ros::Publisher imuPub = node.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
     ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
     ros::Publisher magFieldPub = node.advertise<sensor_msgs::MagneticField>("mag", 1);
-    ros::Publisher odomPub = node.advertise<nav_msgs::Odometry>("gps/utm", 1);
+    ros::Publisher odomPubNED = node.advertise<nav_msgs::Odometry>("gps/utm_ned", 1);
+    ros::Publisher odomPubENU = node.advertise<nav_msgs::Odometry>("gps/utm_enu", 1);
 
-    // Can pass true to this constructor to get print outs. Is currently messy but usable
+    //////////////////////////
+    // KVH Setup
+    //////////////////////////
+    
+    // To get packets from the driver, we first create a vector
+    // that holds a pair containing the packet id and the desired frequency for it to be published
+    // See documentation for all id's.
+    // \todo: Put all id's we support in our documentation. Full list is in KVH's
+    typedef std::pair<packet_id_e, int> freqPair;
+
+    kvh::KvhPacketRequest packetRequest{
+        freqPair(packet_id_euler_orientation_standard_deviation, 50),
+        freqPair(packet_id_system_state, 50),
+        freqPair(packet_id_satellites, 10),
+        freqPair(packet_id_satellites_detailed, 1),
+        freqPair(packet_id_local_magnetics, 50),
+        freqPair(packet_id_utm_position, 50),
+        freqPair(packet_id_ecef_position, 50),
+        freqPair(packet_id_north_seeking_status, 50)
+    };
+
+    // Create a map, this will hold all of our data and status changes (if the packets were updated)
+    kvh::KvhPacketMap packetMap;
+    // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
+    // std::map<packet_id_e, std::pair<bool, std::shared_pointer<void>>>, so best not to deal with it if possible
+    int unsupported = kvh::Driver::CreatePacketMap(packetMap, packetRequest);
+    // Determine if any of the requested packets are unsupported
+    if (unsupported > 0)
+    {
+        ROS_WARN("Warning: %d requested packets are unsupported and will not be available.", unsupported);
+    }
+
     std::string kvhPort("/dev/ttyUSB0");
+    // Can pass true to this constructor to get print outs. Is currently messy but usable
     kvh::Driver kvhDriver;
+    // Check if the port has been set on the ros param server
     if (node.getParam("port", kvhPort))
     {
         ROS_INFO_STREAM("Connecting to KVH on port " << kvhPort);
@@ -114,18 +143,11 @@ int main(int argc, char **argv)
     {
         ROS_WARN("No port specified by param, defaulting to USB0!");
     }
-    kvhDriver.Init(kvhPort, packetRequest);
-
-    // Create a map, this will hold all of our data and status changes (if the packets were updated)
-    kvh::KvhPacketMap packetMap;
-    // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
-    // std::map<packet_id_e, std::pair<bool, std::shared_pointer<void>>>, so best not to deal with it if possible
-    int unsupported = kvhDriver.CreatePacketMap(packetMap, packetRequest);
-    if (unsupported > 0)
-    {
-        ROS_WARN("Warning: %d requested packets are unsupported and will not be available.", unsupported);
-    }
-
+    kvh::KvhInitOptions initOptions;
+    initOptions.baudRate = 115200;
+    kvhDriver.Init(kvhPort, packetRequest, initOptions);
+    
+    // Declare these for reuse
     system_state_packet_t systemStatePacket;
     satellites_packet_t satellitesPacket;
     detailed_satellites_packet_t detailSatellitesPacket;
@@ -143,13 +165,22 @@ int main(int argc, char **argv)
         std_msgs::Header header;
         header.stamp = ros::Time::now();
 
-        // If the sytem state packet has been updated
+        ///////////////////////////////////////////
+        // CUSTOM ROS MESSAGES
+        ///////////////////////////////////////////
+
+        // NOTICE: To check if the packet is updated we must check the first value in the map pair.
+        // packetMap[packet_id].first is true if the packet is changed. We then need to retrieve the packet.
+        // To retrieve packets from the map you must do cast them since they are stored as
+        // void pointers. This follows the patterns
+        // struct_type_t structName = *static_cast<struct_type_t*>(packetMap[packet_id].second.get())
+        // Where .second is getting the second part of the pair, and .get() is retrieving the shared pointer
+
+        // SYSTEM STATE PACKET
         if (packetMap[packet_id_system_state].first)
         {
             ROS_DEBUG("System state packet has updated. Publishing...");
             // Have to cast the shared_ptr to the correct type and then dereference.
-            // TODO: Looking for ways to simplify this statement for driver users.
-            // Static cast
             systemStatePacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
 
             kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState sysStateMsg;
@@ -185,6 +216,7 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_system_state].publish(sysStateMsg);
         }
 
+        // SATELLITES PACKET
         if (packetMap[packet_id_satellites].first)
         {
             ROS_DEBUG("Satellites packet updated. Publishing...");
@@ -202,6 +234,7 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_satellites].publish(satellitesMsg);
         }
 
+        // SATELLITES DETAILED
         if (packetMap[packet_id_satellites_detailed].first)
         {
             ROS_DEBUG("Detailed satellites packet updated. Publishing...");
@@ -236,6 +269,7 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_satellites_detailed].publish(detailSatellitesMsg);
         }
 
+        // LOCAL MAGNETICS PACKET
         if (packetMap[packet_id_local_magnetics].first)
         {
             ROS_DEBUG("Local magnetics packet updated. Publishing...");
@@ -250,6 +284,7 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_local_magnetics].publish(localMagFieldMsg);
         }
 
+        // UTM POSITION PACKET
         if (packetMap[packet_id_utm_position].first)
         {
             ROS_DEBUG("UTM Position packet updated. Publishing...");
@@ -265,6 +300,7 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_utm_position].publish(utmPosMsg);
         }
 
+        // ECEF POSITION PACKET
         if (packetMap[packet_id_ecef_position].first)
         {
             ROS_DEBUG("ECEF position packet updated. Publishing...");
@@ -279,6 +315,7 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_ecef_position].publish(ecefPosMsg);
         }
 
+        // NORTH SEEKING STATUS PACKET
         if (packetMap[packet_id_north_seeking_status].first)
         {
             ROS_DEBUG("North seeking status packet updated. Publishing...");
@@ -300,27 +337,93 @@ int main(int argc, char **argv)
             kvhPubMap[packet_id_north_seeking_status].publish(northSeekInitStatMsg);
         }
 
-        // Standard ros messages. There may be multiple ways to create the same packet so we have each method listed here
-        // If we have the system state packet we have the data for the imu and navsatfix packets
+        ////////////////////////////////////
+        // STANDARD ROS MESSAGES
+        ////////////////////////////////////
+
+        /* Logic below for the types of data we get from each packet
+           if we have system state packet we can publish
+           {
+               IMU MSG
+               NAVSATFIXMSG
+
+               additionally, if we have the utm packet we can publish
+               {
+                   ODOMETRY_MSG
+               }
+           }
+           if we hav the local magnetics packet we can publish
+           {
+               LOCAL_MAG_MSG
+           }
+        */
         if (packetMap[packet_id_system_state].first)
         {
-
+            // IMU Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/Imu.html
+            // Header
+            // Quaternion orientation
+            // float64[9] orientation_covariance
+            // Vector3 angular_velocity
+            // float64[9] angular_velocity_covariance
+            // Vector3 linear_acceleration
+            // float64[9] linear_acceleration_covariance
             sensor_msgs::Imu imuMsg;
+
+            // NAVSATFIX Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/NavSatFix.html
+            // NavSatStatus status
+            // float64 latitude
+            // float64 longitude
+            // float64 altitude
+            // float64[9] position_covariance // Uses East North Up (ENU) in row major order
+            // uint8 position_covariance type
             sensor_msgs::NavSatFix navSatFixMsg;
             system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
+            euler_orientation_standard_deviation_packet_t eulStdDevPack = *static_cast<euler_orientation_standard_deviation_packet_t *>(
+                packetMap[packet_id_euler_orientation_standard_deviation].second.get());
 
             // IMU msg
+            // \todo fill out covariance matrices for each of the below.
+            // We need:
             imuMsg.header = header;
             imuMsg.header.frame_id = "imu";
-            imuMsg.orientation.x = sysPacket.orientation[0];
-            imuMsg.orientation.y = sysPacket.orientation[1];
-            imuMsg.orientation.z = sysPacket.orientation[2];
+
+            // ORIENTATION
+            tf2::Quaternion orientQuat;
+            orientQuat.setRPY(
+                sysPacket.orientation[0],
+                sysPacket.orientation[1],
+                sysPacket.orientation[2]);
+
+            double orientCov[3] = {
+                pow(eulStdDevPack.standard_deviation[0], 2),
+                pow(eulStdDevPack.standard_deviation[1], 2),
+                pow(eulStdDevPack.standard_deviation[2], 2)};
+
+            imuMsg.orientation.x = orientQuat.x();
+            imuMsg.orientation.y = orientQuat.y();
+            imuMsg.orientation.z = orientQuat.z();
+            imuMsg.orientation.w = orientQuat.w();
+            imuMsg.orientation_covariance[0] = orientCov[0];
+            imuMsg.orientation_covariance[4] = orientCov[1];
+            imuMsg.orientation_covariance[8] = orientCov[2];
+
+            // ANGULAR VELOCITY
             imuMsg.angular_velocity.x = sysPacket.angular_velocity[0];
-            imuMsg.angular_velocity.y = sysPacket.angular_velocity[1];
-            imuMsg.angular_velocity.z = sysPacket.angular_velocity[2];
+            imuMsg.angular_velocity.y = -1 * sysPacket.angular_velocity[1];
+            imuMsg.angular_velocity.z = -1 * sysPacket.angular_velocity[2]; // To account for east north up system
+            imuMsg.angular_velocity_covariance[0] = -1; // No packet gives this info
+            // imuMsg.angular_velocity_covariance[0]
+            // imuMsg.angular_velocity_covariance[4]
+            // imuMsg.angular_velocity_covariance[8]
+
+            // LINEAR ACCELERATION
             imuMsg.linear_acceleration.x = sysPacket.body_acceleration[0];
             imuMsg.linear_acceleration.y = sysPacket.body_acceleration[1];
             imuMsg.linear_acceleration.z = sysPacket.body_acceleration[2];
+            imuMsg.linear_acceleration_covariance[0] = -1; // No packet gives this info
+            // imuMsg.linear_acceleration_covariance[0]
+            // imuMsg.linear_acceleration_covariance[4]
+            // imuMsg.linear_acceleration_covariance[8]
 
             imuPub.publish(imuMsg);
 
@@ -361,25 +464,138 @@ int main(int argc, char **argv)
             // If we have system state and utm position we can publish odometry
             if (packetMap[packet_id_utm_position].first)
             {
-                nav_msgs::Odometry odomMsg;
+                // Odometry Message Structure: http://docs.ros.org/melodic/api/nav_msgs/html/msg/Odometry.html
+                // Header
+                // String child_frame_id \todo Fill out child frame id
+                // PoseWithCovariance pose
+                // --> Pose
+                // -->-->Point position
+                // -->-->Quaternion orientation
+                // -->float6[36] covariance // 6x6 order is [x, y, z, X axis rot, y axis rot, z axis rot]
+                // TwistWithCovariance twist
+                // --> Twist // Velocity in free space
+                // -->-->Vector3 linear
+                // -->-->Vector3 angular
+                // -->float64[36] covariance // 6x6 order is [x, y, z, x axis rot, y axis rot, z axis rot]
+
+                // Since UTM is by default NED, we will publish a message like that and a message using
+                // the ros ENU standard
+                nav_msgs::Odometry odomMsgENU;
+                nav_msgs::Odometry odomMsgNED;
                 utm_position_packet_t utmPacket = *static_cast<utm_position_packet_t *>(packetMap[packet_id_utm_position].second.get());
 
-                odomMsg.header = header;
-                odomMsg.header.frame_id = "gps";
-                odomMsg.pose.pose.position.x = utmPacket.position[0];
-                odomMsg.pose.pose.position.y = utmPacket.position[1];
-                odomMsg.pose.pose.position.z = utmPacket.position[2];
-                odomMsg.pose.pose.orientation.x = sysPacket.orientation[0];
-                odomMsg.pose.pose.orientation.y = sysPacket.orientation[1];
-                odomMsg.pose.pose.orientation.z = sysPacket.orientation[2];
-                odomMsg.twist.twist.linear.x = sysPacket.velocity[0];
-                odomMsg.twist.twist.linear.y = sysPacket.velocity[1];
-                odomMsg.twist.twist.linear.z = sysPacket.velocity[2];
-                odomMsg.twist.twist.angular.x = sysPacket.angular_velocity[0];
-                odomMsg.twist.twist.angular.y = sysPacket.angular_velocity[1];
-                odomMsg.twist.twist.angular.z = sysPacket.angular_velocity[2];
+                odomMsgENU.header = header;
+                odomMsgENU.header.frame_id = "gps";
 
-                odomPub.publish(odomMsg);
+                odomMsgNED.header = header;
+                odomMsgNED.header.frame_id = "gps";
+
+                // \todo Fill covarience matrices for both of these
+                // Covariance matrices are 6x6 so we need to fill the diagonal at
+                // 0, 7, 14, 21, 28, 35
+
+                // POSE
+                // Position ENU
+                odomMsgENU.pose.pose.position.x = utmPacket.position[1];
+                odomMsgENU.pose.pose.position.y = utmPacket.position[0];
+                odomMsgENU.pose.pose.position.z = utmPacket.position[2];
+                // odomMsg.pose.covariance[0] =
+                // odomMsg.pose.covariance[7] =
+                // odomMsg.pose.covariance[14] =
+
+                // Position NED
+                odomMsgNED.pose.pose.position.x = utmPacket.position[0];
+                odomMsgNED.pose.pose.position.y = utmPacket.position[1];
+                odomMsgNED.pose.pose.position.z = utmPacket.position[2];
+                // odomMsg.pose.covariance[0] =
+                // odomMsg.pose.covariance[7] =
+                // odomMsg.pose.covariance[14] =
+
+                // Orientation ENU
+                // Use orientation quaternion we created earlier
+                odomMsgENU.pose.pose.orientation.x = orientQuat.x();
+                odomMsgENU.pose.pose.orientation.y = orientQuat.y();
+                odomMsgENU.pose.pose.orientation.z = orientQuat.z();
+                odomMsgENU.pose.pose.orientation.w = orientQuat.w();
+                // Use covariance array created earlier to fill out orientation covariance
+                odomMsgENU.pose.covariance[21] = orientCov[0];
+                odomMsgENU.pose.covariance[28] = orientCov[1];
+                odomMsgENU.pose.covariance[35] = orientCov[2];
+
+                // Orientation NED
+                odomMsgNED.pose.pose.orientation.x = orientQuat.x();
+                odomMsgNED.pose.pose.orientation.y = orientQuat.y();
+                odomMsgNED.pose.pose.orientation.z = orientQuat.z();
+                odomMsgNED.pose.pose.orientation.w = orientQuat.w();
+                // Use covariance array created earlier to fill out orientation covariance
+                odomMsgNED.pose.covariance[21] = orientCov[0];
+                odomMsgNED.pose.covariance[28] = orientCov[1];
+                odomMsgNED.pose.covariance[35] = orientCov[2];
+
+                // TWIST
+                // Linear ENU
+                odomMsgENU.twist.twist.linear.x = sysPacket.velocity[0];
+                odomMsgENU.twist.twist.linear.y = sysPacket.velocity[1];
+                odomMsgENU.twist.twist.linear.z = sysPacket.velocity[2];
+                odomMsgENU.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
+                // odomMsg.twist.covariance[0] =
+                // odomMsg.twist.covariance[7] =
+                // odomMsg.twist.covariance[14] =
+
+                // Linear NED
+                odomMsgNED.twist.twist.linear.x = sysPacket.velocity[0];
+                odomMsgNED.twist.twist.linear.y = sysPacket.velocity[1];
+                odomMsgNED.twist.twist.linear.z = sysPacket.velocity[2];
+                odomMsgNED.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
+                // odomMsg.twist.covariance[0] =
+                // odomMsg.twist.covariance[7] =
+                // odomMsg.twist.covariance[14] =
+
+                // Angular ENU
+                odomMsgENU.twist.twist.angular.x = sysPacket.angular_velocity[0];
+                odomMsgENU.twist.twist.angular.y = sysPacket.angular_velocity[1];
+                odomMsgENU.twist.twist.angular.z = sysPacket.angular_velocity[2];
+                // odomMsg.twist.covariance[21] =
+                // odomMsg.twist.covariance[28] =
+                // odomMsg.twist.covariance[35] =
+
+                // Angular NED
+                odomMsgNED.twist.twist.angular.x = sysPacket.angular_velocity[0];
+                odomMsgNED.twist.twist.angular.y = sysPacket.angular_velocity[1];
+                odomMsgNED.twist.twist.angular.z = sysPacket.angular_velocity[2];
+                // odomMsg.twist.covariance[21] =
+                // odomMsg.twist.covariance[28] =
+                // odomMsg.twist.covariance[35] =
+
+                odomPubENU.publish(odomMsgENU);
+                odomPubNED.publish(odomMsgNED);
+
+                // BROADCAST TRANSFORM TO BASE LINK
+                // static tf2_ros::TransformBroadcaster br;
+                // geometry_msgs::TransformStamped transformStamped;
+
+                // transformStamped.header.stamp = ros::Time::now();
+                // transformStamped.header.frame_id = "world";
+                // transformStamped.child_frame_id = "base_link";
+
+                // // UTM is base_link's position within the world frame
+                // // I think the ordering is correct since they have x = east and y = north, utm is North, East, Hieght
+                // transformStamped.transform.translation.x = utmPacket.position[1];
+                // transformStamped.transform.translation.y = utmPacket.position[0];
+                // transformStamped.transform.translation.z = utmPacket.position[2];
+
+                // // Set to quaternion calculated above for the odometry packet
+                // transformStamped.transform.rotation.x = orientQuat.x();
+                // transformStamped.transform.rotation.y = orientQuat.y();
+                // transformStamped.transform.rotation.z = orientQuat.z();
+                // transformStamped.transform.rotation.w = orientQuat.w();
+
+                // br.sendTransform(transformStamped);
+                
+                // Only have to track change between odom and base_link
+                // This would be based off of intertial sensing
+                // KVH Filter outputs with gps disabled
+
             }
         }
 
@@ -397,10 +613,21 @@ int main(int argc, char **argv)
             magFieldPub.publish(magFieldMsg);
         }
 
+        // Set the "first" of all packets to false to denote they have not been updated
+        packetMap[packet_id_system_state].first = false;
+        packetMap[packet_id_satellites].first = false;
+        packetMap[packet_id_satellites_detailed].first = false;
+        packetMap[packet_id_utm_position].first = false;
+        packetMap[packet_id_ecef_position].first = false;
+        packetMap[packet_id_north_seeking_status].first = false;
+        packetMap[packet_id_local_magnetics].first = false;
+        packetMap[packet_id_euler_orientation_standard_deviation].first = false;
+
         diagnostics.update();
 
-        usleep(100000);
-        ROS_DEBUG("----------------------------------------");
+        ros::spinOnce();
+        rate.sleep();
+        ROS_INFO("----------------------------------------");
     }
 
     diagnostics.broadcast(diagnostic_msgs::DiagnosticStatus::WARN, "Shutting down the KVH driver");

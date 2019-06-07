@@ -33,6 +33,34 @@ namespace kvh
    */
   typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPacketMap;
 
+  /**
+   * @typedef KvhPacketRequest
+   * Defines the format for a packet, frequency (Hz) pair that should be passed in
+   * by the user to retrieve specific packets at the given rate
+   */
+  typedef std::vector<std::pair<packet_id_e, int>> KvhPacketRequest;
+
+  /**
+   * @struct utm_fix
+   * The kvh outputs the utm zone number, which their packet does not have.
+   * We are inheriting from their packet and adding the field they left off.
+   */
+  struct utm_fix : utm_position_packet_t
+  {
+    uint8_t zone_num;
+  };
+
+  /**
+   * @struct KvhInitOptions
+   * Holds initialization options for the Kvh.
+   */
+  struct KvhInitOptions
+  {
+    bool gnssEnabled{true};
+    int baudRate{115200};
+    bool autoBaud{false};
+  };
+
 /**
    * @class Driver
    * @ingroup kvh
@@ -46,7 +74,6 @@ class Driver
 private:
   bool connected_; ///< True if we're connected to the localization unit.
   std::string port_; ///< Port to connect to the kvh through. Ex. "/dev/ttyUSB0"
-  int baud_{115200}; ///< Baud rate for communicating with kvh
   const uint32_t PACKET_PERIOD{50}; ///< Setting for determining packet rate. **Note**: Does not
     ///< equal packet frequency. See manual for equation on how Packet Period affects packet rate. 
   an_decoder_t anDecoder_; ///< Decoder for decoding incoming AN encoded packets.
@@ -54,10 +81,26 @@ private:
   std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve 
     ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay 
     ///< problem where the packet is already gone by the time this function is called) 
+  KvhInitOptions defaultOptions_; ///< If no init options are passed in, use this as the default
+
+  std::map<packet_id_e, int> _packetSize {
+    {packet_id_system_state, sizeof(system_state_packet_t)},
+    {packet_id_unix_time, sizeof(unix_time_packet_t)},
+    {packet_id_raw_sensors, sizeof(raw_sensors_packet_t)},
+    {packet_id_satellites, sizeof(satellites_packet_t)},
+    {packet_id_satellites_detailed, sizeof(detailed_satellites_packet_t)},
+    {packet_id_local_magnetics, sizeof(local_magnetics_packet_t)},
+    {packet_id_utm_position, sizeof(utm_position_packet_t)},
+    {packet_id_ecef_position, sizeof(ecef_position_packet_t)},
+    {packet_id_north_seeking_status, sizeof(north_seeking_status_packet_t)},
+    {packet_id_euler_orientation_standard_deviation, sizeof(euler_orientation_standard_deviation_packet_t)}
+  }; ///< Map relating packet id's to the associated struct size. Used for baudrate calculation
 
   // Private functions, see implementation for detailed comments
   int DecodePacket(an_packet_t*, KvhPacketMap&);
+  int DecodeUtmFix(utm_fix*, an_packet_t*); // Special decode since their utm api is incorrect
   int SendPacket(an_packet_t*);
+  int BuildPacketPeriods(KvhPacketRequest, packet_period_t&);
 
   public:
   Driver(bool _debug = false);
@@ -68,10 +111,23 @@ private:
    * std::vector<packet_id_e> packetRequest{packet_id_system_state, packet_id_satellites}; 
    * std::string kvhPort("/dev/ttyUSB0");
    * kvh::Driver kvhDriver;
-   * kvhDriver.Init(kvhPort, packetRequest);  * 
+   * kvhDriver.Init(kvhPort, packetRequest);  
    * \endcode
    */
-  int Init(const std::string& _port, std::vector<packet_id_e>);
+  int Init(const std::string& _port, KvhPacketRequest&);
+
+    /**
+   * \code
+   * std::vector<packet_id_e> packetRequest{packet_id_system_state, packet_id_satellites}; 
+   * std::string kvhPort("/dev/ttyUSB0");
+   * kvh::KvhInitOptions initOptions;
+   * initOptions.baud = 230600;
+   * ... // Aditional options
+   * kvh::Driver kvhDriver;
+   * kvhDriver.Init(kvhPort, packetRequest, initOptions);  * 
+   * \endcode
+   */
+  int Init(const std::string& _port, KvhPacketRequest&, KvhInitOptions _initOptions);
 
   /**
    * \code 
@@ -100,7 +156,17 @@ private:
    * system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
    * \endcode
    */
-  int CreatePacketMap(KvhPacketMap&, std::vector<packet_id_e>);
+  static int CreatePacketMap(KvhPacketMap&, KvhPacketRequest, bool _debug = false);
+
+  /**
+   * std::string port{'/dev/USB0'};
+   * int curBaud = 115200;
+   * int prevBaud = 9600;
+   * kvh::Driver::SetBaudRate(port, curBaud, prevBaud);
+   */
+  static int SetBaudRate(std::string, int, int);
+
+  static int CalculateRequredBaud(KvhPacketRequest&);
 
   /**
    * \code

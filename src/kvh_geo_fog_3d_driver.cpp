@@ -13,6 +13,9 @@
 #include <functional>
 #include <termios.h>
 #include <typeinfo>
+#include <set>
+#include <iostream>
+#include <fstream>
 
 // RS232
 #include "rs232.h"
@@ -36,7 +39,7 @@ Driver::Driver(bool _debug) :
   port_("/dev/ttyUSB0"),
   debug_(_debug)
 {
-} //end: Driver()
+} // END Driver()
 
 /**
  * @fn Driver::~Driver
@@ -45,7 +48,7 @@ Driver::Driver(bool _debug) :
 Driver::~Driver()
 {
   Cleanup();
-}
+} // END ~Driver()
 
 // PRIVATE FUNCTIONS
 
@@ -66,16 +69,17 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPacketMap &_packetMap)
   if ((_packetMap.count(static_cast<packet_id_e>(_anPacket->id))) == 0)
   {
     // If packet is not in our map, print out the id and length and return as unsupported
-    printf("Packet ID %u of Length %u\n", _anPacket->id, _anPacket->length);
+    if (debug_) printf("Packet ID %u of Length %u\n", _anPacket->id, _anPacket->length);
     return -1;
   }
 
+  // NOTICE: Code structure follows same pattern. Comments for first case work for all cases
   // The packet id is in our map, so decode the packet with the appropriate function
   // The list of supported packets below should match with Driver::CreatePacketMap
-  if (_anPacket->id == packet_id_system_state) /* system state packet */
+  if (_anPacket->id == packet_id_system_state) 
   {
-    /* copy all the binary data into the typedef struct for the packet */
-    /* this allows easy access to all the different values             */
+    // copy all the binary data into the typedef struct for the packet 
+    // this allows easy access to all the different values             
     if (decode_system_state_packet((system_state_packet_t *)_packetMap[packet_id_system_state].second.get(), _anPacket) == 0)
     {
       // Notify that we have updated packet
@@ -118,10 +122,8 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPacketMap &_packetMap)
       return -2;
     }
   }
-  else if (_anPacket->id == packet_id_raw_sensors) /* raw sensors packet */
+  else if (_anPacket->id == packet_id_raw_sensors)
   {
-    /* copy all the binary data into the typedef struct for the packet */
-    /* this allows easy access to all the different values             */
     if (decode_raw_sensors_packet((raw_sensors_packet_t *)_packetMap[packet_id_raw_sensors].second.get(), _anPacket) == 0)
     {
       _packetMap[packet_id_raw_sensors].first = true;
@@ -192,13 +194,10 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPacketMap &_packetMap)
   }
   else if (_anPacket->id == packet_id_utm_position)
   {
-    // Below is a risky hack, they have inconsistencies with the length and fields of this packet
+    // Below we had to create a modified decode function since 
     /** \todo Fix utm_position_packet_t to follow data provided by kvh instead of what they have defined.*/
-    _anPacket->data[24] = _anPacket->data[25];
-    _anPacket->data[25] = 0;
-    _anPacket->length = 25;
 
-    if (decode_utm_position_packet(static_cast<utm_position_packet_t *>(_packetMap[packet_id_utm_position].second.get()), _anPacket) == 0)
+    if (DecodeUtmFix(static_cast<utm_fix *>(_packetMap[packet_id_utm_position].second.get()), _anPacket) == 0)
     {
       _packetMap[packet_id_utm_position].first = true;
       if (debug_)
@@ -244,97 +243,317 @@ int Driver::DecodePacket(an_packet_t *_anPacket, KvhPacketMap &_packetMap)
       return -2;
     }
   }
+  else if (_anPacket->id == packet_id_euler_orientation_standard_deviation)
+  {
+    if (decode_euler_orientation_standard_deviation_packet(
+      static_cast<euler_orientation_standard_deviation_packet_t*>(_packetMap[packet_id_euler_orientation_standard_deviation].second.get()), _anPacket) == 0)
+    {
+      _packetMap[packet_id_euler_orientation_standard_deviation].first = true;
+      if (debug_) printf("Collected euler orientation standard deviation packet.");
+    }
+    else
+    {
+      if (debug_) printf("Failed to decode euler orientation standard devation packet.");
+      return -2;
+    }
+  }
 
   return 0;
+} // END DecodePacket()
+
+int Driver::DecodeUtmFix(utm_fix* _utmPacket, an_packet_t* _anPacket)
+{
+	if(_anPacket->id == packet_id_utm_position && _anPacket->length == 26)
+	{
+		memcpy(&_utmPacket->position, &_anPacket->data[0], 3*sizeof(double));
+		_utmPacket->zone_num = _anPacket->data[24];
+    _utmPacket->zone = _anPacket->data[25];
+		return 0;
+	}
+	else return 1;
 }
 
+/**
+ * @fn Driver::SendPacket
+ * @brief Wrapper function for more easily sending an packets via serial port
+ * 
+ * @param _anPacket [in] The an packet to transmit
+ */
 int Driver::SendPacket(an_packet_t *_anPacket)
 {
-  // Attempt to send our packet periods packet
+  // Encode packet. Adds header including LRC and CRC
   an_packet_encode(_anPacket);
+  // Send AN packet via serial port
   if (SendBuf(an_packet_pointer(_anPacket), an_packet_size(_anPacket)))
   {
-    if (debug_)
-      printf("Packet succesfully sent!\n");
-    packetRequests_.push_back(static_cast<packet_id_e>(_anPacket->id));
     return 0;
+    packetRequests_.push_back(static_cast<packet_id_e>(_anPacket->id));
   }
   else
   {
-    if (debug_)
-      printf("Unable to send packet.\n");
     return -1;
   }
-}
+} // END SendPacket()
 
+
+//////////////////////////////////////////////
 // PUBLIC FUNCTIONS
+//////////////////////////////////////////////
 
 /**
-   * @fn Driver::Init
+ * @fn Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested)
+ * @param [in] _port The port to connect to the kvh through
+ * @param [in] _packetsRequested The requested packets and their associated frequencies
+ * @return [int]: 0 = success, > 0 = warning, < 0 = failure
+ * 
+ * @brief This function will intialize with all of the default options. For more in depth
+ * information see the the overlaoded init function.
+ */
+int Driver::Init(const std::string& _port, KvhPacketRequest& _packetsRequested)
+{
+  return Driver::Init(_port, _packetsRequested, defaultOptions_);
+}
+
+/**
+   * @fn Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, KvhInitOptions _initOptions)
    * @brief Initialize the connection to the device
+   * 
+   * @param _port [in] Port the kvh is connected through
+   * @param _packetsRequested [in] Vector of packet id's to ask the kvh to output
+   * @
+   * 
    * @return [int]: 0 = success, > 0 = warning, < 0 = failure
    * 
    * Initialize the serial connection to the KVH GEO FOG 3D.
-   * TODO: Possibly add code to calculate baud rate?
    * 
    * Current calculation for our packets:
    * (105 (sys state) + 18 (satellites) +
    * (5+(7*(1 for min or 50 for max))) (Detailed satellites) + 17 (local mag)
    * + 30 (utm) + 29 (ecef) + 32) * rate (50hz default) * 11
-   * Minimum baud all packets at 100hz for worst case scenario is 644600, TODO: Find setting of baud needed for this
+   * Minimum baud all packets at 100hz for worst case scenario is 644600
+   * 
+   * @warning When connecting we make the massive assumption that the kvh starts
+   * with a baud rate of 115200. The workflow here is Open comport -> Set baud to required
+   * -> Close comport -> Open comport with baud required
    */
-int Driver::Init(const std::string& _port, std::vector<packet_id_e> _packetsRequested)
+int Driver::Init(const std::string& _port, KvhPacketRequest& _packetsRequested, KvhInitOptions _initOptions)
 {
-  // Open Comport
-  // Make these class variables
-  printf("Opening comport\n");
-  port_ = _port;
-  char portArr[4096];
-  strncpy(portArr, port_.c_str(), 4096);
-  if (OpenComport(portArr, baud_) != 0)
-  {
-    printf("Unable to establish connection.\n");
-    return -1;
-  }
-  connected_ = true;
 
-  // Set the correct packets to output
+  ///////////////////////////////////////
+  // SETTING PACKET OUTPUT AND FREQUENCY
+  // CALCULATE REQUIRED BAUDRATE BEFORE CONNECTING
+  ///////////////////////////////////////
+
+  /* 
+  * In the section below, we need to calculate the desired packet periods
+  * given the desired packet rat+
+  * 
+  * 
+  * ++e (Hz) from the user. Additionally, we need to calculate
+  * the necessary baud rate to make sure we have enough bandwidth for everything.
+  * 
+  * PACKET RATE -> PACKET PERIOD
+  * Formula for how packet frequency relates to packet period:
+  * Packet Rate = 1000000/(Packet Period * Packet Timer Period)Hz - From Manual
+  * 
+  * Packet Timer Period can also be set, but we will use its default of 1000us for now
+  * So, given packet rate, the packet period we need to input is
+  * 
+  * 1000000/(Packet Rate * 1000) = Packet Period
+  * 1000/Packet Rate = Packet Period
+  * 
+  */
+
+
   packet_periods_packet_t packetPeriods;
-  // We will reset the periods each time, so doesn't matter
-  // Make permanent in case it has a hot reset
+
+  // Make permanent in case it has a hot reset, otherwise an error is likely
   packetPeriods.permanent = 1;
   // Clear all exisiting packet periods and replace with new ones
   packetPeriods.clear_existing_packets = 1;
+  
+  std::set<packet_id_e> packetIdList; // To hold list of already added packet id's
+  int returnValue = 0; // Will hold number of duplicated id's
+
+  int dataThroughput = 0;
   int i;
   for (i = 0; i < _packetsRequested.size(); i++)
   {
-    // packet_period_t period = {packet id, period}
-    // See documentation for how period is use dot calculate Hz
-    packet_period_t period;
-    period.packet_id = _packetsRequested.at(i);
-    period.period = PACKET_PERIOD;
-    packetPeriods.packet_periods[i] = period;
-  }
-  // Make sure we end our inputs with a zeroed struct
-  // memset(&packetPeriods.packet_periods[i], 0, sizeof(packet_period_t));
-  an_packet_t *requestPacket = encode_packet_periods_packet(&packetPeriods);
+    std::pair<packet_id_e, int> packet = _packetsRequested.at(i);
 
-  // Send and then free packet
-  printf("Sending packet.\n");
-  int packetError = SendPacket(requestPacket);
+    if (packetIdList.count(packet.first) > 0)
+    {
+      returnValue = 1; // Found duplicate, increase counter
+    }
+
+    // packet_period_t period = {packet id, period}
+    packet_period_t period;
+    period.packet_id = _packetsRequested.at(i).first;
+    period.period = 1000/_packetsRequested.at(i).second; // Using formula for rate to period derived above
+    packetPeriods.packet_periods[i] = period;
+
+    // Add this as part of our baudrate calculation
+    // Increase required baudrate by (struct_size + 5) * rate
+    dataThroughput += (_packetSize[packet.first] + 5) * packet.second;
+  }
+
+  ////////////////////////////////
+  // SETTING BUAD RATE
+  ////////////////////////////////
+
+
+  // dataThroughput from above, 11 from their equation
+  int minBaud = dataThroughput * 11;
+  if (debug_) printf("Calculated baud rate: %d\n", minBaud);
+
+  if (minBaud > _initOptions.baudRate)
+  {
+    returnValue = 2;
+    if (debug_) printf("Required minimum baud rate of %d exceeds given baud of %d\n", minBaud, _initOptions.baudRate);
+  }
+
+  // For autosetting baud rate
+
+  // Find smallest baud rate that will suffice
+  // if (minBaud > 10000000)
+  // {
+  //   if (debug_) printf("Required baud rate too high!\n");
+  //   return -1;
+  // }
+  // else if (minBaud > 921600)
+  // {
+  //   baud_ = 10000000;
+  // }
+  // else if (minBaud > 576000)
+  // {
+  //   baud_ = 921600;
+  // }
+  // else if (minBaud > 500000)
+  // {
+  //   baud_ = 576000;
+  // }
+  // else if (minBaud > 460800)
+  // {
+  //   baud_ = 500000;
+  // }
+  // else if (minBaud > 230400)
+  // {
+  //   baud_ = 460800;
+  // }
+  // else if (minBaud > 115200)
+  // {
+  //   baud_ = 230400;
+  // }
+  // else
+  // {
+  //   baud_ = 115200;
+  // }
+
+  // if (debug_) printf("Baud set to: %d\n", baud_);
+
+  // baud_rates_packet_t baudRatePacket; 
+  // baudRatePacket.permanent = 1;
+  // baudRatePacket.primary_baud_rate = baud_;
+  // baudRatePacket.gpio_1_2_baud_rate = baud_;
+  // baudRatePacket.auxiliary_baud_rate = baud_;
+  // baudRatePacket.reserved = 0;
+
+
+  ///////////////////////////////////////
+  // SETTING UP KALMAN FILTER OPTIONS
+  ///////////////////////////////////////
+
+  filter_options_packet_t filterOptions;
+
+	filterOptions.permanent = true;
+	filterOptions.vehicle_type = vehicle_type_car;
+	filterOptions.internal_gnss_enabled = _initOptions.gnssEnabled; // Set if we want to test using gps or not
+	filterOptions.atmospheric_altitude_enabled = true;
+	filterOptions.velocity_heading_enabled = true;
+	filterOptions.reversing_detection_enabled = true;
+	filterOptions.motion_analysis_enabled = true;
+
+  ////////////////////////////////////////
+  // CONNECTING TO KVH
+  ////////////////////////////////////////
+
+  if (debug_) printf("Opening comport at 115200 baud.\n");
+
+  port_ = _port;
+  char portArr[4096];
+  strncpy(portArr, port_.c_str(), 4096);
+  if (OpenComport(portArr, _initOptions.baudRate) != 0)
+  {
+    if (debug_) printf("Unable to establish connection.\n");
+    return -1;
+  }
+  // We are connected to the KVH!
+  connected_ = true;
+
+  
+  ////////////////////////////////
+  // SENDING CONFIGURATION PACKETS
+  ////////////////////////////////
+
+  an_packet_t* requestPacket;
+  int packetError;
+
+  // Not sending the baud rate packet right now
+  // if (debug_) printf("Sending baud rate packet.\n");
+
+  // requestPacket = encode_baud_rates_packet(&baudRatePacket);
+  // packetError = SendPacket(requestPacket);
+  // an_packet_free(&requestPacket);
+  // requestPacket = nullptr;
+  // if (packetError){
+  //   return -2;
+  // }
+
+  // // Need to close then reopen the comport
+  // CloseComport();
+  // connected_ = false;
+
+  // if (debug_) printf("Opening comport at %d baud\n", baud_);
+
+  // if (OpenComport(portArr, baud_) != 0)
+  // {
+  //   if (debug_) printf("Unable to establish connection at %d baud.\n", baud_);
+  //   return -1;
+  // }
+  // // We are connected to the KVH!
+  // connected_ = true;
+  
+
+  if (debug_) printf("Sending packet_periods.\n");
+
+  requestPacket = encode_packet_periods_packet(&packetPeriods);
+  packetError = SendPacket(requestPacket);
   an_packet_free(&requestPacket);
   requestPacket = nullptr;
+  if (packetError){
+    return -2;
+  }
 
-  // Check if the packet was successfully sent
+  if (debug_) printf("Sending filter options packet.");
+
+  requestPacket = encode_filter_options_packet(&filterOptions);
+  packetError = SendPacket(requestPacket);
+  requestPacket = nullptr;
   if (packetError != 0)
   {
     return -2;
   }
 
-  printf("Initializing decoder.\n");
+  /////////////////////////////////////
+  // INITIALISE AN DECODER
+  /////////////////////////////////////
+
+  if (debug_) printf("Initializing decoder.\n");
   an_decoder_initialise(&anDecoder_);
 
-} //end: Init()
+  return returnValue;
+
+} // END Init()
 
 /**
    * @fn Driver::Once
@@ -377,30 +596,31 @@ int Driver::Once(KvhPacketMap &_packetMap)
   int bytesRec;
   int unexpectedPackets = 0;
 
+  // Check if new packets have been sent
   if ((bytesRec = PollComport(an_decoder_pointer(&anDecoder_), an_decoder_size(&anDecoder_))) > 0)
   {
-    if( verbose_ )
-    {
-      printf("Bytes received!\n");
-    }
     /* increment the decode buffer length by the number of bytes received */
     an_decoder_increment(&anDecoder_, bytesRec);
 
     /* decode all the packets in the buffer */
     while ((anPacket = an_packet_decode(&anDecoder_)) != NULL)
     {
-      // I think I should keep a list of packets I send, and then mark them successful when the acknowledge packet
-      // for it comes back
+      // If we get an acknowledgment packet from sending packets
+      // Acknowledgement packet is different than the others so we keep it seperate
       if (anPacket->id == packet_id_acknowledge)
       {
         acknowledge_packet_t ackP;
         if (decode_acknowledge_packet(&ackP, anPacket) == 0)
         {
-          printf("Acknowledging packet from packet id: %d\n", ackP.packet_id);
+          if (debug_) {
+            printf("*********************************\n"
+            "Acknowledging packet from packet id: %d\n Result of packet %d\n"
+            "********************************\n", ackP.packet_id, ackP.acknowledge_result);
+          }
         }
         else
         {
-          printf("Unable to decode acknowledge packet properly.\n");
+          if (debug_) printf("Unable to decode acknowledge packet properly.\n");
         }
       }
       else
@@ -413,7 +633,7 @@ int Driver::Once(KvhPacketMap &_packetMap)
       an_packet_free(&anPacket);
     }
   }
-}
+} // END Once()
 
 /**
  * @fn Driver::CreatePacketMap
@@ -423,11 +643,13 @@ int Driver::Once(KvhPacketMap &_packetMap)
  *    0 = Success,
  *    >0 = Warning. Warning number denotes number of unsupported packets passed in.
  */
-int Driver::CreatePacketMap(KvhPacketMap &_packetMap, std::vector<packet_id_e> _packRequest)
+int Driver::CreatePacketMap(KvhPacketMap &_packetMap, KvhPacketRequest _packRequest, bool _debug)
 {
   int unsupported = 0;
-  for (packet_id_e &packEnum : _packRequest)
+  int i;
+  for (i = 0; i < _packRequest.size(); i++)
   {
+    packet_id_e packEnum = _packRequest.at(i).first;
     /*
      * General form for below:
      *  case (packetId):
@@ -454,7 +676,7 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, std::vector<packet_id_e> _
       _packetMap[packet_id_local_magnetics] = std::make_pair(false, std::make_shared<local_magnetics_packet_t>());
       break;
     case packet_id_utm_position:
-      _packetMap[packet_id_utm_position] = std::make_pair(false, std::make_shared<utm_position_packet_t>());
+      _packetMap[packet_id_utm_position] = std::make_pair(false, std::make_shared<utm_fix>());
       break;
     case packet_id_ecef_position:
       _packetMap[packet_id_ecef_position] = std::make_pair(false, std::make_shared<ecef_position_packet_t>());
@@ -462,9 +684,12 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, std::vector<packet_id_e> _
     case packet_id_north_seeking_status:
       _packetMap[packet_id_north_seeking_status] = std::make_pair(false, std::make_shared<north_seeking_status_packet_t>());
       break;
+    case packet_id_euler_orientation_standard_deviation:
+      _packetMap[packet_id_euler_orientation_standard_deviation] = std::make_pair(false, std::make_shared<euler_orientation_standard_deviation_packet_t>());
+      break;
     default:
       // If the packet id is not in the list above it is unsupported
-      if (debug_)
+      if (_debug)
         printf("Packet with id: %d unsupported", packEnum);
       unsupported += 1;
     }
@@ -472,7 +697,75 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, std::vector<packet_id_e> _
 
   // Will return 0 if we support all, or the number of entered id's we don't support if >0
   return unsupported;
+} // END CreatePacketMap()
+
+int Driver::SetBaudRate(std::string _port, int _curBaudRate, int _desiredBaudRate)
+{
+
+  int returnValue = 0;
+
+  // Create the baud rate packet that we want to send
+  baud_rates_packet_t baudRatePacket; 
+  baudRatePacket.permanent = 1;
+  baudRatePacket.primary_baud_rate = _desiredBaudRate;
+  baudRatePacket.gpio_1_2_baud_rate = _desiredBaudRate;
+  baudRatePacket.auxiliary_baud_rate = _desiredBaudRate;
+  baudRatePacket.reserved = 0;
+
+  an_packet_t* requestPacket = encode_baud_rates_packet(&baudRatePacket);
+  
+  char portArr[4096];
+  strncpy(portArr, _port.c_str(), 4096);
+  if (OpenComport(portArr, _curBaudRate) != 0)
+  {
+    return -1;
+  }
+  
+  an_packet_encode(requestPacket);
+  // Send AN packet via serial port
+  if (!SendBuf(an_packet_pointer(requestPacket), an_packet_size(requestPacket)))
+  {
+    returnValue = -2;
+  }
+  an_packet_free(&requestPacket);
+  requestPacket = nullptr;
+
+  CloseComport();
+  
+  return returnValue;
 }
+
+// int Driver::CalculateRequredBaud(KvhPacketRequest& _packetsRequested)
+// {
+//   /*
+//   * CALCULATING BAUDRATE:
+//   * 
+//   * Data throughput = (packet_length + 5 (for fixed packet overhead)) * rate
+//   * Minimum baud = data throughput * 11
+//   * -> Find closest baud
+//   */
+
+//    for (i = 0; i < _packetsRequested.size(); i++)
+//   {
+//     std::pair<packet_id_e, int> packet = _packetsRequested.at(i);
+
+//     if (packetIdList.count(packet.first) > 0)
+//     {
+//       returnValue = 1; // Found duplicate, increase counter
+//     }
+
+//     // packet_period_t period = {packet id, period}
+//     packet_period_t period;
+//     period.packet_id = _packetsRequested.at(i).first;
+//     period.period = 1000/_packetsRequested.at(i).second; // Using formula for rate to period derived above
+//     packetPeriods.packet_periods[i] = period;
+
+//     // Add this as part of our baudrate calculation
+//     // Increase required baudrate by (struct_size + 5) * rate
+//     dataThroughput += (_packetSize[packet.first] + 5) * packet.second;
+//   }
+
+// }
 
 /**
    * @fn Driver::Cleanup
@@ -483,6 +776,6 @@ int Driver::Cleanup()
 {
   CloseComport();
   return 0;
-} //end: Cleanup()
+} // END Cleanup()
 
 } // namespace kvh
