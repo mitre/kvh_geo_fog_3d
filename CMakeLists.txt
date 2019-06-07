@@ -252,6 +252,14 @@ install(FILES
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
+## Install our nodelet_plugins.xml for nodelet support
+install(DIRECTORY scripts/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  USE_SOURCE_PERMISSIONS
+  PATTERN ".svn" EXCLUDE
+  PATTERN ".gitignore" EXCLUDE
+)
+
 #############
 ## Testing ##
 #############
