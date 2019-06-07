@@ -54,7 +54,6 @@ class Driver
 private:
   bool connected_; ///< True if we're connected to the localization unit.
   std::string port_; ///< Port to connect to the kvh through. Ex. "/dev/ttyUSB0"
-  int baud_{115200}; ///< Baud rate for communicating with kvh
   const uint32_t PACKET_PERIOD{50}; ///< Setting for determining packet rate. **Note**: Does not
     ///< equal packet frequency. See manual for equation on how Packet Period affects packet rate. 
   an_decoder_t anDecoder_; ///< Decoder for decoding incoming AN encoded packets.
@@ -80,6 +79,7 @@ private:
   int DecodePacket(an_packet_t*, KvhPacketMap&);
   int DecodeUtmFix(utm_fix*, an_packet_t*); // Special decode since their utm api is incorrect
   int SendPacket(an_packet_t*);
+  int BuildPacketPeriods(KvhPacketRequest, packet_period_t&);
 
   public:
   Driver(bool _debug = false);
@@ -93,7 +93,7 @@ private:
    * kvhDriver.Init(kvhPort, packetRequest);  * 
    * \endcode
    */
-  int Init(const std::string& _port, KvhPacketRequest, bool _gnssEnabled = true);
+  int Init(const std::string& _port, KvhPacketRequest, int _baudRate = 115200, bool _gnssEnabled = true);
 
   /**
    * \code 
@@ -122,7 +122,7 @@ private:
    * system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
    * \endcode
    */
-  int CreatePacketMap(KvhPacketMap&, KvhPacketRequest);
+  static int CreatePacketMap(KvhPacketMap&, KvhPacketRequest, bool _debug = false);
 
   /**
    * \code

@@ -194,6 +194,16 @@ target_link_libraries(${PROJECT_NAME}_node
   ${PROJECT_NAME}
 )
 
+# For determine_baud_node.cpp
+add_executable(determine_baud_node src/utility/determine_baud_node.cpp)
+add_dependencies(determine_baud_node
+  ${PROJECT_NAME}
+)
+target_link_libraries(determine_baud_node
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 #add_dependencies(${PROJECT_NAME}_node

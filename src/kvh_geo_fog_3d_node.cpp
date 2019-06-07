@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
     std::string kvhPort("/dev/ttyUSB0");
     // Can pass true to this constructor to get print outs. Is currently messy but usable
-    kvh::Driver kvhDriver(true);
+    kvh::Driver kvhDriver;
     // Check if the port has been set on the ros param server
     if (node.getParam("port", kvhPort))
     {
@@ -405,8 +405,8 @@ int main(int argc, char **argv)
 
             // ANGULAR VELOCITY
             imuMsg.angular_velocity.x = sysPacket.angular_velocity[0];
-            imuMsg.angular_velocity.y = sysPacket.angular_velocity[1];
-            imuMsg.angular_velocity.z = sysPacket.angular_velocity[2];
+            imuMsg.angular_velocity.y = -1 * sysPacket.angular_velocity[1];
+            imuMsg.angular_velocity.z = -1 * sysPacket.angular_velocity[2]; // To account for east north up system
             imuMsg.angular_velocity_covariance[0] = -1; // No packet gives this info
             // imuMsg.angular_velocity_covariance[0]
             // imuMsg.angular_velocity_covariance[4]

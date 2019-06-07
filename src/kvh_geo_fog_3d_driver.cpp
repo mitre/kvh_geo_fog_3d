@@ -299,7 +299,10 @@ int Driver::SendPacket(an_packet_t *_anPacket)
   }
 } // END SendPacket()
 
+
+//////////////////////////////////////////////
 // PUBLIC FUNCTIONS
+//////////////////////////////////////////////
 
 /**
    * @fn Driver::Init
@@ -322,20 +325,13 @@ int Driver::SendPacket(an_packet_t *_anPacket)
    * with a baud rate of 115200. The workflow here is Open comport -> Set baud to required
    * -> Close comport -> Open comport with baud required
    */
-int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, bool _gnssEnabled)
+int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, int _baudRate, bool _gnssEnabled)
 {
 
   ///////////////////////////////////////
   // SETTING PACKET OUTPUT AND FREQUENCY
   // CALCULATE REQUIRED BAUDRATE BEFORE CONNECTING
   ///////////////////////////////////////
-
-  packet_periods_packet_t packetPeriods;
-
-  // Make permanent in case it has a hot reset, otherwise an error is likely
-  packetPeriods.permanent = 1;
-  // Clear all exisiting packet periods and replace with new ones
-  packetPeriods.clear_existing_packets = 1;
 
   /* 
   * In the section below, we need to calculate the desired packet periods
@@ -360,6 +356,14 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
   * -> Find closest baud
   * 
   */
+
+
+  packet_periods_packet_t packetPeriods;
+
+  // Make permanent in case it has a hot reset, otherwise an error is likely
+  packetPeriods.permanent = 1;
+  // Clear all exisiting packet periods and replace with new ones
+  packetPeriods.clear_existing_packets = 1;
   
   std::set<packet_id_e> packetIdList; // To hold list of already added packet id's
   int returnValue = 0; // Will hold number of duplicated id's
@@ -372,13 +376,13 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
 
     if (packetIdList.count(packet.first) > 0)
     {
-      returnValue++; // Found duplicate, increase counter
+      returnValue = 1; // Found duplicate, increase counter
     }
 
     // packet_period_t period = {packet id, period}
     packet_period_t period;
     period.packet_id = _packetsRequested.at(i).first;
-    period.period = 1000/_packetsRequested.at(i).second; // Using formulate for rate to period derived above
+    period.period = 1000/_packetsRequested.at(i).second; // Using formula for rate to period derived above
     packetPeriods.packet_periods[i] = period;
 
     // Add this as part of our baudrate calculation
@@ -390,62 +394,62 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
   // SETTING BUAD RATE
   ////////////////////////////////
 
-  //\todo Decision to make, we have calculated the required baud, should we try to be
-  //\todo be close to it or should we pad for some extra space?
-  //
-  // I am going to pad my space for now by adding 5% on top
-  // With the added padding we effectively operate at ~9000000 baud or below
 
-  // dataThroughput from above, 11 from their equation, 1.05 as a buffering factor
-  int minBaud = dataThroughput * 11 * 1.05;
+  // dataThroughput from above, 11 from their equation
+  int minBaud = dataThroughput * 11;
   if (debug_) printf("Calculated baud rate: %d\n", minBaud);
 
+  if (minBaud > _baudRate)
+  {
+    returnValue = 2;
+    if (debug_) printf("Required minimum baud rate of %d exceeds given baud of %d\n", minBaud, _baudRate);
+  }
+
+  // For autosetting baud rate
+
   // Find smallest baud rate that will suffice
-  if (minBaud > 10000000)
-  {
-    if (debug_) printf("Required baud rate too high!\n");
-    return -1;
-  }
-  else if (minBaud > 921600)
-  {
-    baud_ = 10000000;
-  }
-  else if (minBaud > 576000)
-  {
-    baud_ = 921600;
-  }
-  else if (minBaud > 500000)
-  {
-    baud_ = 576000;
-  }
-  else if (minBaud > 460800)
-  {
-    baud_ = 500000;
-  }
-  else if (minBaud > 230400)
-  {
-    baud_ = 460800;
-  }
-  else if (minBaud > 115200)
-  {
-    baud_ = 230400;
-  }
-  else
-  {
-    baud_ = 115200;
-  }
+  // if (minBaud > 10000000)
+  // {
+  //   if (debug_) printf("Required baud rate too high!\n");
+  //   return -1;
+  // }
+  // else if (minBaud > 921600)
+  // {
+  //   baud_ = 10000000;
+  // }
+  // else if (minBaud > 576000)
+  // {
+  //   baud_ = 921600;
+  // }
+  // else if (minBaud > 500000)
+  // {
+  //   baud_ = 576000;
+  // }
+  // else if (minBaud > 460800)
+  // {
+  //   baud_ = 500000;
+  // }
+  // else if (minBaud > 230400)
+  // {
+  //   baud_ = 460800;
+  // }
+  // else if (minBaud > 115200)
+  // {
+  //   baud_ = 230400;
+  // }
+  // else
+  // {
+  //   baud_ = 115200;
+  // }
 
-  if (debug_) printf("Baud set to: %d\n", baud_);
+  // if (debug_) printf("Baud set to: %d\n", baud_);
 
-  // Testing
-  // baud_ = 230400;
-
-  baud_rates_packet_t baudRatePacket; 
-  baudRatePacket.permanent = 1;
-  baudRatePacket.primary_baud_rate = baud_;
-  baudRatePacket.gpio_1_2_baud_rate = baud_;
-  baudRatePacket.auxiliary_baud_rate = baud_;
-  baudRatePacket.reserved = 0;
+  // baud_rates_packet_t baudRatePacket; 
+  // baudRatePacket.permanent = 1;
+  // baudRatePacket.primary_baud_rate = baud_;
+  // baudRatePacket.gpio_1_2_baud_rate = baud_;
+  // baudRatePacket.auxiliary_baud_rate = baud_;
+  // baudRatePacket.reserved = 0;
 
 
   ///////////////////////////////////////
@@ -477,7 +481,7 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
   // We may change it, and then revert the change when 
   // the driver is exited
   //////////////////////////////////////
-  if (OpenComport(portArr, 115200) != 0)
+  if (OpenComport(portArr, _baudRate) != 0)
   {
     if (debug_) printf("Unable to establish connection.\n");
     return -1;
@@ -490,29 +494,33 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, b
   // SENDING CONFIGURATION PACKETS
   ////////////////////////////////
 
-  if (debug_) printf("Sending baud rate packet.\n");
+  an_packet_t* requestPacket;
+  int packetError;
 
-  an_packet_t* requestPacket = encode_baud_rates_packet(&baudRatePacket);
-  int packetError = SendPacket(requestPacket);
-  an_packet_free(&requestPacket);
-  requestPacket = nullptr;
-  if (packetError){
-    return -2;
-  }
+  // Not sending the baud rate packet right now
+  // if (debug_) printf("Sending baud rate packet.\n");
 
-  // Need to close then reopen the comport
-  CloseComport();
-  connected_ = false;
+  // requestPacket = encode_baud_rates_packet(&baudRatePacket);
+  // packetError = SendPacket(requestPacket);
+  // an_packet_free(&requestPacket);
+  // requestPacket = nullptr;
+  // if (packetError){
+  //   return -2;
+  // }
 
-  if (debug_) printf("Opening comport at %d baud\n", baud_);
+  // // Need to close then reopen the comport
+  // CloseComport();
+  // connected_ = false;
 
-  if (OpenComport(portArr, baud_) != 0)
-  {
-    if (debug_) printf("Unable to establish connection at %d baud.\n", baud_);
-    return -1;
-  }
-  // We are connected to the KVH!
-  connected_ = true;
+  // if (debug_) printf("Opening comport at %d baud\n", baud_);
+
+  // if (OpenComport(portArr, baud_) != 0)
+  // {
+  //   if (debug_) printf("Unable to establish connection at %d baud.\n", baud_);
+  //   return -1;
+  // }
+  // // We are connected to the KVH!
+  // connected_ = true;
   
 
   if (debug_) printf("Sending packet_periods.\n");
@@ -634,7 +642,7 @@ int Driver::Once(KvhPacketMap &_packetMap)
  *    0 = Success,
  *    >0 = Warning. Warning number denotes number of unsupported packets passed in.
  */
-int Driver::CreatePacketMap(KvhPacketMap &_packetMap, KvhPacketRequest _packRequest)
+int Driver::CreatePacketMap(KvhPacketMap &_packetMap, KvhPacketRequest _packRequest, bool _debug)
 {
   int unsupported = 0;
   int i;
@@ -680,7 +688,7 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, KvhPacketRequest _packRequ
       break;
     default:
       // If the packet id is not in the list above it is unsupported
-      if (debug_)
+      if (_debug)
         printf("Packet with id: %d unsupported", packEnum);
       unsupported += 1;
     }
@@ -697,24 +705,6 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, KvhPacketRequest _packRequ
 */
 int Driver::Cleanup()
 {
-  // Before closing comport set the KVH back to 115200 baud
-  baud_rates_packet_t baudRatePacket; 
-  baudRatePacket.permanent = 1;
-  baudRatePacket.primary_baud_rate = 115200;
-  baudRatePacket.gpio_1_2_baud_rate = 115200;
-  baudRatePacket.auxiliary_baud_rate = 115200;
-  baudRatePacket.reserved = 0;
-
-  if (debug_) printf("Sending baud rate packet before finishing up.\n");
-
-  an_packet_t* requestPacket = encode_baud_rates_packet(&baudRatePacket);
-  int packetError = SendPacket(requestPacket);
-  an_packet_free(&requestPacket);
-  requestPacket = nullptr;
-  if (packetError){
-    return -1;
-  }
-
   CloseComport();
   return 0;
 } // END Cleanup()
