@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="kvh_geo_fog_3d_driver" type="kvh_geo_fog_3d_node" name="kvh_geo_fog_3d_node" output="screen">
+    <param name="port" value="/dev/ttyS0" />
+  </node>
+</launch>
