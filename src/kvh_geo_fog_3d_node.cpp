@@ -82,23 +82,6 @@ int main(int argc, char **argv)
     mitre::KVH::DiagnosticsContainer diagContainer;
     SetupUpdater(&diagnostics, &diagContainer);
 
-    // To get packets from the driver, we first create a vector
-    // that holds a pair containing the packet id and the desired frequency for it to be published
-    // See documentation for all id's.
-    // \todo: Put all id's we support in our documentation. Full list is in KVH's
-    typedef std::pair<packet_id_e, int> freqPair;
-
-    kvh::KvhPacketRequest packetRequest{
-        freqPair(packet_id_euler_orientation_standard_deviation, 50),
-        freqPair(packet_id_system_state, 50),
-        freqPair(packet_id_satellites, 10),
-        freqPair(packet_id_satellites_detailed, 1),
-        freqPair(packet_id_local_magnetics, 50),
-        freqPair(packet_id_utm_position, 50),
-        freqPair(packet_id_ecef_position, 50),
-        freqPair(packet_id_north_seeking_status, 50)
-    };
-
     // Map containing publishers for each type of message we want to send out
     std::map<packet_id_e, ros::Publisher> kvhPubMap{
         {packet_id_system_state, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState>("kvh_system_state", 1)},
@@ -116,6 +99,38 @@ int main(int argc, char **argv)
     ros::Publisher odomPubNED = node.advertise<nav_msgs::Odometry>("gps/utm_ned", 1);
     ros::Publisher odomPubENU = node.advertise<nav_msgs::Odometry>("gps/utm_enu", 1);
 
+    //////////////////////////
+    // KVH Setup
+    //////////////////////////
+    
+    // To get packets from the driver, we first create a vector
+    // that holds a pair containing the packet id and the desired frequency for it to be published
+    // See documentation for all id's.
+    // \todo: Put all id's we support in our documentation. Full list is in KVH's
+    typedef std::pair<packet_id_e, int> freqPair;
+
+    kvh::KvhPacketRequest packetRequest{
+        freqPair(packet_id_euler_orientation_standard_deviation, 50),
+        freqPair(packet_id_system_state, 50),
+        freqPair(packet_id_satellites, 10),
+        freqPair(packet_id_satellites_detailed, 1),
+        freqPair(packet_id_local_magnetics, 50),
+        freqPair(packet_id_utm_position, 50),
+        freqPair(packet_id_ecef_position, 50),
+        freqPair(packet_id_north_seeking_status, 50)
+    };
+
+    // Create a map, this will hold all of our data and status changes (if the packets were updated)
+    kvh::KvhPacketMap packetMap;
+    // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
+    // std::map<packet_id_e, std::pair<bool, std::shared_pointer<void>>>, so best not to deal with it if possible
+    int unsupported = kvh::Driver::CreatePacketMap(packetMap, packetRequest);
+    // Determine if any of the requested packets are unsupported
+    if (unsupported > 0)
+    {
+        ROS_WARN("Warning: %d requested packets are unsupported and will not be available.", unsupported);
+    }
+
     std::string kvhPort("/dev/ttyUSB0");
     // Can pass true to this constructor to get print outs. Is currently messy but usable
     kvh::Driver kvhDriver;
@@ -130,20 +145,7 @@ int main(int argc, char **argv)
     }
     kvhDriver.Init(kvhPort, packetRequest);
     
-    // Alternate initialization for driver without the gnss filter setting off
-    // kvhDriver.Init(kvhPort, packetRequest, false); 
-
-    // Create a map, this will hold all of our data and status changes (if the packets were updated)
-    kvh::KvhPacketMap packetMap;
-    // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
-    // std::map<packet_id_e, std::pair<bool, std::shared_pointer<void>>>, so best not to deal with it if possible
-    int unsupported = kvhDriver.CreatePacketMap(packetMap, packetRequest);
-    // Determine if any of the requested packets are unsupported
-    if (unsupported > 0)
-    {
-        ROS_WARN("Warning: %d requested packets are unsupported and will not be available.", unsupported);
-    }
-
+    // Declare these for reuse
     system_state_packet_t systemStatePacket;
     satellites_packet_t satellitesPacket;
     detailed_satellites_packet_t detailSatellitesPacket;

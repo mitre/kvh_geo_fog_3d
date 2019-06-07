@@ -286,15 +286,11 @@ int Driver::SendPacket(an_packet_t *_anPacket)
   // Send AN packet via serial port
   if (SendBuf(an_packet_pointer(_anPacket), an_packet_size(_anPacket)))
   {
-    if (debug_)
-      printf("Packet succesfully sent!\n");
     return 0;
     packetRequests_.push_back(static_cast<packet_id_e>(_anPacket->id));
   }
   else
   {
-    if (debug_)
-      printf("Unable to send packet.\n");
     return -1;
   }
 } // END SendPacket()
@@ -305,11 +301,26 @@ int Driver::SendPacket(an_packet_t *_anPacket)
 //////////////////////////////////////////////
 
 /**
-   * @fn Driver::Init
+ * @fn Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested)
+ * @param [in] _port The port to connect to the kvh through
+ * @param [in] _packetsRequested The requested packets and their associated frequencies
+ * @return [int]: 0 = success, > 0 = warning, < 0 = failure
+ * 
+ * @brief This function will intialize with all of the default options. For more in depth
+ * information see the the overlaoded init function.
+ */
+int Driver::Init(const std::string& _port, KvhPacketRequest& _packetsRequested)
+{
+  return Driver::Init(_port, _packetsRequested, defaultOptions_);
+}
+
+/**
+   * @fn Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, KvhInitOptions _initOptions)
    * @brief Initialize the connection to the device
    * 
    * @param _port [in] Port the kvh is connected through
    * @param _packetsRequested [in] Vector of packet id's to ask the kvh to output
+   * @
    * 
    * @return [int]: 0 = success, > 0 = warning, < 0 = failure
    * 
@@ -325,7 +336,7 @@ int Driver::SendPacket(an_packet_t *_anPacket)
    * with a baud rate of 115200. The workflow here is Open comport -> Set baud to required
    * -> Close comport -> Open comport with baud required
    */
-int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, int _baudRate, bool _gnssEnabled)
+int Driver::Init(const std::string& _port, KvhPacketRequest& _packetsRequested, KvhInitOptions _initOptions)
 {
 
   ///////////////////////////////////////
@@ -347,13 +358,6 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, i
   * 
   * 1000000/(Packet Rate * 1000) = Packet Period
   * 1000/Packet Rate = Packet Period
-  * 
-  * 
-  * CALCULATING BAUDRATE:
-  * 
-  * Data throughput = (packet_length + 5 (for fixed packet overhead)) * rate
-  * Minimum baud = data throughput * 11
-  * -> Find closest baud
   * 
   */
 
@@ -399,10 +403,10 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, i
   int minBaud = dataThroughput * 11;
   if (debug_) printf("Calculated baud rate: %d\n", minBaud);
 
-  if (minBaud > _baudRate)
+  if (minBaud > _initOptions.baudRate)
   {
     returnValue = 2;
-    if (debug_) printf("Required minimum baud rate of %d exceeds given baud of %d\n", minBaud, _baudRate);
+    if (debug_) printf("Required minimum baud rate of %d exceeds given baud of %d\n", minBaud, _initOptions.baudRate);
   }
 
   // For autosetting baud rate
@@ -460,7 +464,7 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, i
 
 	filterOptions.permanent = true;
 	filterOptions.vehicle_type = vehicle_type_car;
-	filterOptions.internal_gnss_enabled = _gnssEnabled; // Set if we want to test using gps or not
+	filterOptions.internal_gnss_enabled = _initOptions.gnssEnabled; // Set if we want to test using gps or not
 	filterOptions.atmospheric_altitude_enabled = true;
 	filterOptions.velocity_heading_enabled = true;
 	filterOptions.reversing_detection_enabled = true;
@@ -475,13 +479,7 @@ int Driver::Init(const std::string& _port, KvhPacketRequest _packetsRequested, i
   port_ = _port;
   char portArr[4096];
   strncpy(portArr, port_.c_str(), 4096);
-  ///////////////////////////////////////
-  // MASSIVE ASSUMPTION
-  // The kvh will always start with 115200 baud rate
-  // We may change it, and then revert the change when 
-  // the driver is exited
-  //////////////////////////////////////
-  if (OpenComport(portArr, _baudRate) != 0)
+  if (OpenComport(portArr, _initOptions.baudRate) != 0)
   {
     if (debug_) printf("Unable to establish connection.\n");
     return -1;
@@ -697,6 +695,74 @@ int Driver::CreatePacketMap(KvhPacketMap &_packetMap, KvhPacketRequest _packRequ
   // Will return 0 if we support all, or the number of entered id's we don't support if >0
   return unsupported;
 } // END CreatePacketMap()
+
+int Driver::SetBaudRate(std::string _port, int _curBaudRate, int _desiredBaudRate)
+{
+
+  int returnValue = 0;
+
+  // Create the baud rate packet that we want to send
+  baud_rates_packet_t baudRatePacket; 
+  baudRatePacket.permanent = 1;
+  baudRatePacket.primary_baud_rate = _desiredBaudRate;
+  baudRatePacket.gpio_1_2_baud_rate = _desiredBaudRate;
+  baudRatePacket.auxiliary_baud_rate = _desiredBaudRate;
+  baudRatePacket.reserved = 0;
+
+  an_packet_t* requestPacket = encode_baud_rates_packet(&baudRatePacket);
+  
+  char portArr[4096];
+  strncpy(portArr, _port.c_str(), 4096);
+  if (OpenComport(portArr, _curBaudRate) != 0)
+  {
+    return -1;
+  }
+  
+  an_packet_encode(requestPacket);
+  // Send AN packet via serial port
+  if (!SendBuf(an_packet_pointer(requestPacket), an_packet_size(requestPacket)))
+  {
+    returnValue = -2;
+  }
+  an_packet_free(&requestPacket);
+  requestPacket = nullptr;
+
+  CloseComport();
+  
+  return returnValue;
+}
+
+// int Driver::CalculateRequredBaud(KvhPacketRequest& _packetsRequested)
+// {
+//   /*
+//   * CALCULATING BAUDRATE:
+//   * 
+//   * Data throughput = (packet_length + 5 (for fixed packet overhead)) * rate
+//   * Minimum baud = data throughput * 11
+//   * -> Find closest baud
+//   */
+
+//    for (i = 0; i < _packetsRequested.size(); i++)
+//   {
+//     std::pair<packet_id_e, int> packet = _packetsRequested.at(i);
+
+//     if (packetIdList.count(packet.first) > 0)
+//     {
+//       returnValue = 1; // Found duplicate, increase counter
+//     }
+
+//     // packet_period_t period = {packet id, period}
+//     packet_period_t period;
+//     period.packet_id = _packetsRequested.at(i).first;
+//     period.period = 1000/_packetsRequested.at(i).second; // Using formula for rate to period derived above
+//     packetPeriods.packet_periods[i] = period;
+
+//     // Add this as part of our baudrate calculation
+//     // Increase required baudrate by (struct_size + 5) * rate
+//     dataThroughput += (_packetSize[packet.first] + 5) * packet.second;
+//   }
+
+// }
 
 /**
    * @fn Driver::Cleanup
