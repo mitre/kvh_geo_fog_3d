@@ -125,7 +125,7 @@ int main(int argc, char **argv)
                 printf("Setting new baud rate at %d\n", newBaudRate);
                 int rv = kvh::Driver::SetBaudRate(kvhPort, baudRates[baudRateAttempt], newBaudRate);
 
-                if (rv = 0)
+                if (rv == 0)
                     printf("Success\n");
                 else
                     printf("Failure\n");
