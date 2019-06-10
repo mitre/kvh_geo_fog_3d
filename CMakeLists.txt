@@ -14,7 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
   pluginlib
   roscpp
   std_msgs
-  robot_localization
 )
 
 ################################################
