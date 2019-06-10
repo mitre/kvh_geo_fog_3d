@@ -1,5 +1,9 @@
 <launch>
+  <arg name="port" default="/dev/ttyUSB0" />
+  <arg name="baud" default="234000" />
+
   <node pkg="kvh_geo_fog_3d_driver" type="kvh_geo_fog_3d_driver_node" name="kvh_geo_fog_3d_driver_node" output="screen">
-    <param name="port" value="/dev/ttyUSB0" />
+    <param name="port" value="$(arg port)" />
+    <param name="baud" value="$(arg baud)" />
   </node>
 </launch>
