@@ -482,6 +482,7 @@ int Driver::Init(const std::string& _port, KvhPacketRequest& _packetsRequested, 
   port_ = _port;
   char portArr[4096];
   strncpy(portArr, port_.c_str(), 4096);
+  printf("Baud: %d\n", _initOptions.baudRate);
   if (OpenComport(portArr, _initOptions.baudRate) != 0)
   {
     if (debug_) printf("Unable to establish connection.\n");
@@ -541,7 +542,7 @@ int Driver::Init(const std::string& _port, KvhPacketRequest& _packetsRequested, 
   requestPacket = nullptr;
   if (packetError != 0)
   {
-    return -2;
+    return -3;
   }
 
   /////////////////////////////////////

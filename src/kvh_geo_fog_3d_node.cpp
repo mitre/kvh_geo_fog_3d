@@ -93,7 +93,10 @@ int main(int argc, char **argv)
         {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}};
 
     // Publishers for standard ros messages
-    ros::Publisher imuPub = node.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
+    ros::Publisher imuDataRawPub = node.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
+    ros::Publisher imuDataRawFLUPub = node.advertise<sensor_msgs::Imu>("imu/data_raw_flu", 1);
+    ros::Publisher imuDataPub = node.advertise<sensor_msgs::Imu>("imu/data", 1);
+    ros::Publisher imuDataFLUPub = node.advertise<sensor_msgs::Imu>("imu/data_flu", 1);
     ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
     ros::Publisher magFieldPub = node.advertise<sensor_msgs::MagneticField>("mag", 1);
     ros::Publisher odomPubNED = node.advertise<nav_msgs::Odometry>("gps/utm_ned", 1);
@@ -178,7 +181,7 @@ int main(int argc, char **argv)
 
         // SYSTEM STATE PACKET
         if (packetMap[packet_id_system_state].first)
-        {
+        {   
             ROS_DEBUG("System state packet has updated. Publishing...");
             // Have to cast the shared_ptr to the correct type and then dereference.
             systemStatePacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
@@ -359,6 +362,10 @@ int main(int argc, char **argv)
         */
         if (packetMap[packet_id_system_state].first)
         {
+            system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
+            euler_orientation_standard_deviation_packet_t eulStdDevPack = *static_cast<euler_orientation_standard_deviation_packet_t *>(
+                packetMap[packet_id_euler_orientation_standard_deviation].second.get());
+
             // IMU Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/Imu.html
             // Header
             // Quaternion orientation
@@ -367,7 +374,148 @@ int main(int argc, char **argv)
             // float64[9] angular_velocity_covariance
             // Vector3 linear_acceleration
             // float64[9] linear_acceleration_covariance
-            sensor_msgs::Imu imuMsg;
+            // \todo fill out covariance matrices for each of the below.
+
+            // ORIENTATION
+            // \todo data_raw only contains accelerations and rpy rate
+            // \todo data_raw that has negative in FLU (negative y, z)
+            // \todo add data topic which will publish orientation in kvh format
+            // \todo add data_flu topic which will publish orientation in kvh format
+
+            double orientCov[3] = {
+                pow(eulStdDevPack.standard_deviation[0], 2),
+                pow(eulStdDevPack.standard_deviation[1], 2),
+                pow(eulStdDevPack.standard_deviation[2], 2)};
+
+            // DATA_RAW Topic
+            sensor_msgs::Imu imuDataRaw;
+            imuDataRaw.header = header;
+            imuDataRaw.header.frame_id = "imu";
+            
+            // ANGULAR VELOCITY
+            imuDataRaw.angular_velocity.x = sysPacket.angular_velocity[0];
+            imuDataRaw.angular_velocity.y = sysPacket.angular_velocity[1];
+            imuDataRaw.angular_velocity.z = sysPacket.angular_velocity[2]; // To account for east north up system
+            imuDataRaw.angular_velocity_covariance[0] = -1; // No packet gives this info
+            // imuDataRaw.angular_velocity_covariance[0]
+            // imuDataRaw.angular_velocity_covariance[4]
+            // imuDataRaw.angular_velocity_covariance[8]
+
+            // LINEAR ACCELERATION
+            imuDataRaw.linear_acceleration.x = sysPacket.body_acceleration[0];
+            imuDataRaw.linear_acceleration.y = sysPacket.body_acceleration[1];
+            imuDataRaw.linear_acceleration.z = sysPacket.body_acceleration[2];
+            imuDataRaw.linear_acceleration_covariance[0] = -1; // No packet gives this info
+            // imuDataRaw.linear_acceleration_covariance[0]
+            // imuDataRaw.linear_acceleration_covariance[4]
+            // imuDataRaw.linear_acceleration_covariance[8]
+
+            imuDataRawPub.publish(imuDataRaw);
+
+            // DATA_RAW_FLU
+            sensor_msgs::Imu imuDataRawFLU;
+            imuDataRawFLU.header = header;
+            imuDataRawFLU.header.frame_id = "imu";
+
+            // ANGULAR VELOCITY
+            imuDataRawFLU.angular_velocity.x = sysPacket.angular_velocity[0];
+            imuDataRawFLU.angular_velocity.y = -1 * sysPacket.angular_velocity[1];
+            imuDataRawFLU.angular_velocity.z = -1 * sysPacket.angular_velocity[2]; // To account for east north up system
+            imuDataRawFLU.angular_velocity_covariance[0] = -1; // No packet gives this info
+            // imuDataRawFLU.angular_velocity_covariance[0]
+            // imuDataRawFLU.angular_velocity_covariance[4]
+            // imuDataRawFLU.angular_velocity_covariance[8]
+
+            // LINEAR ACCELERATION
+            imuDataRawFLU.linear_acceleration.x = sysPacket.body_acceleration[0];
+            imuDataRawFLU.linear_acceleration.y = -1 * sysPacket.body_acceleration[1];
+            imuDataRawFLU.linear_acceleration.z = -1 * sysPacket.body_acceleration[2];
+            imuDataRawFLU.linear_acceleration_covariance[0] = -1; // No packet gives this info
+            // imuDataRawFLU.linear_acceleration_covariance[0]
+            // imuDataRawFLU.linear_acceleration_covariance[4]
+            // imuDataRawFLU.linear_acceleration_covariance[8]
+
+            imuDataRawFLUPub.publish(imuDataRawFLU);
+
+            // DATA Topic
+
+            tf2::Quaternion orientQuat;
+            orientQuat.setRPY(
+                sysPacket.orientation[0],
+                sysPacket.orientation[1],
+                sysPacket.orientation[2]);
+
+            sensor_msgs::Imu imuData;
+            imuData.header = header;
+            imuData.header.frame_id = "imu";
+
+            imuData.orientation.x = orientQuat.x();
+            imuData.orientation.y = orientQuat.y();
+            imuData.orientation.z = orientQuat.z();
+            imuData.orientation.w = orientQuat.w();
+            imuData.orientation_covariance[0] = orientCov[0];
+            imuData.orientation_covariance[4] = orientCov[1];
+            imuData.orientation_covariance[8] = orientCov[2];
+
+            // ANGULAR VELOCITY
+            imuData.angular_velocity.x = sysPacket.angular_velocity[0];
+            imuData.angular_velocity.y = sysPacket.angular_velocity[1];
+            imuData.angular_velocity.z = sysPacket.angular_velocity[2]; // To account for east north up system
+            imuData.angular_velocity_covariance[0] = -1; // No packet gives this info
+            // imuData.angular_velocity_covariance[0]
+            // imuData.angular_velocity_covariance[4]
+            // imuData.angular_velocity_covariance[8]
+
+            // LINEAR ACCELERATION
+            imuData.linear_acceleration.x = sysPacket.body_acceleration[0];
+            imuData.linear_acceleration.y = sysPacket.body_acceleration[1];
+            imuData.linear_acceleration.z = sysPacket.body_acceleration[2];
+            imuData.linear_acceleration_covariance[0] = -1; // No packet gives this info
+            // imuData.linear_acceleration_covariance[0]
+            // imuData.linear_acceleration_covariance[4]
+            // imuData.linear_acceleration_covariance[8]
+
+            imuDataPub.publish(imuData);
+
+            // DATA_FLU topic
+            tf2::Quaternion orientQuatFLU;
+            orientQuat.setRPY(
+                sysPacket.orientation[0],
+                -1 * sysPacket.orientation[1],
+                -1 * sysPacket.orientation[2]
+            );
+
+            sensor_msgs::Imu imuDataFLU;
+            imuDataFLU.header = header;
+            imuDataFLU.header.frame_id = "imu";
+
+            imuDataFLU.orientation.x = orientQuatFLU.x();
+            imuDataFLU.orientation.y = orientQuatFLU.y();
+            imuDataFLU.orientation.z = orientQuatFLU.z();
+            imuDataFLU.orientation.w = orientQuatFLU.w();
+            imuDataFLU.orientation_covariance[0] = orientCov[0];
+            imuDataFLU.orientation_covariance[4] = orientCov[1];
+            imuDataFLU.orientation_covariance[8] = orientCov[2];
+
+            // ANGULAR VELOCITY
+            imuDataFLU.angular_velocity.x = sysPacket.angular_velocity[0];
+            imuDataFLU.angular_velocity.y = -1 * sysPacket.angular_velocity[1];
+            imuDataFLU.angular_velocity.z = -1 * sysPacket.angular_velocity[2]; // To account for east north up system
+            imuDataFLU.angular_velocity_covariance[0] = -1; // No packet gives this info
+            // imuDataFLU.angular_velocity_covariance[0]
+            // imuDataFLU.angular_velocity_covariance[4]
+            // imuDataFLU.angular_velocity_covariance[8]
+
+            // LINEAR ACCELERATION
+            imuDataFLU.linear_acceleration.x = sysPacket.body_acceleration[0];
+            imuDataFLU.linear_acceleration.y = -1 * sysPacket.body_acceleration[1];
+            imuDataFLU.linear_acceleration.z = -1 * sysPacket.body_acceleration[2];
+            imuDataFLU.linear_acceleration_covariance[0] = -1; // No packet gives this info
+            // imuDataFLU.linear_acceleration_covariance[0]
+            // imuDataFLU.linear_acceleration_covariance[4]
+            // imuDataFLU.linear_acceleration_covariance[8]
+
+            imuDataFLUPub.publish(imuDataFLU);
 
             // NAVSATFIX Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/NavSatFix.html
             // NavSatStatus status
@@ -377,57 +525,6 @@ int main(int argc, char **argv)
             // float64[9] position_covariance // Uses East North Up (ENU) in row major order
             // uint8 position_covariance type
             sensor_msgs::NavSatFix navSatFixMsg;
-            system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
-            euler_orientation_standard_deviation_packet_t eulStdDevPack = *static_cast<euler_orientation_standard_deviation_packet_t *>(
-                packetMap[packet_id_euler_orientation_standard_deviation].second.get());
-
-            // IMU msg
-            // \todo fill out covariance matrices for each of the below.
-            // We need:
-            imuMsg.header = header;
-            imuMsg.header.frame_id = "imu";
-
-            // ORIENTATION
-            tf2::Quaternion orientQuat;
-            orientQuat.setRPY(
-                sysPacket.orientation[0],
-                sysPacket.orientation[1],
-                sysPacket.orientation[2]);
-
-            double orientCov[3] = {
-                pow(eulStdDevPack.standard_deviation[0], 2),
-                pow(eulStdDevPack.standard_deviation[1], 2),
-                pow(eulStdDevPack.standard_deviation[2], 2)};
-
-            imuMsg.orientation.x = orientQuat.x();
-            imuMsg.orientation.y = orientQuat.y();
-            imuMsg.orientation.z = orientQuat.z();
-            imuMsg.orientation.w = orientQuat.w();
-            imuMsg.orientation_covariance[0] = orientCov[0];
-            imuMsg.orientation_covariance[4] = orientCov[1];
-            imuMsg.orientation_covariance[8] = orientCov[2];
-
-            // ANGULAR VELOCITY
-            imuMsg.angular_velocity.x = sysPacket.angular_velocity[0];
-            imuMsg.angular_velocity.y = -1 * sysPacket.angular_velocity[1];
-            imuMsg.angular_velocity.z = -1 * sysPacket.angular_velocity[2]; // To account for east north up system
-            imuMsg.angular_velocity_covariance[0] = -1; // No packet gives this info
-            // imuMsg.angular_velocity_covariance[0]
-            // imuMsg.angular_velocity_covariance[4]
-            // imuMsg.angular_velocity_covariance[8]
-
-            // LINEAR ACCELERATION
-            imuMsg.linear_acceleration.x = sysPacket.body_acceleration[0];
-            imuMsg.linear_acceleration.y = sysPacket.body_acceleration[1];
-            imuMsg.linear_acceleration.z = sysPacket.body_acceleration[2];
-            imuMsg.linear_acceleration_covariance[0] = -1; // No packet gives this info
-            // imuMsg.linear_acceleration_covariance[0]
-            // imuMsg.linear_acceleration_covariance[4]
-            // imuMsg.linear_acceleration_covariance[8]
-
-            imuPub.publish(imuMsg);
-
-            // NavSatFix msg
             navSatFixMsg.header = header;
             navSatFixMsg.header.frame_id = "gps";
 
@@ -627,7 +724,7 @@ int main(int argc, char **argv)
 
         ros::spinOnce();
         rate.sleep();
-        ROS_INFO("----------------------------------------");
+        ROS_DEBUG("----------------------------------------");
     }
 
     diagnostics.broadcast(diagnostic_msgs::DiagnosticStatus::WARN, "Shutting down the KVH driver");
