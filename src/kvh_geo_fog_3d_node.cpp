@@ -146,8 +146,17 @@ int main(int argc, char **argv)
     {
         ROS_WARN("No port specified by param, defaulting to USB0!");
     }
+
     kvh::KvhInitOptions initOptions;
-    initOptions.baudRate = 115200;
+    if (node.getParam("baud", initOptions.baudRate))
+    {
+        ROS_INFO_STREAM("Connecting with baud rate " << initOptions.baudRate);
+    }
+    else
+    {
+        ROS_WARN("No baud specified, using baud %d.", initOptions.baudRate);
+    }
+
     kvhDriver.Init(kvhPort, packetRequest, initOptions);
     
     // Declare these for reuse
