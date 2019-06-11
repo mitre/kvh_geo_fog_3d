@@ -2,7 +2,11 @@
 
 <launch>
   <arg name="port" default="/dev/ttyUSB0" />
-  <arg name="baud" default="234000" />
+  <!-- We default to a baud rate of 921600 because it's 8x 115200,
+       which works for high speed ports that use a frequency multiplexer
+       to achieve higher baud rates. 115200 is too slow to handle
+       detailed satellite information packets. -->
+  <arg name="baud" default="921600" />
 
   <node pkg="kvh_geo_fog_3d_driver" type="kvh_geo_fog_3d_driver_node" name="kvh_geo_fog_3d_driver_node" output="screen">
     <param name="port" value="$(arg port)" />
