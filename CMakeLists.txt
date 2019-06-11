@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   pluginlib
   roscpp
   std_msgs
+  tf2
 )
 
 ################################################
@@ -103,7 +104,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
   INCLUDE_DIRS include include/geo_fog_sdk include/rs232
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS dynamic_reconfigure message_runtime nodelet pluginlib roscpp std_msgs
+  CATKIN_DEPENDS dynamic_reconfigure message_runtime nodelet pluginlib roscpp std_msgs tf2
 )
 
 ###########
