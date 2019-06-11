@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="port" default="/dev/ttyUSB0" />
+  
+  <node pkg="kvh_geo_fog_3d_driver" type="determine_baud_node" name="kvh_determine_baud" output="screen" >
+    <param name="port" value="$(arg port)" />
+  </node>
+</launch>

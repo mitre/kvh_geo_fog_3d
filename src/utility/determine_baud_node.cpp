@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "kvh_geo_fog_3d_driver");
 
-    ros::NodeHandle node;
+    ros::NodeHandle node("~");
 
     std::vector<int> baudRates = {
         1200, 1800, 2400, 4800, 9600,
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     int baudRateAttempt = 0;
     ros::Rate rate(10);
     bool baudFound = false;
-    while (baudRateAttempt < baudRates.size() && !baudFound)
+    while (ros::ok() && (baudRateAttempt < baudRates.size() && !baudFound))
     {
         printf("Attempting Baud Rate: %d\n", baudRates[baudRateAttempt]);
 
