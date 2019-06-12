@@ -7,14 +7,11 @@
  */
 
 /*****
- * Frame id's for messages:
- * IMU - IMU
- * NavSat - GPS
- * Odom - GPS
- * MagField - IMU
- * 
- * Messages that we are creating
- * 
+ * Frame id's for messages (see README.md):
+ * IMU - imu_link_{frd,flu,ned,enu}
+ * NavSat - gps_{ned,enu}
+ * Odom - gps_{ned,enu}
+ * MagField - imu_link_{ned,enu}
  */
 
 /**
@@ -61,6 +58,8 @@
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Vector3.h"
 
+const static double PI = 3.14159;
+
 void SetupUpdater(diagnostic_updater::Updater *_diagnostics, mitre::KVH::DiagnosticsContainer *_diagContainer)
 {
     _diagnostics->setHardwareID("KVH GEO FOG 3D"); ///< @todo This should probably contain the serial number of the unit, but we only get that after a message read
@@ -93,10 +92,10 @@ int main(int argc, char **argv)
         {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}};
 
     // Publishers for standard ros messages
-    ros::Publisher imuDataRawPub = node.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
+    ros::Publisher imuDataRawPub = node.advertise<sensor_msgs::Imu>("imu/data_raw_frd", 1);
     ros::Publisher imuDataRawFLUPub = node.advertise<sensor_msgs::Imu>("imu/data_raw_flu", 1);
-    ros::Publisher imuDataPub = node.advertise<sensor_msgs::Imu>("imu/data", 1);
-    ros::Publisher imuDataFLUPub = node.advertise<sensor_msgs::Imu>("imu/data_flu", 1);
+    ros::Publisher imuDataNEDPub = node.advertise<sensor_msgs::Imu>("imu/data_ned", 1);
+    ros::Publisher imuDataENUPub = node.advertise<sensor_msgs::Imu>("imu/data_enu", 1);
     ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
     ros::Publisher magFieldPub = node.advertise<sensor_msgs::MagneticField>("mag", 1);
     ros::Publisher odomPubNED = node.advertise<nav_msgs::Odometry>("gps/utm_ned", 1);
@@ -399,7 +398,7 @@ int main(int argc, char **argv)
             // DATA_RAW Topic
             sensor_msgs::Imu imuDataRaw;
             imuDataRaw.header = header;
-            imuDataRaw.header.frame_id = "imu";
+            imuDataRaw.header.frame_id = "imu_link_frd";
             
             // ANGULAR VELOCITY
             imuDataRaw.angular_velocity.x = sysPacket.angular_velocity[0];
@@ -424,7 +423,7 @@ int main(int argc, char **argv)
             // DATA_RAW_FLU
             sensor_msgs::Imu imuDataRawFLU;
             imuDataRawFLU.header = header;
-            imuDataRawFLU.header.frame_id = "imu_flu";
+            imuDataRawFLU.header.frame_id = "imu_link_flu";
 
             // ANGULAR VELOCITY
             imuDataRawFLU.angular_velocity.x = sysPacket.angular_velocity[0];
@@ -454,77 +453,81 @@ int main(int argc, char **argv)
                 sysPacket.orientation[1],
                 sysPacket.orientation[2]);
 
-            sensor_msgs::Imu imuData;
-            imuData.header = header;
-            imuData.header.frame_id = "imu";
+            sensor_msgs::Imu imuDataNED;
+            imuDataNED.header = header;
+            imuDataNED.header.frame_id = "imu_link_ned";
 
-            imuData.orientation.x = orientQuat.x();
-            imuData.orientation.y = orientQuat.y();
-            imuData.orientation.z = orientQuat.z();
-            imuData.orientation.w = orientQuat.w();
-            imuData.orientation_covariance[0] = orientCov[0];
-            imuData.orientation_covariance[4] = orientCov[1];
-            imuData.orientation_covariance[8] = orientCov[2];
+            imuDataNED.orientation.x = orientQuat.x();
+            imuDataNED.orientation.y = orientQuat.y();
+            imuDataNED.orientation.z = orientQuat.z();
+            imuDataNED.orientation.w = orientQuat.w();
+            imuDataNED.orientation_covariance[0] = orientCov[0];
+            imuDataNED.orientation_covariance[4] = orientCov[1];
+            imuDataNED.orientation_covariance[8] = orientCov[2];
 
             // ANGULAR VELOCITY
-            imuData.angular_velocity.x = sysPacket.angular_velocity[0];
-            imuData.angular_velocity.y = sysPacket.angular_velocity[1];
-            imuData.angular_velocity.z = sysPacket.angular_velocity[2]; // To account for east north up system
-            imuData.angular_velocity_covariance[0] = -1; // No packet gives this info
-            // imuData.angular_velocity_covariance[0]
-            // imuData.angular_velocity_covariance[4]
-            // imuData.angular_velocity_covariance[8]
+            imuDataNED.angular_velocity.x = sysPacket.angular_velocity[0];
+            imuDataNED.angular_velocity.y = sysPacket.angular_velocity[1];
+            imuDataNED.angular_velocity.z = sysPacket.angular_velocity[2];
+            imuDataNED.angular_velocity_covariance[0] = -1; // No packet gives this info
 
             // LINEAR ACCELERATION
-            imuData.linear_acceleration.x = sysPacket.body_acceleration[0];
-            imuData.linear_acceleration.y = sysPacket.body_acceleration[1];
-            imuData.linear_acceleration.z = sysPacket.body_acceleration[2];
-            imuData.linear_acceleration_covariance[0] = -1; // No packet gives this info
-            // imuData.linear_acceleration_covariance[0]
-            // imuData.linear_acceleration_covariance[4]
-            // imuData.linear_acceleration_covariance[8]
+            imuDataNED.linear_acceleration.x = sysPacket.body_acceleration[0];
+            imuDataNED.linear_acceleration.y = sysPacket.body_acceleration[1];
+            imuDataNED.linear_acceleration.z = sysPacket.body_acceleration[2];
+            imuDataNED.linear_acceleration_covariance[0] = -1; // No packet gives this info
 
-            imuDataPub.publish(imuData);
+            imuDataNEDPub.publish(imuDataNED);
 
-            // DATA_FLU topic
-            tf2::Quaternion orientQuatFLU;
-            orientQuat.setRPY(
-                sysPacket.orientation[0],
-                -1 * sysPacket.orientation[1],
-                -1 * sysPacket.orientation[2]
+            ///////////////////////////////////////////////////////////////////////////////////////////////
+            // DATA_ENU topic
+            ///////////////////////////////////////////////////////////////////////////////////////////////
+
+            tf2::Quaternion orientQuatENU;
+            //For NED -> ENU transformation:
+            //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
+            orientQuatENU.setRPY(
+              sysPacket.orientation[1], // ENU roll = NED pitch
+              sysPacket.orientation[0], // ENU pitch = NED roll
+              (-1 * sysPacket.orientation[2]) + (PI / 2.0) // ENU yaw = -(NED yaw) + 90 degrees
             );
 
-            sensor_msgs::Imu imuDataFLU;
-            imuDataFLU.header = header;
-            imuDataFLU.header.frame_id = "imu_flu";
+            sensor_msgs::Imu imuDataENU;
+            imuDataENU.header = header;
+            imuDataENU.header.frame_id = "imu_link_enu";
 
-            imuDataFLU.orientation.x = orientQuatFLU.x();
-            imuDataFLU.orientation.y = orientQuatFLU.y();
-            imuDataFLU.orientation.z = orientQuatFLU.z();
-            imuDataFLU.orientation.w = orientQuatFLU.w();
-            imuDataFLU.orientation_covariance[0] = orientCov[0];
-            imuDataFLU.orientation_covariance[4] = orientCov[1];
-            imuDataFLU.orientation_covariance[8] = orientCov[2];
+            // ORIENTATION
+            //Keep in mind that these are w.r.t. frame_id
+            imuDataENU.orientation.x = orientQuatENU.x();
+            imuDataENU.orientation.y = orientQuatENU.y();
+            imuDataENU.orientation.z = orientQuatENU.z();
+            imuDataENU.orientation.w = orientQuatENU.w();
+            imuDataENU.orientation_covariance[0] = orientCov[1];
+            imuDataENU.orientation_covariance[4] = orientCov[0];
+            imuDataENU.orientation_covariance[8] = orientCov[2];
 
             // ANGULAR VELOCITY
-            imuDataFLU.angular_velocity.x = sysPacket.angular_velocity[0];
-            imuDataFLU.angular_velocity.y = -1 * sysPacket.angular_velocity[1];
-            imuDataFLU.angular_velocity.z = -1 * sysPacket.angular_velocity[2]; // To account for east north up system
-            imuDataFLU.angular_velocity_covariance[0] = -1; // No packet gives this info
-            // imuDataFLU.angular_velocity_covariance[0]
-            // imuDataFLU.angular_velocity_covariance[4]
-            // imuDataFLU.angular_velocity_covariance[8]
+            // Keep in mind that for the sensor_msgs/Imu message, accelerations are
+            // w.r.t the frame_id, which in this case is imu_link_enu.
+            // Thus, we must apply the following transformation for NED to ENU accelerations:
+            // Roll* -> Pitch*, Pitch* -> Roll*, Yaw* -> -Yaw*
+            imuDataENU.angular_velocity.x = sysPacket.angular_velocity[1]; // ENU roll rate = NED pitch rate
+            imuDataENU.angular_velocity.y = sysPacket.angular_velocity[0]; // ENU pitch rate = NED roll rate
+            imuDataENU.angular_velocity.z = -1 * sysPacket.angular_velocity[2]; // ENU yaw rate = -(NED yaw rate)
+            imuDataENU.angular_velocity_covariance[0] = -1; // No packet gives this info
 
             // LINEAR ACCELERATION
-            imuDataFLU.linear_acceleration.x = sysPacket.body_acceleration[0];
-            imuDataFLU.linear_acceleration.y = -1 * sysPacket.body_acceleration[1];
-            imuDataFLU.linear_acceleration.z = -1 * sysPacket.body_acceleration[2];
-            imuDataFLU.linear_acceleration_covariance[0] = -1; // No packet gives this info
-            // imuDataFLU.linear_acceleration_covariance[0]
-            // imuDataFLU.linear_acceleration_covariance[4]
-            // imuDataFLU.linear_acceleration_covariance[8]
+            // Keep in mind that for the sensor_msgs/Imu message, accelerations are
+            // w.r.t the frame_id, which in this case is imu_link_enu.
+            // Thus, we must apply the following transformation for NED to ENU accelerations:
+            // X* -> Y*, Y* -> X*, Z* -> Z*
+            imuDataENU.linear_acceleration.x = sysPacket.body_acceleration[1];
+            imuDataENU.linear_acceleration.y = sysPacket.body_acceleration[0];
+            imuDataENU.linear_acceleration.z = -1 * sysPacket.body_acceleration[2];
+            imuDataENU.linear_acceleration_covariance[0] = -1; // No packet gives this info
 
-            imuDataFLUPub.publish(imuDataFLU);
+            // Publish
+            imuDataENUPub.publish(imuDataENU);
 
             // NAVSATFIX Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/NavSatFix.html
             // NavSatStatus status
@@ -535,7 +538,7 @@ int main(int argc, char **argv)
             // uint8 position_covariance type
             sensor_msgs::NavSatFix navSatFixMsg;
             navSatFixMsg.header = header;
-            navSatFixMsg.header.frame_id = "gps";
+            navSatFixMsg.header.frame_id = "gps_enu";
 
             // Set nav sat status
             int status = sysPacket.filter_status.b.gnss_fix_type;
@@ -594,7 +597,7 @@ int main(int argc, char **argv)
                 odomMsgENU.header.frame_id = "gps_enu";
 
                 odomMsgNED.header = header;
-                odomMsgNED.header.frame_id = "gps";
+                odomMsgNED.header.frame_id = "gps_ned";
 
                 // \todo Fill covarience matrices for both of these
                 // Covariance matrices are 6x6 so we need to fill the diagonal at
@@ -604,7 +607,7 @@ int main(int argc, char **argv)
                 // Position ENU
                 odomMsgENU.pose.pose.position.x = utmPacket.position[1];
                 odomMsgENU.pose.pose.position.y = utmPacket.position[0];
-                odomMsgENU.pose.pose.position.z = utmPacket.position[2];
+                odomMsgENU.pose.pose.position.z = -1 * utmPacket.position[2];
                 // odomMsg.pose.covariance[0] =
                 // odomMsg.pose.covariance[7] =
                 // odomMsg.pose.covariance[14] =
@@ -619,10 +622,10 @@ int main(int argc, char **argv)
 
                 // Orientation ENU
                 // Use orientation quaternion we created earlier
-                odomMsgENU.pose.pose.orientation.x = orientQuat.x();
-                odomMsgENU.pose.pose.orientation.y = orientQuat.y();
-                odomMsgENU.pose.pose.orientation.z = orientQuat.z();
-                odomMsgENU.pose.pose.orientation.w = orientQuat.w();
+                odomMsgENU.pose.pose.orientation.x = orientQuatENU.x();
+                odomMsgENU.pose.pose.orientation.y = orientQuatENU.y();
+                odomMsgENU.pose.pose.orientation.z = orientQuatENU.z();
+                odomMsgENU.pose.pose.orientation.w = orientQuatENU.w();
                 // Use covariance array created earlier to fill out orientation covariance
                 odomMsgENU.pose.covariance[21] = orientCov[0];
                 odomMsgENU.pose.covariance[28] = orientCov[1];
@@ -640,9 +643,9 @@ int main(int argc, char **argv)
 
                 // TWIST
                 // Linear ENU
-                odomMsgENU.twist.twist.linear.x = sysPacket.velocity[0];
-                odomMsgENU.twist.twist.linear.y = sysPacket.velocity[1];
-                odomMsgENU.twist.twist.linear.z = sysPacket.velocity[2];
+                odomMsgENU.twist.twist.linear.x = sysPacket.velocity[1];
+                odomMsgENU.twist.twist.linear.y = sysPacket.velocity[0];
+                odomMsgENU.twist.twist.linear.z = -1 * sysPacket.velocity[2];
                 odomMsgENU.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
                 // odomMsg.twist.covariance[0] =
                 // odomMsg.twist.covariance[7] =
@@ -658,9 +661,9 @@ int main(int argc, char **argv)
                 // odomMsg.twist.covariance[14] =
 
                 // Angular ENU
-                odomMsgENU.twist.twist.angular.x = sysPacket.angular_velocity[0];
-                odomMsgENU.twist.twist.angular.y = sysPacket.angular_velocity[1];
-                odomMsgENU.twist.twist.angular.z = sysPacket.angular_velocity[2];
+                odomMsgENU.twist.twist.angular.x = sysPacket.angular_velocity[1];
+                odomMsgENU.twist.twist.angular.y = sysPacket.angular_velocity[0];
+                odomMsgENU.twist.twist.angular.z = -1 * sysPacket.angular_velocity[2];
                 // odomMsg.twist.covariance[21] =
                 // odomMsg.twist.covariance[28] =
                 // odomMsg.twist.covariance[35] =
@@ -711,7 +714,7 @@ int main(int argc, char **argv)
             local_magnetics_packet_t localMagPacket = *static_cast<local_magnetics_packet_t *>(packetMap[packet_id_local_magnetics].second.get());
 
             magFieldMsg.header = header;
-            magFieldMsg.header.frame_id = "imu";
+            magFieldMsg.header.frame_id = "imu_link_ned";
             magFieldMsg.magnetic_field.x = localMagPacket.magnetic_field[0];
             magFieldMsg.magnetic_field.y = localMagPacket.magnetic_field[1];
             magFieldMsg.magnetic_field.z = localMagPacket.magnetic_field[2];
