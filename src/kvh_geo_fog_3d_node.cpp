@@ -424,7 +424,7 @@ int main(int argc, char **argv)
             // DATA_RAW_FLU
             sensor_msgs::Imu imuDataRawFLU;
             imuDataRawFLU.header = header;
-            imuDataRawFLU.header.frame_id = "imu";
+            imuDataRawFLU.header.frame_id = "imu_flu";
 
             // ANGULAR VELOCITY
             imuDataRawFLU.angular_velocity.x = sysPacket.angular_velocity[0];
@@ -496,7 +496,7 @@ int main(int argc, char **argv)
 
             sensor_msgs::Imu imuDataFLU;
             imuDataFLU.header = header;
-            imuDataFLU.header.frame_id = "imu";
+            imuDataFLU.header.frame_id = "imu_flu";
 
             imuDataFLU.orientation.x = orientQuatFLU.x();
             imuDataFLU.orientation.y = orientQuatFLU.y();
@@ -591,7 +591,7 @@ int main(int argc, char **argv)
                 utm_position_packet_t utmPacket = *static_cast<utm_position_packet_t *>(packetMap[packet_id_utm_position].second.get());
 
                 odomMsgENU.header = header;
-                odomMsgENU.header.frame_id = "gps";
+                odomMsgENU.header.frame_id = "gps_enu";
 
                 odomMsgNED.header = header;
                 odomMsgNED.header.frame_id = "gps";
