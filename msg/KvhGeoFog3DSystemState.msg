@@ -156,16 +156,19 @@ float32 g_force_g
 
 #
 # Roll of the system off of gravitational level, in radians
+# [-pi,pi)
 #
 float32 roll_rad
 
 #
 # Pitch of the system off of gravitational level, in radians
+# [-pi,pi)
 #
 float32 pitch_rad
 
 #
-# Heading angle of the system with respect to true north, in radians 
+# Heading angle of the system with respect to true north, in radians
+# [0,2*pi)
 #
 float32 heading_rad
 

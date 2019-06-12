@@ -9,10 +9,13 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
+  geometry_msgs
   message_generation
+  nav_msgs
   nodelet
   pluginlib
   roscpp
+  sensor_msgs
   std_msgs
   tf2_ros
 )

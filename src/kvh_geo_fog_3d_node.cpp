@@ -57,8 +57,37 @@
 #include "nav_msgs/Odometry.h"
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Vector3.h"
+#include "geometry_msgs/Vector3Stamped.h"
 
 const static double PI = 3.14159;
+
+// Bounds on [-pi, pi)
+inline double BoundFromNegPiToPi(const double& _value)
+{
+  double result = _value;
+  while( result < -(PI) )
+  {
+    result += PI;
+  }
+  while( result >= PI )
+  {
+    result -= PI;
+  }
+  return result;
+} //end: BoundFromNegPiToPi(double* _value)
+inline double BoundFromNegPiToPi(const float& _value)
+{
+  double result = _value;
+  while( result < -(PI) )
+  {
+    result += PI;
+  }
+  while( result >= PI )
+  {
+    result -= PI;
+  }
+  return result;
+} //end: BoundFromNegPiToPi(const float& _value)
 
 void SetupUpdater(diagnostic_updater::Updater *_diagnostics, mitre::KVH::DiagnosticsContainer *_diagContainer)
 {
@@ -96,6 +125,10 @@ int main(int argc, char **argv)
     ros::Publisher imuDataRawFLUPub = node.advertise<sensor_msgs::Imu>("imu/data_raw_flu", 1);
     ros::Publisher imuDataNEDPub = node.advertise<sensor_msgs::Imu>("imu/data_ned", 1);
     ros::Publisher imuDataENUPub = node.advertise<sensor_msgs::Imu>("imu/data_enu", 1);
+    ros::Publisher imuDataRpyNEDPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_ned", 1);
+    ros::Publisher imuDataRpyNEDDegPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_ned_deg", 1);
+    ros::Publisher imuDataRpyENUPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_enu", 1);
+    ros::Publisher imuDataRpyENUDegPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_enu_deg", 1);
     ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
     ros::Publisher magFieldPub = node.advertise<sensor_msgs::MagneticField>("mag", 1);
     ros::Publisher odomPubNED = node.advertise<nav_msgs::Odometry>("gps/utm_ned", 1);
@@ -384,12 +417,10 @@ int main(int argc, char **argv)
             // float64[9] linear_acceleration_covariance
             // \todo fill out covariance matrices for each of the below.
 
+            // [-pi,pi) bounded yaw
+            double boundedYaw = BoundFromNegPiToPi(sysPacket.orientation[2]);
+            
             // ORIENTATION
-            // \todo data_raw only contains accelerations and rpy rate
-            // \todo data_raw that has negative in FLU (negative y, z)
-            // \todo add data topic which will publish orientation in kvh format
-            // \todo add data_flu topic which will publish orientation in kvh format
-
             double orientCov[3] = {
                 pow(eulStdDevPack.standard_deviation[0], 2),
                 pow(eulStdDevPack.standard_deviation[1], 2),
@@ -403,7 +434,7 @@ int main(int argc, char **argv)
             // ANGULAR VELOCITY
             imuDataRaw.angular_velocity.x = sysPacket.angular_velocity[0];
             imuDataRaw.angular_velocity.y = sysPacket.angular_velocity[1];
-            imuDataRaw.angular_velocity.z = sysPacket.angular_velocity[2]; // To account for east north up system
+            imuDataRaw.angular_velocity.z = sysPacket.angular_velocity[2];
             imuDataRaw.angular_velocity_covariance[0] = -1; // No packet gives this info
             // imuDataRaw.angular_velocity_covariance[0]
             // imuDataRaw.angular_velocity_covariance[4]
@@ -446,14 +477,15 @@ int main(int argc, char **argv)
             imuDataRawFLUPub.publish(imuDataRawFLU);
 
             // DATA Topic
-
             tf2::Quaternion orientQuat;
             orientQuat.setRPY(
                 sysPacket.orientation[0],
                 sysPacket.orientation[1],
-                sysPacket.orientation[2]);
+                boundedYaw);
 
             sensor_msgs::Imu imuDataNED;
+            geometry_msgs::Vector3Stamped imuDataRpyNED;
+            geometry_msgs::Vector3Stamped imuDataRpyNEDDeg;
             imuDataNED.header = header;
             imuDataNED.header.frame_id = "imu_link_ned";
 
@@ -465,6 +497,18 @@ int main(int argc, char **argv)
             imuDataNED.orientation_covariance[4] = orientCov[1];
             imuDataNED.orientation_covariance[8] = orientCov[2];
 
+            imuDataRpyNED.header = header;
+            imuDataRpyNED.header.frame_id = "imu_link_ned";
+            imuDataRpyNED.vector.x = sysPacket.orientation[0];
+            imuDataRpyNED.vector.y = sysPacket.orientation[1];
+            imuDataRpyNED.vector.z = boundedYaw;
+
+            imuDataRpyNEDDeg.header = header;
+            imuDataRpyNEDDeg.header.frame_id = "imu_link_ned";
+            imuDataRpyNEDDeg.vector.x = ((imuDataRpyNED.vector.x * 180.0) / PI);
+            imuDataRpyNEDDeg.vector.y = ((imuDataRpyNED.vector.y * 180.0) / PI);
+            imuDataRpyNEDDeg.vector.z = ((imuDataRpyNED.vector.z * 180.0) / PI);
+            
             // ANGULAR VELOCITY
             imuDataNED.angular_velocity.x = sysPacket.angular_velocity[0];
             imuDataNED.angular_velocity.y = sysPacket.angular_velocity[1];
@@ -478,7 +522,9 @@ int main(int argc, char **argv)
             imuDataNED.linear_acceleration_covariance[0] = -1; // No packet gives this info
 
             imuDataNEDPub.publish(imuDataNED);
-
+            imuDataRpyNEDPub.publish(imuDataRpyNED);
+            imuDataRpyNEDDegPub.publish(imuDataRpyNEDDeg);
+            
             ///////////////////////////////////////////////////////////////////////////////////////////////
             // DATA_ENU topic
             ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -486,16 +532,24 @@ int main(int argc, char **argv)
             tf2::Quaternion orientQuatENU;
             //For NED -> ENU transformation:
             //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
+            double unfixedEnuYaw = (-1 * boundedYaw) + (PI / 2.0);
+            double enuYaw = BoundFromNegPiToPi(unfixedEnuYaw);
             orientQuatENU.setRPY(
               sysPacket.orientation[1], // ENU roll = NED pitch
               sysPacket.orientation[0], // ENU pitch = NED roll
-              (-1 * sysPacket.orientation[2]) + (PI / 2.0) // ENU yaw = -(NED yaw) + 90 degrees
+              enuYaw // ENU yaw = -(NED yaw) + 90 degrees
             );
 
             sensor_msgs::Imu imuDataENU;
+            geometry_msgs::Vector3Stamped imuDataRpyENU;
+            geometry_msgs::Vector3Stamped imuDataRpyENUDeg;
             imuDataENU.header = header;
             imuDataENU.header.frame_id = "imu_link_enu";
-
+            imuDataRpyENU.header = header;
+            imuDataRpyENU.header.frame_id = "imu_link_enu";
+            imuDataRpyENUDeg.header = header;
+            imuDataRpyENUDeg.header.frame_id = "imu_link_enu";
+            
             // ORIENTATION
             //Keep in mind that these are w.r.t. frame_id
             imuDataENU.orientation.x = orientQuatENU.x();
@@ -506,6 +560,14 @@ int main(int argc, char **argv)
             imuDataENU.orientation_covariance[4] = orientCov[0];
             imuDataENU.orientation_covariance[8] = orientCov[2];
 
+            imuDataRpyENU.vector.x = sysPacket.orientation[1];
+            imuDataRpyENU.vector.y = sysPacket.orientation[0];
+            imuDataRpyENU.vector.z = enuYaw;
+            imuDataRpyENUDeg.vector.x = ((imuDataRpyENU.vector.x * 180.0) / PI);
+            imuDataRpyENUDeg.vector.y = ((imuDataRpyENU.vector.y * 180.0) / PI);
+            imuDataRpyENUDeg.vector.z = ((imuDataRpyENU.vector.z * 180.0) / PI);
+            
+            
             // ANGULAR VELOCITY
             // Keep in mind that for the sensor_msgs/Imu message, accelerations are
             // w.r.t the frame_id, which in this case is imu_link_enu.
@@ -528,7 +590,9 @@ int main(int argc, char **argv)
 
             // Publish
             imuDataENUPub.publish(imuDataENU);
-
+            imuDataRpyENUPub.publish(imuDataRpyENU);
+            imuDataRpyENUDegPub.publish(imuDataRpyENUDeg);
+            
             // NAVSATFIX Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/NavSatFix.html
             // NavSatStatus status
             // float64 latitude
