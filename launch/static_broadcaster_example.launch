@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- This is the ROS REP-105 conformant frame_id on the KVH where inertial measurements are made from.
+       It should exist in your current TF tree, outside of this file. -->
+  <arg name="base_nav_frame_id" default="nav" />
+  <!-- This is the ROS REP-105 conformant frame_id of the phase center of the primary GPS antenna (where
+       GPS measurements are referenced). It should exist in your current TF tree, outside of this file. -->
+  <arg name="base_gps_frame_id" default="gps" />
+
+  <!-- Initial transform from the base_frame_id into our imu_link TF subtree -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="nav_base_frame_to_imu_link_flu" args="0 0 0 0 0 0 $(arg base_nav_frame_id) imu_link_flu" />
+
+  <!-- All of the concurrent rotational transforms, so our data can be converted properly. -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_flu_to_imu_link_frd" args="0 0 0 0 0 -3.14159 imu_link_flu imu_link_frd" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_frd_to_imu_link_ned" args="0 0 0 0 0 0 imu_link_frd imu_link_ned" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_flu_to_imu_link_enu" args="0 0 0 -1.57080 0 0 imu_link_flu imu_link_enu" />
+
+  <!-- The GPS transforms. -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="gps_to_gps_enu" args="0 0 0 -1.57080 0 0 $(arg base_gps_frame_id) gps_enu" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="gps_enu_to_gps_ned" args="0 0 0 1.57080 3.14159 0 gps_enu gps_ned" />
+</launch>
