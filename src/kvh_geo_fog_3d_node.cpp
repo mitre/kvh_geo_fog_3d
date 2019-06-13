@@ -447,15 +447,44 @@ int main(int argc, char **argv)
             // \todo fill out covariance matrices for each of the below.
 
             // [-pi,pi) bounded yaw
-            double boundedYawPiPi = BoundFromNegPiToPi(sysPacket.orientation[2]);
+            double boundedYawPiToPi = BoundFromNegPiToPi(sysPacket.orientation[2]);
             double boundedYawZero2Pi = BoundFromZeroTo2Pi(sysPacket.orientation[2]);
             
             // ORIENTATION
-            double orientCov[3] = {
+            double orientCovFRD[3] = {
                 pow(eulStdDevPack.standard_deviation[0], 2),
                 pow(eulStdDevPack.standard_deviation[1], 2),
                 pow(eulStdDevPack.standard_deviation[2], 2)};
-
+            tf2::Quaternion orientQuatFRD;
+            orientQuatFRD.setRPY(
+                sysPacket.orientation[0],
+                sysPacket.orientation[1],
+                boundedYawPiToPi);
+            double orientCovFLU[3] = {
+                pow(eulStdDevPack.standard_deviation[0], 2),
+                pow(eulStdDevPack.standard_deviation[1], 2),
+                pow(eulStdDevPack.standard_deviation[2], 2)};
+            tf2::Quaternion orientQuatFLU;
+            orientQuatFRD.setRPY(
+                sysPacket.orientation[0],
+                (-1 * sysPacket.orientation[1]),
+                (-1 * boundedYawPiToPi));
+            tf2::Quaternion orientQuatENU;
+            //For NED -> ENU transformation:
+            //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
+            double unfixedEnuYaw = (-1 * boundedYawZero2Pi) + (PI / 2.0);
+            double enuYaw = BoundFromZeroTo2Pi(unfixedEnuYaw);
+            orientQuatENU.setRPY(
+              sysPacket.orientation[1], // ENU roll = NED pitch
+              sysPacket.orientation[0], // ENU pitch = NED roll
+              enuYaw // ENU yaw = -(NED yaw) + 90 degrees
+            );
+            double orientCovENU[3] = {
+              pow(eulStdDevPack.standard_deviation[1], 2),
+              pow(eulStdDevPack.standard_deviation[0], 2),
+              pow(eulStdDevPack.standard_deviation[2], 2),
+            };
+            
             // DATA_RAW Topic
             sensor_msgs::Imu imuDataRaw;
             imuDataRaw.header = header;
@@ -507,25 +536,19 @@ int main(int argc, char **argv)
             imuDataRawFLUPub.publish(imuDataRawFLU);
 
             // DATA Topic
-            tf2::Quaternion orientQuat;
-            orientQuat.setRPY(
-                sysPacket.orientation[0],
-                sysPacket.orientation[1],
-                boundedYawZero2Pi);
-
             sensor_msgs::Imu imuDataNED;
             geometry_msgs::Vector3Stamped imuDataRpyNED;
             geometry_msgs::Vector3Stamped imuDataRpyNEDDeg;
             imuDataNED.header = header;
             imuDataNED.header.frame_id = "imu_link_ned";
 
-            imuDataNED.orientation.x = orientQuat.x();
-            imuDataNED.orientation.y = orientQuat.y();
-            imuDataNED.orientation.z = orientQuat.z();
-            imuDataNED.orientation.w = orientQuat.w();
-            imuDataNED.orientation_covariance[0] = orientCov[0];
-            imuDataNED.orientation_covariance[4] = orientCov[1];
-            imuDataNED.orientation_covariance[8] = orientCov[2];
+            imuDataNED.orientation.x = orientQuatFRD.x();
+            imuDataNED.orientation.y = orientQuatFRD.y();
+            imuDataNED.orientation.z = orientQuatFRD.z();
+            imuDataNED.orientation.w = orientQuatFRD.w();
+            imuDataNED.orientation_covariance[0] = orientCovFRD[0];
+            imuDataNED.orientation_covariance[4] = orientCovFRD[1];
+            imuDataNED.orientation_covariance[8] = orientCovFRD[2];
 
             imuDataRpyNED.header = header;
             imuDataRpyNED.header.frame_id = "imu_link_ned";
@@ -558,18 +581,6 @@ int main(int argc, char **argv)
             ///////////////////////////////////////////////////////////////////////////////////////////////
             // DATA_ENU topic
             ///////////////////////////////////////////////////////////////////////////////////////////////
-
-            tf2::Quaternion orientQuatENU;
-            //For NED -> ENU transformation:
-            //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
-            double unfixedEnuYaw = (-1 * boundedYawZero2Pi) + (PI / 2.0);
-            double enuYaw = BoundFromZeroTo2Pi(unfixedEnuYaw);
-            orientQuatENU.setRPY(
-              sysPacket.orientation[1], // ENU roll = NED pitch
-              sysPacket.orientation[0], // ENU pitch = NED roll
-              enuYaw // ENU yaw = -(NED yaw) + 90 degrees
-            );
-
             sensor_msgs::Imu imuDataENU;
             geometry_msgs::Vector3Stamped imuDataRpyENU;
             geometry_msgs::Vector3Stamped imuDataRpyENUDeg;
@@ -586,9 +597,9 @@ int main(int argc, char **argv)
             imuDataENU.orientation.y = orientQuatENU.y();
             imuDataENU.orientation.z = orientQuatENU.z();
             imuDataENU.orientation.w = orientQuatENU.w();
-            imuDataENU.orientation_covariance[0] = orientCov[1];
-            imuDataENU.orientation_covariance[4] = orientCov[0];
-            imuDataENU.orientation_covariance[8] = orientCov[2];
+            imuDataENU.orientation_covariance[0] = orientCovENU[1];
+            imuDataENU.orientation_covariance[4] = orientCovENU[0];
+            imuDataENU.orientation_covariance[8] = orientCovENU[2];
 
             imuDataRpyENU.vector.x = sysPacket.orientation[1];
             imuDataRpyENU.vector.y = sysPacket.orientation[0];
@@ -688,11 +699,13 @@ int main(int argc, char **argv)
                 utm_position_packet_t utmPacket = *static_cast<utm_position_packet_t *>(packetMap[packet_id_utm_position].second.get());
 
                 odomMsgENU.header = header;
-                odomMsgENU.header.frame_id = "gps_enu";
-
+                odomMsgENU.header.frame_id = "gps_enu";     //The nav_msgs/Odometry "Pose" section shoudl be in this frame
+                odomMsgENU.child_frame_id = "imu_link_flu"; //The nav_msgs/Odometry "Twist" section should be in this frame
+                
                 odomMsgNED.header = header;
                 odomMsgNED.header.frame_id = "gps_ned";
-
+                odomMsgNED.child_frame_id = "imu_link_frd";
+                
                 // \todo Fill covarience matrices for both of these
                 // Covariance matrices are 6x6 so we need to fill the diagonal at
                 // 0, 7, 14, 21, 28, 35
@@ -721,55 +734,45 @@ int main(int argc, char **argv)
                 odomMsgENU.pose.pose.orientation.z = orientQuatENU.z();
                 odomMsgENU.pose.pose.orientation.w = orientQuatENU.w();
                 // Use covariance array created earlier to fill out orientation covariance
-                odomMsgENU.pose.covariance[21] = orientCov[0];
-                odomMsgENU.pose.covariance[28] = orientCov[1];
-                odomMsgENU.pose.covariance[35] = orientCov[2];
+                odomMsgENU.pose.covariance[21] = orientCovENU[0];
+                odomMsgENU.pose.covariance[28] = orientCovENU[1];
+                odomMsgENU.pose.covariance[35] = orientCovENU[2];
 
                 // Orientation NED
-                odomMsgNED.pose.pose.orientation.x = orientQuat.x();
-                odomMsgNED.pose.pose.orientation.y = orientQuat.y();
-                odomMsgNED.pose.pose.orientation.z = orientQuat.z();
-                odomMsgNED.pose.pose.orientation.w = orientQuat.w();
+                odomMsgNED.pose.pose.orientation.x = orientQuatFRD.x();
+                odomMsgNED.pose.pose.orientation.y = orientQuatFRD.y();
+                odomMsgNED.pose.pose.orientation.z = orientQuatFRD.z();
+                odomMsgNED.pose.pose.orientation.w = orientQuatFRD.w();
                 // Use covariance array created earlier to fill out orientation covariance
-                odomMsgNED.pose.covariance[21] = orientCov[0];
-                odomMsgNED.pose.covariance[28] = orientCov[1];
-                odomMsgNED.pose.covariance[35] = orientCov[2];
+                odomMsgNED.pose.covariance[21] = orientCovFRD[0];
+                odomMsgNED.pose.covariance[28] = orientCovFRD[1];
+                odomMsgNED.pose.covariance[35] = orientCovFRD[2];
 
                 // TWIST
-                // Linear ENU
-                odomMsgENU.twist.twist.linear.x = sysPacket.velocity[1];
-                odomMsgENU.twist.twist.linear.y = sysPacket.velocity[0];
-                odomMsgENU.twist.twist.linear.z = -1 * sysPacket.velocity[2];
+                // Linear FLU
+                odomMsgENU.twist.twist.linear.x = sysPacket.velocity[0];
+                odomMsgENU.twist.twist.linear.y = (-1 * sysPacket.velocity[1]);
+                odomMsgENU.twist.twist.linear.z = (-1 * sysPacket.velocity[2]);
                 odomMsgENU.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
-                // odomMsg.twist.covariance[0] =
-                // odomMsg.twist.covariance[7] =
-                // odomMsg.twist.covariance[14] =
 
-                // Linear NED
+                // Linear FRD
                 odomMsgNED.twist.twist.linear.x = sysPacket.velocity[0];
                 odomMsgNED.twist.twist.linear.y = sysPacket.velocity[1];
                 odomMsgNED.twist.twist.linear.z = sysPacket.velocity[2];
                 odomMsgNED.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
-                // odomMsg.twist.covariance[0] =
-                // odomMsg.twist.covariance[7] =
-                // odomMsg.twist.covariance[14] =
 
                 // Angular ENU
-                odomMsgENU.twist.twist.angular.x = sysPacket.angular_velocity[1];
-                odomMsgENU.twist.twist.angular.y = sysPacket.angular_velocity[0];
-                odomMsgENU.twist.twist.angular.z = -1 * sysPacket.angular_velocity[2];
-                // odomMsg.twist.covariance[21] =
-                // odomMsg.twist.covariance[28] =
-                // odomMsg.twist.covariance[35] =
+                odomMsgENU.twist.twist.angular.x = sysPacket.angular_velocity[0];
+                odomMsgENU.twist.twist.angular.y = (-1 * sysPacket.angular_velocity[1]);
+                odomMsgENU.twist.twist.angular.z = (-1 * sysPacket.angular_velocity[2]);
+                odomMsgENU.twist.covariance[0] = -1;
 
                 // Angular NED
                 odomMsgNED.twist.twist.angular.x = sysPacket.angular_velocity[0];
                 odomMsgNED.twist.twist.angular.y = sysPacket.angular_velocity[1];
                 odomMsgNED.twist.twist.angular.z = sysPacket.angular_velocity[2];
-                // odomMsg.twist.covariance[21] =
-                // odomMsg.twist.covariance[28] =
-                // odomMsg.twist.covariance[35] =
-
+                odomMsgNED.twist.covariance[0] = -1;
+                
                 odomPubENU.publish(odomMsgENU);
                 odomPubNED.publish(odomMsgNED);
 
