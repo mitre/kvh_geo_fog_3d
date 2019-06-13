@@ -67,11 +67,11 @@ inline double BoundFromNegPiToPi(const double& _value)
   double result = _value;
   while( result < -(PI) )
   {
-    result += PI;
+    result += (2*PI);
   }
   while( result >= PI )
   {
-    result -= PI;
+    result -= (2*PI);
   }
   return result;
 } //end: BoundFromNegPiToPi(double* _value)
@@ -80,14 +80,43 @@ inline double BoundFromNegPiToPi(const float& _value)
   double result = _value;
   while( result < -(PI) )
   {
-    result += PI;
+    result += (2*PI);
   }
   while( result >= PI )
   {
-    result -= PI;
+    result -= (2*PI);
   }
   return result;
 } //end: BoundFromNegPiToPi(const float& _value)
+
+// Bounds on [-pi, pi)
+inline double BoundFromZeroTo2Pi(const double& _value)
+{
+  double result = _value;
+  while( result < 0 )
+  {
+    result += (2*PI);
+  }
+  while( result >= (2*PI) )
+  {
+    result -= (2*PI);
+  }
+  return result;
+} //end: BoundFromZeroTo2Pi(double* _value)
+inline double BoundFromZeroTo2Pi(const float& _value)
+{
+  double result = _value;
+  while( result < 0 )
+  {
+    result += (2*PI);
+  }
+  while( result >= (2*PI) )
+  {
+    result -= (2*PI);
+  }
+  return result;
+} //end: BoundFromZeroTo2Pi(const float& _value)
+
 
 void SetupUpdater(diagnostic_updater::Updater *_diagnostics, mitre::KVH::DiagnosticsContainer *_diagContainer)
 {
@@ -418,7 +447,8 @@ int main(int argc, char **argv)
             // \todo fill out covariance matrices for each of the below.
 
             // [-pi,pi) bounded yaw
-            double boundedYaw = BoundFromNegPiToPi(sysPacket.orientation[2]);
+            double boundedYawPiPi = BoundFromNegPiToPi(sysPacket.orientation[2]);
+            double boundedYawZero2Pi = BoundFromZeroTo2Pi(sysPacket.orientation[2]);
             
             // ORIENTATION
             double orientCov[3] = {
@@ -481,7 +511,7 @@ int main(int argc, char **argv)
             orientQuat.setRPY(
                 sysPacket.orientation[0],
                 sysPacket.orientation[1],
-                boundedYaw);
+                boundedYawZero2Pi);
 
             sensor_msgs::Imu imuDataNED;
             geometry_msgs::Vector3Stamped imuDataRpyNED;
@@ -501,7 +531,7 @@ int main(int argc, char **argv)
             imuDataRpyNED.header.frame_id = "imu_link_ned";
             imuDataRpyNED.vector.x = sysPacket.orientation[0];
             imuDataRpyNED.vector.y = sysPacket.orientation[1];
-            imuDataRpyNED.vector.z = boundedYaw;
+            imuDataRpyNED.vector.z = boundedYawZero2Pi;
 
             imuDataRpyNEDDeg.header = header;
             imuDataRpyNEDDeg.header.frame_id = "imu_link_ned";
@@ -532,8 +562,8 @@ int main(int argc, char **argv)
             tf2::Quaternion orientQuatENU;
             //For NED -> ENU transformation:
             //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
-            double unfixedEnuYaw = (-1 * boundedYaw) + (PI / 2.0);
-            double enuYaw = BoundFromNegPiToPi(unfixedEnuYaw);
+            double unfixedEnuYaw = (-1 * boundedYawZero2Pi) + (PI / 2.0);
+            double enuYaw = BoundFromZeroTo2Pi(unfixedEnuYaw);
             orientQuatENU.setRPY(
               sysPacket.orientation[1], // ENU roll = NED pitch
               sysPacket.orientation[0], // ENU pitch = NED roll
