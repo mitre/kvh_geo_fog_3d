@@ -10,7 +10,7 @@
  * Frame id's for messages (see README.md):
  * IMU - imu_link_{frd,flu,ned,enu}
  * NavSat - gps_{ned,enu}
- * Odom - gps_{ned,enu}
+ * Odom - gps_{ned,enu}, imu_link_{frd,flu}
  * MagField - imu_link_{ned,enu}
  */
 
@@ -468,7 +468,7 @@ int main(int argc, char **argv)
                 pow(eulStdDevPack.standard_deviation[1], 2),
                 pow(eulStdDevPack.standard_deviation[2], 2)};
             tf2::Quaternion orientQuatFLU;
-            orientQuatFRD.setRPY(
+            orientQuatFLU.setRPY(
                 sysPacket.orientation[0],
                 (-1 * sysPacket.orientation[1]),
                 (-1 * boundedYawPiToPi));
