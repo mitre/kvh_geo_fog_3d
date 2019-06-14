@@ -154,10 +154,13 @@ int main(int argc, char **argv)
     ros::Publisher imuDataRawFLUPub = node.advertise<sensor_msgs::Imu>("imu/data_raw_flu", 1);
     ros::Publisher imuDataNEDPub = node.advertise<sensor_msgs::Imu>("imu/data_ned", 1);
     ros::Publisher imuDataENUPub = node.advertise<sensor_msgs::Imu>("imu/data_enu", 1);
+    ros::Publisher imuDataFLUPub = node.advertise<sensor_msgs::Imu>("imu/data_flu", 1);
     ros::Publisher imuDataRpyNEDPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_ned", 1);
     ros::Publisher imuDataRpyNEDDegPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_ned_deg", 1);
     ros::Publisher imuDataRpyENUPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_enu", 1);
     ros::Publisher imuDataRpyENUDegPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_enu_deg", 1);
+    ros::Publisher imuDataRpyFLUPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_flu", 1);
+    ros::Publisher imuDataRpyFLUDegPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_flu_deg", 1);
     ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
     ros::Publisher magFieldPub = node.advertise<sensor_msgs::MagneticField>("mag", 1);
     ros::Publisher odomPubNED = node.advertise<nav_msgs::Odometry>("gps/utm_ned", 1);
@@ -633,7 +636,55 @@ int main(int argc, char **argv)
             imuDataENUPub.publish(imuDataENU);
             imuDataRpyENUPub.publish(imuDataRpyENU);
             imuDataRpyENUDegPub.publish(imuDataRpyENUDeg);
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////
+            // DATA_FLU topic
+            ///////////////////////////////////////////////////////////////////////////////////////////////
+            sensor_msgs::Imu imuDataFLU;
+            geometry_msgs::Vector3Stamped imuDataRpyFLU;
+            geometry_msgs::Vector3Stamped imuDataRpyFLUDeg;
+            imuDataFLU.header = header;
+            imuDataFLU.header.frame_id = "imu_link_flu";
+            imuDataRpyFLU.header = header;
+            imuDataRpyFLU.header.frame_id = "imu_link_flu";
+            imuDataRpyFLUDeg.header = header;
+            imuDataRpyFLUDeg.header.frame_id = "imu_link_flu";
             
+            // ORIENTATION
+            //Keep in mind that these are w.r.t. frame_id
+            imuDataFLU.orientation.x = orientQuatFLU.x();
+            imuDataFLU.orientation.y = orientQuatFLU.y();
+            imuDataFLU.orientation.z = orientQuatFLU.z();
+            imuDataFLU.orientation.w = orientQuatFLU.w();
+            imuDataFLU.orientation_covariance[0] = orientCovFLU[0];
+            imuDataFLU.orientation_covariance[4] = orientCovFLU[1];
+            imuDataFLU.orientation_covariance[8] = orientCovFLU[2];
+
+            imuDataRpyFLU.vector.x = sysPacket.orientation[0];
+            imuDataRpyFLU.vector.y = (-1 * sysPacket.orientation[1]);
+            imuDataRpyFLU.vector.z = (-1 * boundedYawZero2Pi);
+            imuDataRpyFLUDeg.vector.x = ((imuDataRpyFLU.vector.x * 180.0) / PI);
+            imuDataRpyFLUDeg.vector.y = ((imuDataRpyFLU.vector.y * 180.0) / PI);
+            imuDataRpyFLUDeg.vector.z = ((imuDataRpyFLU.vector.z * 180.0) / PI);
+            
+            
+            // ANGULAR VELOCITY
+            imuDataFLU.angular_velocity.x = sysPacket.angular_velocity[0];
+            imuDataFLU.angular_velocity.y = (-1 * sysPacket.angular_velocity[1]);
+            imuDataFLU.angular_velocity.z = (-1 * sysPacket.angular_velocity[2]);
+            imuDataFLU.angular_velocity_covariance[0] = -1; // No packet gives this info
+
+            // LINEAR ACCELERATION
+            imuDataFLU.linear_acceleration.x = sysPacket.body_acceleration[0];
+            imuDataFLU.linear_acceleration.y = (-1 * sysPacket.body_acceleration[1]);
+            imuDataFLU.linear_acceleration.z = (-1 * sysPacket.body_acceleration[2]);
+            imuDataFLU.linear_acceleration_covariance[0] = -1; // No packet gives this info
+
+            // Publish
+            imuDataFLUPub.publish(imuDataFLU);
+            imuDataRpyFLUPub.publish(imuDataRpyFLU);
+            imuDataRpyFLUDegPub.publish(imuDataRpyFLUDeg);
+
             // NAVSATFIX Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/NavSatFix.html
             // NavSatStatus status
             // float64 latitude
@@ -699,12 +750,12 @@ int main(int argc, char **argv)
                 utm_position_packet_t utmPacket = *static_cast<utm_position_packet_t *>(packetMap[packet_id_utm_position].second.get());
 
                 odomMsgENU.header = header;
-                odomMsgENU.header.frame_id = "gps_enu";     //The nav_msgs/Odometry "Pose" section shoudl be in this frame
+                odomMsgENU.header.frame_id = "gps_enu";     //The nav_msgs/Odometry "Pose" section should be in this frame
                 odomMsgENU.child_frame_id = "imu_link_flu"; //The nav_msgs/Odometry "Twist" section should be in this frame
                 
                 odomMsgNED.header = header;
-                odomMsgNED.header.frame_id = "gps_ned";
-                odomMsgNED.child_frame_id = "imu_link_frd";
+                odomMsgNED.header.frame_id = "gps_ned";     //The nav_msgs/Odometry "Pose" section should be in this frame
+                odomMsgNED.child_frame_id = "imu_link_frd"; //The nav_msgs/Odometry "Twist" section should be in this frame
                 
                 // \todo Fill covarience matrices for both of these
                 // Covariance matrices are 6x6 so we need to fill the diagonal at
@@ -775,33 +826,6 @@ int main(int argc, char **argv)
                 
                 odomPubENU.publish(odomMsgENU);
                 odomPubNED.publish(odomMsgNED);
-
-                // BROADCAST TRANSFORM TO BASE LINK
-                // static tf2_ros::TransformBroadcaster br;
-                // geometry_msgs::TransformStamped transformStamped;
-
-                // transformStamped.header.stamp = ros::Time::now();
-                // transformStamped.header.frame_id = "world";
-                // transformStamped.child_frame_id = "base_link";
-
-                // // UTM is base_link's position within the world frame
-                // // I think the ordering is correct since they have x = east and y = north, utm is North, East, Hieght
-                // transformStamped.transform.translation.x = utmPacket.position[1];
-                // transformStamped.transform.translation.y = utmPacket.position[0];
-                // transformStamped.transform.translation.z = utmPacket.position[2];
-
-                // // Set to quaternion calculated above for the odometry packet
-                // transformStamped.transform.rotation.x = orientQuat.x();
-                // transformStamped.transform.rotation.y = orientQuat.y();
-                // transformStamped.transform.rotation.z = orientQuat.z();
-                // transformStamped.transform.rotation.w = orientQuat.w();
-
-                // br.sendTransform(transformStamped);
-                
-                // Only have to track change between odom and base_link
-                // This would be based off of intertial sensing
-                // KVH Filter outputs with gps disabled
-
             }
         }
 
