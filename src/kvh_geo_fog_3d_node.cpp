@@ -573,13 +573,11 @@ int main(int argc, char **argv)
             imuDataNED.angular_velocity.x = sysPacket.angular_velocity[0];
             imuDataNED.angular_velocity.y = sysPacket.angular_velocity[1];
             imuDataNED.angular_velocity.z = sysPacket.angular_velocity[2];
-            // imuDataNED.angular_velocity_covariance[0] = -1; // No packet gives this info
 
             // LINEAR ACCELERATION
             imuDataNED.linear_acceleration.x = sysPacket.body_acceleration[0];
             imuDataNED.linear_acceleration.y = sysPacket.body_acceleration[1];
             imuDataNED.linear_acceleration.z = sysPacket.body_acceleration[2];
-            // imuDataNED.linear_acceleration_covariance[0] = -1; // No packet gives this info
 
             imuDataNEDPub.publish(imuDataNED);
             imuDataRpyNEDPub.publish(imuDataRpyNED);
@@ -624,7 +622,6 @@ int main(int argc, char **argv)
             imuDataENU.angular_velocity.x = sysPacket.angular_velocity[1]; // ENU roll rate = NED pitch rate
             imuDataENU.angular_velocity.y = sysPacket.angular_velocity[0]; // ENU pitch rate = NED roll rate
             imuDataENU.angular_velocity.z = -1 * sysPacket.angular_velocity[2]; // ENU yaw rate = -(NED yaw rate)
-            imuDataENU.angular_velocity_covariance[0] = -1; // No packet gives this info
 
             // LINEAR ACCELERATION
             // Keep in mind that for the sensor_msgs/Imu message, accelerations are
@@ -634,7 +631,6 @@ int main(int argc, char **argv)
             imuDataENU.linear_acceleration.x = sysPacket.body_acceleration[1];
             imuDataENU.linear_acceleration.y = sysPacket.body_acceleration[0];
             imuDataENU.linear_acceleration.z = -1 * sysPacket.body_acceleration[2];
-            imuDataENU.linear_acceleration_covariance[0] = -1; // No packet gives this info
 
             // Publish
             imuDataENUPub.publish(imuDataENU);
@@ -676,13 +672,11 @@ int main(int argc, char **argv)
             imuDataFLU.angular_velocity.x = sysPacket.angular_velocity[0];
             imuDataFLU.angular_velocity.y = (-1 * sysPacket.angular_velocity[1]);
             imuDataFLU.angular_velocity.z = (-1 * sysPacket.angular_velocity[2]);
-            imuDataFLU.angular_velocity_covariance[0] = -1; // No packet gives this info
-
+            
             // LINEAR ACCELERATION
             imuDataFLU.linear_acceleration.x = sysPacket.body_acceleration[0];
             imuDataFLU.linear_acceleration.y = (-1 * sysPacket.body_acceleration[1]);
             imuDataFLU.linear_acceleration.z = (-1 * sysPacket.body_acceleration[2]);
-            imuDataFLU.linear_acceleration_covariance[0] = -1; // No packet gives this info
 
             // Publish
             imuDataFLUPub.publish(imuDataFLU);
@@ -808,25 +802,21 @@ int main(int argc, char **argv)
                 odomMsgENU.twist.twist.linear.x = sysPacket.velocity[0];
                 odomMsgENU.twist.twist.linear.y = (-1 * sysPacket.velocity[1]);
                 odomMsgENU.twist.twist.linear.z = (-1 * sysPacket.velocity[2]);
-                // odomMsgENU.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
 
                 // Linear FRD
                 odomMsgNED.twist.twist.linear.x = sysPacket.velocity[0];
                 odomMsgNED.twist.twist.linear.y = sysPacket.velocity[1];
                 odomMsgNED.twist.twist.linear.z = sysPacket.velocity[2];
-                // odomMsgNED.twist.covariance[0] = -1; // No packet gives this info, this incudes for angular as well
 
                 // Angular ENU
                 odomMsgENU.twist.twist.angular.x = sysPacket.angular_velocity[0];
                 odomMsgENU.twist.twist.angular.y = (-1 * sysPacket.angular_velocity[1]);
                 odomMsgENU.twist.twist.angular.z = (-1 * sysPacket.angular_velocity[2]);
-                // odomMsgENU.twist.covariance[0] = -1;
 
                 // Angular NED
                 odomMsgNED.twist.twist.angular.x = sysPacket.angular_velocity[0];
                 odomMsgNED.twist.twist.angular.y = sysPacket.angular_velocity[1];
                 odomMsgNED.twist.twist.angular.z = sysPacket.angular_velocity[2];
-                // odomMsgNED.twist.covariance[0] = -1;
                 
                 odomPubENU.publish(odomMsgENU);
                 odomPubNED.publish(odomMsgNED);
