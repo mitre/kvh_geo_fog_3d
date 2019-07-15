@@ -64,7 +64,23 @@ frame convention they'd like to consume.
 
 For frame_id strings, we will deviate from REP 103 and use the following:
 * imu_link_frd and imu_link_flu - These frames will be used for raw data.
-* imu_link_ned and imu_link_enu - These frames are necessary because the orientation data is north-oriented.
+* utm_ned and utm_enu - These frames are necessary because the orientation data is north-oriented.
 
-imu_link_ned is the same as imu_link_frd. However, imu_link_flu differs from imu_link_enu in the following (flu -> enu):
-* (X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
+# Bearing Convention
+
+This sensor produces bearing measurements with respect to true north. The other two forms of north are
+magnetic north and grid north. Grid north differs very slightly from true north, and is dependent upon
+where in the UTM grid your sensor is located. Magnetic north differs significantly from true north, and
+is dependent upon the fluctuation of the magnetic field.
+
+# Orientation Convention
+
+The orientations presented by the sensor are either in ENU or NED conventions. Practically, this means
+a sign change in pitch and yaw between the two conventions. Yaw is aligned with true north.
+
+Because of a limitation in how ROS sensor_msgs/Imu reports data, it can be unclear when viewing the
+message specifications the frame respective of which orientation is reported. This ambiguity is caused
+by not having a separate frame_id for orientation (which is measured w.r.t. a relatively fixed point) versus
+rates and accelerations (which are measured w.r.t. the body frame), and is not present in nav_msgs/Odometry
+which separates these two frames. Orientation data within sensor_msgs/Imu conforms to the same conventions
+as nav_msgs/Odometry, and is globally fixed in the NED and ENU frames.
