@@ -221,7 +221,7 @@ void BuildTest()
     sh script: '''#!/bin/bash
         cd catkin_ws
         source /opt/ros/kinetic/setup.bash
-        catkin build --verbose --catkin-make-args run_tests | grep "\[.\{10\}\]"''', label: 'Build Test'
+        catkin build --verbose --catkin-make-args run_tests''', label: 'Build Test'
 }
 void BuildDebug()
 {
