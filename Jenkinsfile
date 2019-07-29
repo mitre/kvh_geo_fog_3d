@@ -113,7 +113,7 @@ pipeline
             archiveArtifacts 'catkin_ws/*_lint.txt'
             archiveArtifacts 'cppcheck-result.xml'
             archiveArtifacts 'lizard.xml'
-            archiveArtifacts 'catkin_ws/*gtest-kvh_geo_fog_3d_driver-test.xml'
+            archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
             
             ////////////////////////////////////////////////////////////////////
             // Due to how fragile plugin publishers are with Declarative
