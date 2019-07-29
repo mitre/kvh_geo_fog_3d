@@ -90,6 +90,13 @@ pipeline
                 BuildRelease()
             }
         } //end: stage('Build')
+        stage('Test')
+        {
+            steps
+            {
+                BuildTest()
+            }
+        } //end: stage('Test')
         stage('Package')
         {
             steps
@@ -206,6 +213,15 @@ void BuildRelease()
         cd catkin_ws
         source /opt/ros/kinetic/setup.bash
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON''', label: 'Build Release'
+}
+void BuildTest()
+{
+    //Initial directory is ${JENKINS_WORKSPACE}/kvh_geo_fog_3d_driver.
+    //Under here is contained catkin_ws/src/kvh_geo_fog_3d_driver
+    sh script: '''#!/bin/bash
+        cd catkin_ws
+        source /opt/ros/kinetic/setup.bash
+        catkin build --verbose --catkin-make-args run_tests | grep '\[.\{10\}\]' ''', label: 'Build Test'
 }
 void BuildDebug()
 {
