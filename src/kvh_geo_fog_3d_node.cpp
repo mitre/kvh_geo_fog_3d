@@ -433,64 +433,30 @@ int main(int argc, char **argv)
             // \todo fill out covariance matrices for each of the below.
 
             // [-pi,pi) bounded yaw
-<<<<<<< HEAD
-            double boundedYawPiToPi = BoundFromNegPiToPi(systemStatePacket.orientation[2]);
-            double boundedYawZero2Pi = BoundFromZeroTo2Pi(systemStatePacket.orientation[2]);
-            
-            // ORIENTATION
-            double orientCovFRD[3] = {
-                pow(eulStdDevPack.standard_deviation[0], 2),
-                pow(eulStdDevPack.standard_deviation[1], 2),
-                pow(eulStdDevPack.standard_deviation[2], 2)};
-            tf2::Quaternion orientQuatFRD;
-
-            orientQuatFRD.setRPY(
-                systemStatePacket.orientation[0],
-                systemStatePacket.orientation[1],
-                boundedYawPiToPi);
-
-            double orientCovFLU[3] = {
-                pow(eulStdDevPack.standard_deviation[0], 2),
-                pow(eulStdDevPack.standard_deviation[1], 2),
-                pow(eulStdDevPack.standard_deviation[2], 2)};
-            tf2::Quaternion orientQuatFLU;
-
-            orientQuatFLU.setRPY(
-                systemStatePacket.orientation[0],
-                (-1 * systemStatePacket.orientation[1]),
-                (-1 * boundedYawPiToPi));
-=======
-            double boundedBearingPiToPi = BoundFromNegPiToPi(sysPacket.orientation[2]);
-            double boundedBearingZero2Pi = BoundFromZeroTo2Pi(sysPacket.orientation[2]);
+            double boundedBearingPiToPi = BoundFromNegPiToPi(systemStatePacket.orientation[2]);
+            double boundedBearingZero2Pi = BoundFromZeroTo2Pi(systemStatePacket.orientation[2]);
             
             // ORIENTATION
             // All orientations from this sensor are w.r.t. true north.
             tf2::Quaternion orientQuatNED;
             orientQuatNED.setRPY(
-              sysPacket.orientation[0],
-              sysPacket.orientation[1],
+              systemStatePacket.orientation[0],
+              systemStatePacket.orientation[1],
               boundedBearingZero2Pi);
             double orientCovNED[3] = {
               pow(eulStdDevPack.standard_deviation[0], 2),
               pow(eulStdDevPack.standard_deviation[1], 2),
               pow(eulStdDevPack.standard_deviation[2], 2)};
 
->>>>>>> master
             tf2::Quaternion orientQuatENU;
             //For NED -> ENU transformation:
             //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
             double unfixedEnuBearing = (-1 * boundedBearingZero2Pi) + (PI / 2.0);
             double enuBearing = BoundFromZeroTo2Pi(unfixedEnuBearing);
             orientQuatENU.setRPY(
-<<<<<<< HEAD
               systemStatePacket.orientation[1], // ENU roll = NED pitch
               systemStatePacket.orientation[0], // ENU pitch = NED roll
-              enuYaw // ENU yaw = -(NED yaw) + 90 degrees
-=======
-              sysPacket.orientation[1], // ENU roll = NED pitch
-              sysPacket.orientation[0], // ENU pitch = NED roll
               enuBearing // ENU bearing = -(NED bearing) + 90 degrees
->>>>>>> master
             );
             double orientCovENU[3] = {
               pow(eulStdDevPack.standard_deviation[1], 2),
@@ -566,17 +532,10 @@ int main(int argc, char **argv)
             imuDataNED.orientation_covariance[8] = orientCovNED[2];
 
             imuDataRpyNED.header = header;
-<<<<<<< HEAD
-            imuDataRpyNED.header.frame_id = "imu_link_ned";
+            imuDataRpyNED.header.frame_id = "imu_link_frd";
             imuDataRpyNED.vector.x = systemStatePacket.orientation[0];
             imuDataRpyNED.vector.y = systemStatePacket.orientation[1];
-            imuDataRpyNED.vector.z = boundedYawZero2Pi;
-=======
-            imuDataRpyNED.header.frame_id = "imu_link_frd";
-            imuDataRpyNED.vector.x = sysPacket.orientation[0];
-            imuDataRpyNED.vector.y = sysPacket.orientation[1];
             imuDataRpyNED.vector.z = boundedBearingZero2Pi;
->>>>>>> master
 
             imuDataRpyNEDDeg.header = header;
             imuDataRpyNEDDeg.header.frame_id = "imu_link_frd";
@@ -621,15 +580,9 @@ int main(int argc, char **argv)
             imuDataENU.orientation_covariance[4] = orientCovENU[0];
             imuDataENU.orientation_covariance[8] = orientCovENU[2];
 
-<<<<<<< HEAD
             imuDataRpyENU.vector.x = systemStatePacket.orientation[1];
             imuDataRpyENU.vector.y = systemStatePacket.orientation[0];
-            imuDataRpyENU.vector.z = enuYaw;
-=======
-            imuDataRpyENU.vector.x = sysPacket.orientation[1];
-            imuDataRpyENU.vector.y = sysPacket.orientation[0];
             imuDataRpyENU.vector.z = enuBearing;
->>>>>>> master
             imuDataRpyENUDeg.vector.x = ((imuDataRpyENU.vector.x * 180.0) / PI);
             imuDataRpyENUDeg.vector.y = ((imuDataRpyENU.vector.y * 180.0) / PI);
             imuDataRpyENUDeg.vector.z = ((imuDataRpyENU.vector.z * 180.0) / PI);
@@ -637,90 +590,23 @@ int main(int argc, char **argv)
             
             // ANGULAR VELOCITY
             // Keep in mind that for the sensor_msgs/Imu message, accelerations are
-<<<<<<< HEAD
-            // w.r.t the frame_id, which in this case is imu_link_enu.
-            // Thus, we must apply the following transformation for NED to ENU accelerations:
-            // Roll* -> Pitch*, Pitch* -> Roll*, Yaw* -> -Yaw*
-            imuDataENU.angular_velocity.x = systemStatePacket.angular_velocity[1]; // ENU roll rate = NED pitch rate
-            imuDataENU.angular_velocity.y = systemStatePacket.angular_velocity[0]; // ENU pitch rate = NED roll rate
-            imuDataENU.angular_velocity.z = -1 * systemStatePacket.angular_velocity[2]; // ENU yaw rate = -(NED yaw rate)
+            // w.r.t the frame_id, which in this case is imu_link_flu.
+            imuDataENU.angular_velocity.x = systemStatePacket.angular_velocity[0];
+            imuDataENU.angular_velocity.y = -1 * systemStatePacket.angular_velocity[1];
+            imuDataENU.angular_velocity.z = -1 * systemStatePacket.angular_velocity[2];
 
             // LINEAR ACCELERATION
             // Keep in mind that for the sensor_msgs/Imu message, accelerations are
-            // w.r.t the frame_id, which in this case is imu_link_enu.
-            // Thus, we must apply the following transformation for NED to ENU accelerations:
-            // X* -> Y*, Y* -> X*, Z* -> Z*
-            imuDataENU.linear_acceleration.x = systemStatePacket.body_acceleration[1];
-            imuDataENU.linear_acceleration.y = systemStatePacket.body_acceleration[0];
+            // w.r.t the frame_id, which in this case is imu_link_flu.
+            imuDataENU.linear_acceleration.x = systemStatePacket.body_acceleration[0];
+            imuDataENU.linear_acceleration.y = -1 * systemStatePacket.body_acceleration[1];
             imuDataENU.linear_acceleration.z = -1 * systemStatePacket.body_acceleration[2];
-=======
-            // w.r.t the frame_id, which in this case is imu_link_flu.
-            imuDataENU.angular_velocity.x = sysPacket.angular_velocity[0];
-            imuDataENU.angular_velocity.y = -1 * sysPacket.angular_velocity[1];
-            imuDataENU.angular_velocity.z = -1 * sysPacket.angular_velocity[2];
-
-            // LINEAR ACCELERATION
-            // Keep in mind that for the sensor_msgs/Imu message, accelerations are
-            // w.r.t the frame_id, which in this case is imu_link_flu.
-            imuDataENU.linear_acceleration.x = sysPacket.body_acceleration[0];
-            imuDataENU.linear_acceleration.y = -1 * sysPacket.body_acceleration[1];
-            imuDataENU.linear_acceleration.z = -1 * sysPacket.body_acceleration[2];
->>>>>>> master
 
             // Publish
             imuDataENUPub.publish(imuDataENU);
             imuDataRpyENUPub.publish(imuDataRpyENU);
             imuDataRpyENUDegPub.publish(imuDataRpyENUDeg);
 
-<<<<<<< HEAD
-            ///////////////////////////////////////////////////////////////////////////////////////////////
-            // DATA_FLU topic
-            ///////////////////////////////////////////////////////////////////////////////////////////////
-            sensor_msgs::Imu imuDataFLU;
-            geometry_msgs::Vector3Stamped imuDataRpyFLU;
-            geometry_msgs::Vector3Stamped imuDataRpyFLUDeg;
-            imuDataFLU.header = header;
-            imuDataFLU.header.frame_id = "imu_link_flu";
-            imuDataRpyFLU.header = header;
-            imuDataRpyFLU.header.frame_id = "imu_link_flu";
-            imuDataRpyFLUDeg.header = header;
-            imuDataRpyFLUDeg.header.frame_id = "imu_link_flu";
-            
-            // ORIENTATION
-            //Keep in mind that these are w.r.t. frame_id
-            imuDataFLU.orientation.x = orientQuatFLU.x();
-            imuDataFLU.orientation.y = orientQuatFLU.y();
-            imuDataFLU.orientation.z = orientQuatFLU.z();
-            imuDataFLU.orientation.w = orientQuatFLU.w();
-            imuDataFLU.orientation_covariance[0] = orientCovFLU[0];
-            imuDataFLU.orientation_covariance[4] = orientCovFLU[1];
-            imuDataFLU.orientation_covariance[8] = orientCovFLU[2];
-
-            imuDataRpyFLU.vector.x = systemStatePacket.orientation[0];
-            imuDataRpyFLU.vector.y = (-1 * systemStatePacket.orientation[1]);
-            imuDataRpyFLU.vector.z = (-1 * boundedYawZero2Pi);
-            imuDataRpyFLUDeg.vector.x = ((imuDataRpyFLU.vector.x * 180.0) / PI);
-            imuDataRpyFLUDeg.vector.y = ((imuDataRpyFLU.vector.y * 180.0) / PI);
-            imuDataRpyFLUDeg.vector.z = ((imuDataRpyFLU.vector.z * 180.0) / PI);
-            
-            
-            // ANGULAR VELOCITY
-            imuDataFLU.angular_velocity.x = systemStatePacket.angular_velocity[0];
-            imuDataFLU.angular_velocity.y = (-1 * systemStatePacket.angular_velocity[1]);
-            imuDataFLU.angular_velocity.z = (-1 * systemStatePacket.angular_velocity[2]);
-            
-            // LINEAR ACCELERATION
-            imuDataFLU.linear_acceleration.x = systemStatePacket.body_acceleration[0];
-            imuDataFLU.linear_acceleration.y = (-1 * systemStatePacket.body_acceleration[1]);
-            imuDataFLU.linear_acceleration.z = (-1 * systemStatePacket.body_acceleration[2]);
-
-            // Publish
-            imuDataFLUPub.publish(imuDataFLU);
-            imuDataRpyFLUPub.publish(imuDataRpyFLU);
-            imuDataRpyFLUDegPub.publish(imuDataRpyFLUDeg);
-
-=======
->>>>>>> master
             // NAVSATFIX Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/NavSatFix.html
             // NavSatStatus status
             // float64 latitude
@@ -836,43 +722,21 @@ int main(int argc, char **argv)
                 odomMsgNED.pose.covariance[35] = orientCovNED[2];
 
                 // TWIST
-<<<<<<< HEAD
-                // Linear FLU
+                // ENU uses FLU rates/accels
                 odomMsgENU.twist.twist.linear.x = systemStatePacket.velocity[0];
                 odomMsgENU.twist.twist.linear.y = (-1 * systemStatePacket.velocity[1]);
                 odomMsgENU.twist.twist.linear.z = (-1 * systemStatePacket.velocity[2]);
-
-                // Linear FRD
-                odomMsgNED.twist.twist.linear.x = systemStatePacket.velocity[0];
-                odomMsgNED.twist.twist.linear.y = systemStatePacket.velocity[1];
-                odomMsgNED.twist.twist.linear.z = systemStatePacket.velocity[2];
-
-                // Angular ENU
                 odomMsgENU.twist.twist.angular.x = systemStatePacket.angular_velocity[0];
                 odomMsgENU.twist.twist.angular.y = (-1 * systemStatePacket.angular_velocity[1]);
                 odomMsgENU.twist.twist.angular.z = (-1 * systemStatePacket.angular_velocity[2]);
-
-                // Angular NED
+                
+                // NED uses FRD rates/accels
+                odomMsgNED.twist.twist.linear.x = systemStatePacket.velocity[0];
+                odomMsgNED.twist.twist.linear.y = systemStatePacket.velocity[1];
+                odomMsgNED.twist.twist.linear.z = systemStatePacket.velocity[2];
                 odomMsgNED.twist.twist.angular.x = systemStatePacket.angular_velocity[0];
                 odomMsgNED.twist.twist.angular.y = systemStatePacket.angular_velocity[1];
                 odomMsgNED.twist.twist.angular.z = systemStatePacket.angular_velocity[2];
-=======
-                // ENU uses FLU rates/accels
-                odomMsgENU.twist.twist.linear.x = sysPacket.velocity[0];
-                odomMsgENU.twist.twist.linear.y = (-1 * sysPacket.velocity[1]);
-                odomMsgENU.twist.twist.linear.z = (-1 * sysPacket.velocity[2]);
-                odomMsgENU.twist.twist.angular.x = sysPacket.angular_velocity[0];
-                odomMsgENU.twist.twist.angular.y = (-1 * sysPacket.angular_velocity[1]);
-                odomMsgENU.twist.twist.angular.z = (-1 * sysPacket.angular_velocity[2]);
-                
-                // NED uses FRD rates/accels
-                odomMsgNED.twist.twist.linear.x = sysPacket.velocity[0];
-                odomMsgNED.twist.twist.linear.y = sysPacket.velocity[1];
-                odomMsgNED.twist.twist.linear.z = sysPacket.velocity[2];
-                odomMsgNED.twist.twist.angular.x = sysPacket.angular_velocity[0];
-                odomMsgNED.twist.twist.angular.y = sysPacket.angular_velocity[1];
-                odomMsgNED.twist.twist.angular.z = sysPacket.angular_velocity[2];
->>>>>>> master
                 
                 odomPubENU.publish(odomMsgENU);
                 odomPubNED.publish(odomMsgNED);
