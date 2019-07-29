@@ -9,6 +9,7 @@
 
 // STD
 #include <vector>
+#include <set>
 #include <map>
 #include <memory>
 #include <functional>
@@ -19,46 +20,23 @@
 #include "an_packet_protocol.h"
 #include "spatial_packets.h"
 
+// Kvh Driver Components
+#include "kvh_geo_fog_3d_packet_storage.hpp"
+#include "kvh_geo_fog_3d_global_vars.hpp"
+#include "kvh_geo_fog_3d_device_configuration.hpp"
+
 namespace kvh
 {
   /**
-   * @typedef KvhPackageMap
-   * Defines mapping from packet id's given in spatial_packets.h to a pair
-   * that contains a pointer to a struct of the type represented by the id, and a boolean
-   * denoting if the struct has been changed (for use when the map is passed to the
-   * Driver::Once function).
-   * 
-   * @attention If possible, use Driver::CreatePacketMap function
-   * to create and populate this map properly
-   */
-  typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPacketMap;
-
-  /**
-   * @typedef KvhPacketRequest
-   * Defines the format for a packet, frequency (Hz) pair that should be passed in
-   * by the user to retrieve specific packets at the given rate
-   */
-  typedef std::vector<std::pair<packet_id_e, int>> KvhPacketRequest;
-
-  /**
-   * @struct utm_fix
-   * The kvh outputs the utm zone number, which their packet does not have.
-   * We are inheriting from their packet and adding the field they left off.
-   */
-  struct utm_fix : utm_position_packet_t
-  {
-    uint8_t zone_num;
-  };
-
-  /**
    * @struct KvhInitOptions
    * Holds initialization options for the Kvh.
+   * \todo Implement gnss enabled
    */
   struct KvhInitOptions
   {
     bool gnssEnabled{true};
     int baudRate{115200};
-    bool autoBaud{false};
+    bool debugOn{false};
   };
 
 /**
@@ -82,27 +60,17 @@ private:
     ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay 
     ///< problem where the packet is already gone by the time this function is called) 
   KvhInitOptions defaultOptions_; ///< If no init options are passed in, use this as the default
-
-  std::map<packet_id_e, int> _packetSize {
-    {packet_id_system_state, sizeof(system_state_packet_t)},
-    {packet_id_unix_time, sizeof(unix_time_packet_t)},
-    {packet_id_raw_sensors, sizeof(raw_sensors_packet_t)},
-    {packet_id_satellites, sizeof(satellites_packet_t)},
-    {packet_id_satellites_detailed, sizeof(detailed_satellites_packet_t)},
-    {packet_id_local_magnetics, sizeof(local_magnetics_packet_t)},
-    {packet_id_utm_position, sizeof(utm_position_packet_t)},
-    {packet_id_ecef_position, sizeof(ecef_position_packet_t)},
-    {packet_id_north_seeking_status, sizeof(north_seeking_status_packet_t)},
-    {packet_id_euler_orientation_standard_deviation, sizeof(euler_orientation_standard_deviation_packet_t)}
-  }; ///< Map relating packet id's to the associated struct size. Used for baudrate calculation
+  KvhPacketStorage packetStorage_; ///< Class responsible for handling packets and ensuring consistency
+  KvhDeviceConfig deviceConfig_; ///< Class responsible for configuring kvh geo fog
 
   // Private functions, see implementation for detailed comments
-  int DecodePacket(an_packet_t*, KvhPacketMap&);
+  int DecodePacket(an_packet_t*);
   int DecodeUtmFix(utm_fix*, an_packet_t*); // Special decode since their utm api is incorrect
   int SendPacket(an_packet_t*);
-  int BuildPacketPeriods(KvhPacketRequest, packet_period_t&);
+
 
   public:
+
   Driver(bool _debug = false);
   ~Driver();
 
@@ -116,7 +84,7 @@ private:
    */
   int Init(const std::string& _port, KvhPacketRequest&);
 
-    /**
+  /**
    * \code
    * std::vector<packet_id_e> packetRequest{packet_id_system_state, packet_id_satellites}; 
    * std::string kvhPort("/dev/ttyUSB0");
@@ -143,31 +111,18 @@ private:
    *    .... // Do stuff with the retrived packet
    * }
    */
-  int Once(KvhPacketMap&);
+  int Once();
 
-  /**
-   * \code
-   * KvhPacketMap packetMap;
-   * kvh::Driver kvhDriver;
-   * // Populates map with packet id -> pair {boolean updated, pointer to struct}
-   * // Ex packet_id_e_system_state -> {bool, system_state_packet*}
-   * kvhDriver.CreatePacketMap(packetMap, packetRequest);
-   * // To retrieve the struct:
-   * system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
-   * \endcode
-   */
-  static int CreatePacketMap(KvhPacketMap&, KvhPacketRequest, bool _debug = false);
+  //\todo Implement PacketIsUpdated and GetPacket functions
+  bool PacketIsUpdated(packet_id_e);
+  int SetPacketUpdated(packet_id_e, bool);
 
-  /**
-   * std::string port{'/dev/USB0'};
-   * int curBaud = 115200;
-   * int prevBaud = 9600;
-   * kvh::Driver::SetBaudRate(port, curBaud, prevBaud);
-   */
-  static int SetBaudRate(std::string, int, int);
-
-  static int CalculateRequredBaud(KvhPacketRequest&);
-
+  template <class T>
+  int GetPacket(packet_id_e _packetId, T& packet)
+  {
+    return packetStorage_.GetPacket(_packetId, packet);
+  }
+  
   /**
    * \code
    * kvh::Driver kvhDriver
