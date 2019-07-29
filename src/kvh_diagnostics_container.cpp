@@ -170,7 +170,7 @@ void mitre::KVH::DiagnosticsContainer::UpdateSystemStatus(diagnostic_updater::Di
 
 void mitre::KVH::DiagnosticsContainer::UpdateFilterStatus(diagnostic_updater::DiagnosticStatusWrapper &stat)
 {
-  uint8_t level = diagnostic_msgs::DiagnosticStatus::STALE;
+  uint8_t level = diagnostic_msgs::DiagnosticStatus::OK;
   if( receivedFilterStatus_ )
   {
     ///////////////////////////////////////////////////////
@@ -208,9 +208,9 @@ void mitre::KVH::DiagnosticsContainer::UpdateFilterStatus(diagnostic_updater::Di
     ///////////////////////////////////////////////////////
     // Check GNSS Fix status
     // No fix is warn, everything else is OK
-    // These 3 bits are 0x10, 0x20, and 0x40 (so 0x70 for all 3)
+    // These 3 bits are 0x10, 0x20, and 0x40 (so 0x70 for all 3) then shift right to remove zeros
     std::string currentStatusStr("");
-    switch(static_cast<int>(filterStatus_ & 0x70))
+    switch(static_cast<int>((filterStatus_ & 0x70) >> 4))
     {
       case 0:
       {
