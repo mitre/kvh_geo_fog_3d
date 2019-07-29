@@ -13,6 +13,7 @@
 
 // KVH GEO FOG
 #include "kvh_geo_fog_3d_driver.hpp"
+#include "kvh_geo_fog_3d_device_configuration.hpp"
 #include "spatial_packets.h"
 
 // ROS
@@ -34,13 +35,6 @@ int main(int argc, char **argv)
         {
             std::pair<packet_id_e, int>(packet_id_system_state, 50)};
 
-    // Create a map, this will hold all of our data and status changes (if the packets were updated)
-    kvh::KvhPacketMap packetMap;
-
-    // Send the above to this function, it will initialize our map. KvhPackageMap is a messy map of type:
-    // std::map<packet_id_e, std::pair<bool, std::shared_pointer<void>>>, so best not to deal with it if possible
-    int unsupported = kvh::Driver::CreatePacketMap(packetMap, packetRequest);
-
     std::string kvhPort("/dev/ttyUSB0");
     // Check if the port has been set on the ros param server
     if (node.getParam("port", kvhPort))
@@ -50,12 +44,6 @@ int main(int argc, char **argv)
     else
     {
         ROS_WARN("No port specified by param, defaulting to USB0!");
-    }
-
-    // Determine if any of the requested packets are unsupported
-    if (unsupported > 0)
-    {
-        ROS_WARN("Warning: %d requested packets are unsupported and will not be available.", unsupported);
     }
 
     kvh::Driver kvhDriver;
@@ -78,9 +66,9 @@ int main(int argc, char **argv)
         for (int timerCount = 0; timerCount < 20; timerCount++)
         {
             // Look for data
-            kvhDriver.Once(packetMap);
+            kvhDriver.Once();
 
-            if (packetMap[packet_id_system_state].first)
+            if (kvhDriver.PacketIsUpdated(packet_id_system_state))
             {
                 // If we recieved data, then print out the baud rate
                 // \todo Possibly put this on the rosparam server
@@ -123,7 +111,7 @@ int main(int argc, char **argv)
             if (std::find(baudRates.begin(), baudRates.end(), newBaudRate) != baudRates.end())
             {
                 printf("Setting new baud rate at %d\n", newBaudRate);
-                int rv = kvh::Driver::SetBaudRate(kvhPort, baudRates[baudRateAttempt], newBaudRate);
+                int rv = kvh::KvhDeviceConfig::SetBaudRate(kvhPort, baudRates[baudRateAttempt], newBaudRate);
 
                 if (rv == 0)
                     printf("Success\n");

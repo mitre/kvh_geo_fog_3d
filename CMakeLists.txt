@@ -20,6 +20,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
 )
 
+set(KVH_DRIVER_FILES
+  src/kvh_driver/driver_main.cpp
+  src/kvh_driver/decode_packets.cpp
+  src/kvh_driver/packet_storage.cpp
+  src/kvh_driver/kvh_global_vars.cpp
+  src/kvh_driver/device_configuration.cpp
+)
+
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
@@ -139,7 +147,7 @@ add_library(${PROJECT_NAME}
   geo_fog_sdk/rs232/rs232.c
   geo_fog_sdk/spatial_packets.c
   src/kvh_diagnostics_container.cpp
-  src/kvh_geo_fog_3d_driver.cpp
+  ${KVH_DRIVER_FILES}
 )
 
 ## Specify libraries to link a library or executable target against
@@ -175,7 +183,10 @@ add_dependencies(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/kvh_geo_fog_3d_node.cpp)
+add_executable(${PROJECT_NAME}_node 
+  src/kvh_geo_fog_3d_node.cpp
+  ${KVH_DRIVER_FILES}
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -279,10 +290,19 @@ install(DIRECTORY scripts/
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_flir_adk_driver.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+include_directories(
+  test/include
+)
+catkin_add_gtest(${PROJECT_NAME}-test 
+  test/init_vars.cpp
+  test/device_configuration_test.cpp
+  test/packet_storage_test.cpp
+  test/kvh_driver_test.cpp
+)
+target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+if(TARGET ${PROJECT_NAME}-test)
+  target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
