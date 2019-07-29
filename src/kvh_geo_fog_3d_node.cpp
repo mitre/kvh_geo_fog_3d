@@ -24,13 +24,13 @@
 #include "kvh_geo_fog_3d_driver.hpp"
 #include "spatial_packets.h"
 #include "kvh_diagnostics_container.hpp"
-#include <diagnostic_updater/diagnostic_updater.h>
 
 // ROS
 #include "ros/ros.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <diagnostic_updater/diagnostic_updater.h>
 
 // Custom ROS msgs
 #include <kvh_geo_fog_3d_driver/KvhGeoFog3DSystemState.h>
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "kvh_geo_fog_3d_driver");
 
     ros::NodeHandle node("~");
-    ros::Rate rate(50); // 50hz by defaul, may eventually may settable parameter
+    ros::Rate rate(50); // 50hz by default, may eventually may settable parameter
 
     diagnostic_updater::Updater diagnostics;
     mitre::KVH::DiagnosticsContainer diagContainer;
@@ -201,7 +201,10 @@ int main(int argc, char **argv)
 
     if (node.getParam("debug", initOptions.debugOn))
     {
-        ROS_INFO_STREAM("Showing debug statements.");
+        if(initOptions.debugOn)
+        {
+            ROS_INFO_STREAM("Showing debug statements.");
+        }
     }    
 
     kvhDriver.Init(kvhPort, packetRequest, initOptions);
@@ -438,6 +441,25 @@ int main(int argc, char **argv)
             
             // ORIENTATION
             // All orientations from this sensor are w.r.t. true north.
+            if (std::isnan(eulStdDevPack.standard_deviation[0]))
+            {
+              eulStdDevPack.standard_deviation[0] = 0;
+              ROS_INFO("NAN Found");
+            }
+
+            if (std::isnan(eulStdDevPack.standard_deviation[1]))
+            {
+              eulStdDevPack.standard_deviation[1] = 0;
+              ROS_INFO("NAN Found");
+            }
+
+            if (std::isnan(eulStdDevPack.standard_deviation[2]))
+            {
+              eulStdDevPack.standard_deviation[2] = 0;
+              ROS_INFO("NAN Found");
+            }
+
+
             tf2::Quaternion orientQuatNED;
             orientQuatNED.setRPY(
               systemStatePacket.orientation[0],
