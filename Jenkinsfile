@@ -151,6 +151,16 @@ pipeline
                 {
                     currentBuild.result = 'UNSTABLE'
                 }
+
+                try
+                {
+                    xunit (thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
+                        tools: [ GoogleTest(pattern: 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml') ])
+                }
+                catch(exc)
+                {
+                    sh script: 'echo XUNIT PLUGIN NOT AVAILABLE', label: 'XUNIT Parsing'
+                }
             }
         }
 	    success
