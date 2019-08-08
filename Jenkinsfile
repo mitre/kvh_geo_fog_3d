@@ -186,11 +186,11 @@ void CheckoutMaster()
         branches: [[name: '*/master']],
         doGenerateSubmoduleConfigurations: false,
         extensions: [[$class: 'RelativeTargetDirectory',
-            relativeTargetDir: 'catkin_ws/src/kvh_geo_fog_3d_driver']],
+            relativeTargetDir: 'catkin_ws/src/kvh_geo_fog_3d']],
         submoduleCfg: [],
         userRemoteConfigs:
             [[credentialsId:'ZLAC_GITLAB_KEY',
-            url: 'git@gitlab.mitre.org:DART/kvh_geo_fog_3d_driver.git']]
+            url: 'git@gitlab.mitre.org:DART/kvh_geo_fog_3d.git']]
         ])
 }
 void SetupKinetic()
@@ -213,13 +213,13 @@ void SetupKinetic()
     sh script: """
         cd catkin_ws
         rosdep update
-        rosdep install --rosdistro kinetic --from-paths src -y -r src/kvh_geo_fog_3d_driver
+        rosdep install --rosdistro kinetic --from-paths src -y -r src/kvh_geo_fog_3d
     """, label: 'Install Package rosdeps'
 }
 void BuildRelease()
 {
-    //Initial directory is ${JENKINS_WORKSPACE}/kvh_geo_fog_3d_driver.
-    //Under here is contained catkin_ws/src/kvh_geo_fog_3d_driver
+    //Initial directory is ${JENKINS_WORKSPACE}/kvh_geo_fog_3d.
+    //Under here is contained catkin_ws/src/kvh_geo_fog_3d
     sh script: '''#!/bin/bash
         cd catkin_ws
         source /opt/ros/kinetic/setup.bash
@@ -227,8 +227,8 @@ void BuildRelease()
 }
 void BuildTest()
 {
-    //Initial directory is ${JENKINS_WORKSPACE}/kvh_geo_fog_3d_driver.
-    //Under here is contained catkin_ws/src/kvh_geo_fog_3d_driver
+    //Initial directory is ${JENKINS_WORKSPACE}/kvh_geo_fog_3d.
+    //Under here is contained catkin_ws/src/kvh_geo_fog_3d
     sh script: '''#!/bin/bash
         cd catkin_ws
         source /opt/ros/kinetic/setup.bash
@@ -236,8 +236,8 @@ void BuildTest()
 }
 void BuildDebug()
 {
-    //Initial directory is ${JENKINS_WORKSPACE}/kvh_geo_fog_3d_driver.
-    //Under here is contained catkin_ws/src/kvh_geo_fog_3d_driver
+    //Initial directory is ${JENKINS_WORKSPACE}/kvh_geo_fog_3d.
+    //Under here is contained catkin_ws/src/kvh_geo_fog_3d
     sh script: '''#!/bin/bash
         cd catkin_ws
         set -o pipefail
@@ -250,7 +250,7 @@ void CatkinLint()
         cd catkin_ws
         set -o pipefail
         source /opt/ros/kinetic/setup.bash
-        catkin lint -W2 src/kvh_geo_fog_3d_driver |& tee catkinpackage_lint.txt
+        catkin lint -W2 src/kvh_geo_fog_3d |& tee catkinpackage_lint.txt
     ''', label: 'Catkin Linter'
 }
 void CppCheck()
@@ -260,23 +260,20 @@ void CppCheck()
         # Run this from the base of the workspace! File paths are relative to
         # the run location, and Jenkins reports want those paths to be relative
         # to the workspace root (e.g. /home/jenkins/workspace/kvh_geo_fog_3d_driver)
-        cppcheck --enable=warning,style,performance,portability --language=c++ --platform=unix64 --std=c++11 -I catkin_ws/src/kvh_geo_fog_3d_driver/include/ --xml --xml-version=2 catkin_ws/src/kvh_geo_fog_3d_driver/src 2> cppcheck-result.xml
+        cppcheck --enable=warning,style,performance,portability --language=c++ --platform=unix64 --std=c++11 -I catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/include/ --xml --xml-version=2 catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/src catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/src 2> cppcheck-result.xml
     """, label: 'CPPCheck'
 }
 void Lizard()
 {
     sh script: """
-        lizard -l cpp catkin_ws/src/kvh_geo_fog_3d_driver/src/ catkin_ws/src/kvh_geo_fog_3d_driver/include/ --xml > lizard.xml 2>&1
+        lizard -l cpp catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/src/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/include/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/src/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/include/ --xml > lizard.xml 2>&1
     """, label: 'Lizard'
 }
 void PackageDebian()
 {
     sh script: '''#!/bin/bash
-        cd catkin_ws/src/kvh_geo_fog_3d_driver
-        bloom-generate rosdebian --os-name ubuntu --os-version xenial --ros-distro kinetic
-        cp packaging/rules debian/rules
-        source /opt/ros/kinetic/setup.bash
-        fakeroot debian/rules binary
+        cd catkin_ws/src/kvh_geo_fog_3d
+        ./build_all_debs.sh
     ''', label: "Debian Packaging"
 }
 
