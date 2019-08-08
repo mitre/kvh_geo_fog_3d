@@ -20,12 +20,12 @@ pipeline
     }
     triggers
     {
-        //Trigger builds every night at 2AM, as well as whenever the repo is
-        //updated. Poll for updates every 10 minutes.
-        pollSCM('H/10 * * * *')
+        //Trigger builds every night at 2AM
         cron('H 2 * * *')
+        //Don't trigger on SCM changes--too much to do in Jenkins for that.
+        //For fast SCM builds without metrics, use Gitlab runners.
+        //pollSCM('H/10 * * * *')
     }
-    
     stages
     {
         stage('Checkout')
