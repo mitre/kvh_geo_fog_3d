@@ -15,7 +15,7 @@ do
 done
 
 echo "Removing remaining debian files..."
-rm -f kvh_geo_fog_3d*.deb
+rm -f ros-*-kvh-geo-fog-3d*.deb
 
 echo "Done!"
 
