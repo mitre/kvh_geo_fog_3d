@@ -10,6 +10,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   geometry_msgs
+  kvh_geo_fog_3d_msgs
   message_generation
   nav_msgs
   nodelet
@@ -52,17 +53,10 @@ set(KVH_DRIVER_FILES
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-# Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  KvhGeoFog3DDetailSatellites.msg
-  KvhGeoFog3DECEFPos.msg
-  KvhGeoFog3DLocalMagneticField.msg 
-  KvhGeoFog3DNorthSeekingInitStatus.msg 
-  KvhGeoFog3DSatellites.msg 
-  KvhGeoFog3DSystemState.msg
-  KvhGeoFog3DUTMPosition.msg
-)
+##
+# For this package, message live in the sibling "_msgs" package, so don't add any
+# here.
+##
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -77,12 +71,6 @@ add_message_files(
 #   Action1.action
 #   Action2.action
 # )
-
-# Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -115,7 +103,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
   INCLUDE_DIRS include include/geo_fog_sdk include/rs232
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS dynamic_reconfigure message_runtime nodelet pluginlib roscpp std_msgs tf2_ros
+  CATKIN_DEPENDS dynamic_reconfigure kvh_geo_fog_3d_msgs message_runtime nodelet pluginlib roscpp std_msgs tf2_ros
 )
 
 ###########

@@ -33,13 +33,13 @@
 #include <diagnostic_updater/diagnostic_updater.h>
 
 // Custom ROS msgs
-#include <kvh_geo_fog_3d_driver/KvhGeoFog3DSystemState.h>
-#include <kvh_geo_fog_3d_driver/KvhGeoFog3DSatellites.h>
-#include <kvh_geo_fog_3d_driver/KvhGeoFog3DDetailSatellites.h>
-#include <kvh_geo_fog_3d_driver/KvhGeoFog3DLocalMagneticField.h>
-#include <kvh_geo_fog_3d_driver/KvhGeoFog3DUTMPosition.h>
-#include <kvh_geo_fog_3d_driver/KvhGeoFog3DECEFPos.h>
-#include <kvh_geo_fog_3d_driver/KvhGeoFog3DNorthSeekingInitStatus.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DDetailSatellites.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DLocalMagneticField.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DUTMPosition.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DECEFPos.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DNorthSeekingInitStatus.h>
 
 // Standard ROS msgs
 #include "sensor_msgs/Imu.h"
@@ -133,13 +133,13 @@ int main(int argc, char **argv)
 
     // Map containing publishers for each type of message we want to send out
     std::map<packet_id_e, ros::Publisher> kvhPubMap{
-        {packet_id_system_state, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState>("kvh_system_state", 1)},
-        {packet_id_satellites, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DSatellites>("kvh_satellites", 1)},
-        {packet_id_satellites_detailed, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DDetailSatellites>("kvh_detailed_satellites", 1)},
-        {packet_id_local_magnetics, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DLocalMagneticField>("kvh_local_magnetics", 1)},
-        {packet_id_utm_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition>("kvh_utm_position", 1)},
-        {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos>("kvh_ecef_pos", 1)},
-        {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}};
+        {packet_id_system_state, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DSystemState>("kvh_system_state", 1)},
+        {packet_id_satellites, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DSatellites>("kvh_satellites", 1)},
+        {packet_id_satellites_detailed, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DDetailSatellites>("kvh_detailed_satellites", 1)},
+        {packet_id_local_magnetics, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DLocalMagneticField>("kvh_local_magnetics", 1)},
+        {packet_id_utm_position, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DUTMPosition>("kvh_utm_position", 1)},
+        {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DECEFPos>("kvh_ecef_pos", 1)},
+        {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)}};
 
     // Publishers for standard ros messages
     ros::Publisher imuDataRawPub = node.advertise<sensor_msgs::Imu>("imu/data_raw_frd", 1);
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
             // Have to cast the shared_ptr to the correct type and then dereference.
             kvhDriver.GetPacket(packet_id_system_state, systemStatePacket);
 
-            kvh_geo_fog_3d_driver::KvhGeoFog3DSystemState sysStateMsg;
+            kvh_geo_fog_3d_msgs::KvhGeoFog3DSystemState sysStateMsg;
             sysStateMsg.header = header;
             sysStateMsg.system_status = systemStatePacket.system_status.r;
             sysStateMsg.filter_status = systemStatePacket.filter_status.r;
@@ -284,7 +284,7 @@ int main(int argc, char **argv)
         {
             ROS_DEBUG("Satellites packet updated. Publishing...");
             kvhDriver.GetPacket(packet_id_satellites, satellitesPacket);
-            kvh_geo_fog_3d_driver::KvhGeoFog3DSatellites satellitesMsg;
+            kvh_geo_fog_3d_msgs::KvhGeoFog3DSatellites satellitesMsg;
 
             satellitesMsg.header = header;
             satellitesMsg.hdop = satellitesPacket.hdop;
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
         {
             ROS_DEBUG("Detailed satellites packet updated. Publishing...");
             kvhDriver.GetPacket(packet_id_satellites_detailed, detailSatellitesPacket);
-            kvh_geo_fog_3d_driver::KvhGeoFog3DDetailSatellites detailSatellitesMsg;
+            kvh_geo_fog_3d_msgs::KvhGeoFog3DDetailSatellites detailSatellitesMsg;
 
             detailSatellitesMsg.header = header;
 
@@ -337,7 +337,7 @@ int main(int argc, char **argv)
         {
             ROS_DEBUG("Local magnetics packet updated. Publishing...");
             kvhDriver.GetPacket(packet_id_local_magnetics, localMagPacket);
-            kvh_geo_fog_3d_driver::KvhGeoFog3DLocalMagneticField localMagFieldMsg;
+            kvh_geo_fog_3d_msgs::KvhGeoFog3DLocalMagneticField localMagFieldMsg;
 
             localMagFieldMsg.header = header;
             localMagFieldMsg.loc_mag_field_x_mG = localMagPacket.magnetic_field[0];
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
         {
             ROS_DEBUG("UTM Position packet updated. Publishing...");
             kvhDriver.GetPacket(packet_id_utm_position, utmPosPacket);
-            kvh_geo_fog_3d_driver::KvhGeoFog3DUTMPosition utmPosMsg;
+            kvh_geo_fog_3d_msgs::KvhGeoFog3DUTMPosition utmPosMsg;
 
             utmPosMsg.header = header;
             utmPosMsg.northing_m = utmPosPacket.position[0];
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
         {
             ROS_DEBUG("ECEF position packet updated. Publishing...");
             kvhDriver.GetPacket(packet_id_ecef_position, ecefPosPacket);
-            kvh_geo_fog_3d_driver::KvhGeoFog3DECEFPos ecefPosMsg;
+            kvh_geo_fog_3d_msgs::KvhGeoFog3DECEFPos ecefPosMsg;
 
             ecefPosMsg.header = header;
             ecefPosMsg.ecef_x_m = ecefPosPacket.position[0];
@@ -383,7 +383,7 @@ int main(int argc, char **argv)
         {
             ROS_DEBUG("North seeking status packet updated. Publishing...");
             kvhDriver.GetPacket(packet_id_north_seeking_status, northSeekingStatPacket);
-            kvh_geo_fog_3d_driver::KvhGeoFog3DNorthSeekingInitStatus northSeekInitStatMsg;
+            kvh_geo_fog_3d_msgs::KvhGeoFog3DNorthSeekingInitStatus northSeekInitStatMsg;
 
             northSeekInitStatMsg.header = header;
             northSeekInitStatMsg.flags = northSeekingStatPacket.north_seeking_status.r;

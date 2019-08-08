@@ -1,18 +1,17 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>kvh_geo_fog_3d_driver</name>
+  <name>kvh_geo_fog_3d_msgs</name>
   <version>1.0.0</version>
-  <description>A ROS driver for the KVH Geo Fog 3D INS family of systems.</description>
+  <description>kvh_geo_fog_3d_msgs contains raw messages for the KVH GEO FOG 3D INS devices.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
-  <!-- Example:  -->
-  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
+  <maintainer email="tbostic@mitre.org">Trevor Bostic</maintainer>
   <maintainer email="zlacelle@mitre.org">Zach LaCelle</maintainer>
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>BSD</license>
+  <license>Proprietary</license>
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
@@ -25,7 +24,7 @@
   <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
   <author email="tbostic@mitre.org">Trevor Bostic</author>
   <author email="zlacelle@mitre.org">Zach LaCelle</author>
-  
+
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <!-- Examples: -->
@@ -47,46 +46,15 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>diagnostic_updater</build_depend>
-  <build_depend>dynamic_reconfigure</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>kvh_geo_fog_3d_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>nodelet</build_depend>
-  <build_depend>pluginlib</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>sensor_msgs</build_depend>
+  <buildtool_depend>message_generation</buildtool_depend>
+
   <build_depend>std_msgs</build_depend>
-  <build_depend>tf2_ros</build_depend>
-  <build_export_depend>diagnostic_updater</build_export_depend>
-  <build_export_depend>dynamic_reconfigure</build_export_depend>
-  <build_export_depend>geometry_msgs</build_export_depend>
-  <build_export_depend>kvh_geo_fog_3d_msgs</build_export_depend>
-  <build_export_depend>message_generation</build_export_depend>
-  <build_export_depend>nav_msgs</build_export_depend>
-  <build_export_depend>nodelet</build_export_depend>
-  <build_export_depend>pluginlib</build_export_depend>
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>sensor_msgs</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
-  <build_export_depend>tf2_ros</build_export_depend>
-  <exec_depend>dynamic_reconfigure</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>kvh_geo_fog_3d_msgs</exec_depend>
+  
   <exec_depend>message_runtime</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>nodelet</exec_depend>
-  <exec_depend>pluginlib</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
 
-
-  <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
-    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
     <rosdoc external="http://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d-dual/commercial-geo-fog-3d-dual/"/>
   </export>
+
 </package>
