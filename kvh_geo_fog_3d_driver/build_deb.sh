@@ -9,6 +9,7 @@ export PYTHONHTTPSVERIFY=0
 
 echo "Building Debian..."
 bloom-generate rosdebian --os-name ubuntu --os-version xenial --ros-distro kinetic
+bash packaging/fix_rules.sh
 fakeroot debian/rules binary
 
 echo "Done!"
