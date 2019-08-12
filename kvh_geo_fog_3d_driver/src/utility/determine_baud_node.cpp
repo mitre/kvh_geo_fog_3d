@@ -25,15 +25,16 @@ int main(int argc, char **argv)
 
     ros::NodeHandle node("~");
 
-    std::vector<int> baudRates = {
+    std::set<int> baudRates = {
         1200, 1800, 2400, 4800, 9600,
         19200, 57600, 115200, 230400,
         460800, 500000, 576000, 921600, 1000000};
 
     // We will just look for the system state packet
     kvh::KvhPacketRequest packetRequest =
-        {
-            std::pair<packet_id_e, int>(packet_id_system_state, 50)};
+    {
+        std::pair<packet_id_e, int>(packet_id_system_state, 50)
+    };
 
     std::string kvhPort("/dev/ttyUSB0");
     // Check if the port has been set on the ros param server
@@ -46,90 +47,60 @@ int main(int argc, char **argv)
         ROS_WARN("No port specified by param, defaulting to USB0!");
     }
 
-    kvh::Driver kvhDriver;
-    kvh::KvhInitOptions initOptions;
-    int baudRateAttempt = 0;
-    ros::Rate rate(10);
-    bool baudFound = false;
-    while (ros::ok() && (baudRateAttempt < baudRates.size() && !baudFound))
+
+    int curBaudRate = kvh::KvhDeviceConfig::FindCurrentBaudRate(kvhPort);
+    
+    if (curBaudRate > 0)
     {
-        printf("Attempting Baud Rate: %d\n", baudRates[baudRateAttempt]);
+        int newBaudRate = 0;
+        std::string possibleRates = "";
 
-        // Initialize the driver at some baud rate
-        initOptions.baudRate = baudRates[baudRateAttempt];
-        int error = kvhDriver.Init(kvhPort, packetRequest, initOptions);
-
-        if (error != 0)
-            printf("Error initializing: %d\n", error);
-
-        // Give it ~2 seconds to see if any data comes in
-        for (int timerCount = 0; timerCount < 20; timerCount++)
+        for(int rate : baudRates)
         {
-            // Look for data
-            kvhDriver.Once();
-
-            if (kvhDriver.PacketIsUpdated(packet_id_system_state))
-            {
-                // If we recieved data, then print out the baud rate
-                // \todo Possibly put this on the rosparam server
-                printf("Recieved packet. Correct baud rate found!\n");
-                printf("Baud Rate: %d\n", baudRates[baudRateAttempt]);
-                baudFound = true;
-                break;
-            }
-
-            ros::spinOnce();
-            rate.sleep();
+            possibleRates += std::to_string(rate) + "\n";
         }
 
-        // Check if baud was found before increment
-        if (!baudFound)
-            baudRateAttempt++;
-
-        // Close the kvh so that we can reinitialize
-        kvhDriver.Cleanup();
-    }
-
-    if (baudFound)
-    {
-        int newBaudRate;
-        bool setRate = false;
-
-        while (!setRate)
+        while (true)
         {
-            printf("If you wish to modify the baud rate,"
-                   "please input a new baud rate, if not enter -1.\n");
-            printf("Acceptable baud rates:\n");
-            for (int i = 0; i < baudRates.size(); i++)
-            {
-                printf("%d\n", baudRates[i]);
-            }
+            printf("If you wish to modify the baud rate, please input a new rate.\n%s", possibleRates.c_str());
+            printf("********************************\n");
+            printf("Keep in mind that AM1 runs on hyper mode which multiplies all baud rates\n");
+            printf("by a factor of 8. Example, if you wish to enter 921600, enter 115200 (921600/115200)\n");
+            printf("Only a few of the rates are currently supported in this mode.\n");
+            printf("********************************\n");
+            printf("If you wish to exit, please enter a negative number.\n");
+
 
             std::cin >> newBaudRate;
 
-            // Get the new baud rate, see if it is in the list of accepted baud rates.
-            if (std::find(baudRates.begin(), baudRates.end(), newBaudRate) != baudRates.end())
+            if (baudRates.count(newBaudRate) > 0)
             {
-                printf("Setting new baud rate at %d\n", newBaudRate);
-                int rv = kvh::KvhDeviceConfig::SetBaudRate(kvhPort, baudRates[baudRateAttempt], newBaudRate);
-
-                if (rv == 0)
-                    printf("Success\n");
+                if (kvh::KvhDeviceConfig::SetBaudRate(kvhPort, curBaudRate, newBaudRate) != 0)
+                {
+                    printf("Unable to set baud rate, please try again or exit.\n");
+                    continue;
+                }
                 else
-                    printf("Failure\n");
-
-                setRate = true;
+                {
+                    printf("Baud Rate successfully set. Exiting.\n");
+                    break;
+                }
+                
             }
-            else if (newBaudRate >= 0)
+            else if (newBaudRate > 0)
             {
-                printf("Please enter a baudrate from the list of acceptable rates.\n");
+                printf("Please enter a value from the list provided.\n");
             }
-            else // Negative number
+            else
             {
-                printf("Exiting\n");
-                setRate = true;
+                printf("Exiting program.\n");
+                break;
             }
         }
+    }
+    else
+    {
+        printf("Unable to find baud rate. Try a different port.");
     }
 
     printf("Reached the end successfully.\n");
