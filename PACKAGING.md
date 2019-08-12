@@ -6,6 +6,8 @@ To package this repository, follow these steps.
 
 ONLY FOLLOW THESE STEPS IF YOU ALREADY KNOW WHAT THE REST OF THIS FILE SAYS!!!
 
+For each subdirectory containing a package:
+
 ```
 catkin_generate_changelog
 (edit CHANGELOG.rst)
@@ -14,8 +16,14 @@ catkin_prepare_release --bump {major,minor,patch}
 git push --tags
 ./packaging/release.sh
 bloom-generate rosdebian --os-name ubuntu --os-version <version here> --ros-distro <ROS distro here>
+./packaging/fix_rules.sh
 fakeroot debian/rules binary
 ```
+
+## Pre-Requisite
+
+These commands are per-package! So, you must go into sub-directories to release each package individually.
+
 ## Step 0: Figure out your new version
 
 NOTE: If you are unfamiliar with software versioning practice for this project, consult the software wiki here: https://confluence.mitre.org/display/MET2MIP/Versioning
@@ -112,6 +120,17 @@ Example:
 ```
 bloom-generate rosdebian --os-name ubuntu --os-version xenial --ros-distro kinetic
 ```
+
+### Handling local package dependencies
+
+Bloom cleans your ROS environment before building, and thus if you have a package that depends on other
+local packages to build, it will fail. A great example is a repository which is split into a _msgs package
+containing your messages and a _driver package containing your driver.
+
+To get around this issue, the scripts in packaging are called to fix up the debian/rules file before
+packaging. Generally this is a fix_rules.sh file that adds some cmake variables to the build.
+
+Refer to the build_deb.sh script, and the scripts under packaging/, for more details.
 
 ### Packaging
 
