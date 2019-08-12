@@ -60,6 +60,14 @@ public:
     static int SetBaudRate(std::string, int, int);
 
     /**
+    * @code
+    * std::string port{'/dev/ttyUSB1'};
+    * int curBaud = FindCurrentBaudRate(port);
+    * @endcode
+    */
+    static int FindCurrentBaudRate(std::string);
+
+    /**
      * @code
      * kvh::KvhPacketRequest packetRequest = {
      *    // Create packet timer
@@ -67,7 +75,7 @@ public:
      * kvh::KvhDeviceConfig::CalculateRequiredBaud(packetRequest);
      * @endcode
      */
-    static int CalculateRequiredBaud(KvhPacketRequest&);
+    static int CalculateRequiredBaud(KvhPacketRequest &);
 };
 
 } // namespace kvh

@@ -88,7 +88,7 @@ int KvhDeviceConfig::CreatePacketPeriodsPacket(KvhPacketRequest &_packetsRequest
  *  -1 = Vehicle type out of range
  */
 int KvhDeviceConfig::CreateFilterOptionsPacket(
-    filter_options_packet_t& _filterOptions,
+    filter_options_packet_t &_filterOptions,
     bool _permanent,
     uint8_t _vehicle_type,
     bool _internal_gnss_enabled,
@@ -97,21 +97,21 @@ int KvhDeviceConfig::CreateFilterOptionsPacket(
     bool _reversing_detection_enabled,
     bool _motion_analysis_enabled)
 {
-    if (_vehicle_type > 13)
-    {
-        return -1;
-    }
+  if (_vehicle_type > 13)
+  {
+    return -1;
+  }
 
-    _filterOptions.permanent = _permanent;
-    _filterOptions.vehicle_type = _vehicle_type;
-    _filterOptions.internal_gnss_enabled = _internal_gnss_enabled; // Set if we want to test using gps or not
-    _filterOptions.reserved = 0; // Need to set to 0, have found problems with other packets not doing this
-    _filterOptions.atmospheric_altitude_enabled = _atmospheric_altitude_enabled;
-    _filterOptions.velocity_heading_enabled = _velocity_heading_enabled;
-    _filterOptions.reversing_detection_enabled = _reversing_detection_enabled;
-    _filterOptions.motion_analysis_enabled = _motion_analysis_enabled;
+  _filterOptions.permanent = _permanent;
+  _filterOptions.vehicle_type = _vehicle_type;
+  _filterOptions.internal_gnss_enabled = _internal_gnss_enabled; // Set if we want to test using gps or not
+  _filterOptions.reserved = 0;                                   // Need to set to 0, have found problems with other packets not doing this
+  _filterOptions.atmospheric_altitude_enabled = _atmospheric_altitude_enabled;
+  _filterOptions.velocity_heading_enabled = _velocity_heading_enabled;
+  _filterOptions.reversing_detection_enabled = _reversing_detection_enabled;
+  _filterOptions.motion_analysis_enabled = _motion_analysis_enabled;
 
-    return 0;
+  return 0;
 }
 
 /**
@@ -136,35 +136,93 @@ int KvhDeviceConfig::CreateFilterOptionsPacket(
  */
 int KvhDeviceConfig::SetBaudRate(std::string _port, int _curBaudRate, int _desiredBaudRate)
 {
-    // Create the baud rate packet that we want to send
-    baud_rates_packet_t baudRatePacket;
-    baudRatePacket.permanent = 1;
-    baudRatePacket.primary_baud_rate = _desiredBaudRate;
-    baudRatePacket.gpio_1_2_baud_rate = _desiredBaudRate;
-    baudRatePacket.auxiliary_baud_rate = _desiredBaudRate;
-    baudRatePacket.reserved = 0;
+  // Create the baud rate packet that we want to send
+  baud_rates_packet_t baudRatePacket;
+  baudRatePacket.permanent = 1;
+  baudRatePacket.primary_baud_rate = _desiredBaudRate;
+  baudRatePacket.gpio_1_2_baud_rate = _desiredBaudRate;
+  baudRatePacket.auxiliary_baud_rate = _desiredBaudRate;
+  baudRatePacket.reserved = 0;
 
-    an_packet_t *requestPacket = encode_baud_rates_packet(&baudRatePacket);
+  an_packet_t *requestPacket = encode_baud_rates_packet(&baudRatePacket);
 
-    char portArr[4096];
-    strncpy(portArr, _port.c_str(), 4096);
-    if (OpenComport(portArr, _curBaudRate) != 0)
+  char portArr[4096];
+  strncpy(portArr, _port.c_str(), 4096);
+  if (OpenComport(portArr, _curBaudRate) != 0)
+  {
+    return -1;
+  }
+
+  an_packet_encode(requestPacket);
+  // Send AN packet via serial port
+  if (!SendBuf(an_packet_pointer(requestPacket), an_packet_size(requestPacket)))
+  {
+    return -2;
+  }
+  an_packet_free(&requestPacket);
+  requestPacket = nullptr;
+
+  CloseComport();
+
+  return 0;
+}
+
+/**
+ * @Driver::FindCurrentBaudRate
+ * @param [in] port The port on the computer the kvh is connected to (e.g. '/dev/ttyUSB0')
+ * @return int The current baudrate of the kvh if found, -1 otherwise
+ * 
+ * @brief This function tries each possible setting of baudrates until it
+ * either finds one that is receiving packets from the kvh, or runs out of
+ * possibilities.
+ */
+int KvhDeviceConfig::FindCurrentBaudRate(std::string _port)
+{
+  std::vector<int> baudRates = {
+      1200, 1800, 2400, 4800, 9600,
+      19200, 57600, 115200, 230400,
+      460800, 500000, 576000, 921600, 1000000};
+
+  char portArr[4096];
+  strncpy(portArr, _port.c_str(), 4096);
+
+  for (int baudRate : baudRates)
+  {
+    printf("Opening with port: %s, baudrate: %d...\n", portArr, baudRate);
+    if (OpenComport(portArr, baudRate) != 0)
     {
-        return -1;
+      continue; // Try next baud rate
     }
 
-    an_packet_encode(requestPacket);
-    // Send AN packet via serial port
-    if (!SendBuf(an_packet_pointer(requestPacket), an_packet_size(requestPacket)))
+    an_decoder_t anDecoder;
+    an_packet_t *anPacket;
+    an_decoder_initialise(&anDecoder);
+    int bytesRec = 0;
+ 
+    // Check for data over the next second
+    for (int i = 0; i < 20; i++)
     {
-        return -2;
+      // Check if new packets have been sent
+      if ((bytesRec = PollComport(an_decoder_pointer(&anDecoder), an_decoder_size(&anDecoder))) > 0)
+      {
+        // printf("Bytes Recieved: %d", bytesRec);
+        an_decoder_increment(&anDecoder, bytesRec);
+        // See if we can decode a packet
+        while ((anPacket = an_packet_decode(&anDecoder)) != NULL)
+        {
+          // If so, we have found the correct baud rate
+          printf("Found a packet\n");
+          CloseComport();
+          an_packet_free(&anPacket);
+          printf("Found connection at %d baud\n", baudRate);
+          return baudRate;
+        }
+      }
+      usleep(10000);
     }
-    an_packet_free(&requestPacket);
-    requestPacket = nullptr;
-
     CloseComport();
-
-    return 0;
+  }
+  return -1;
 }
 
 /**
@@ -185,35 +243,35 @@ int KvhDeviceConfig::SetBaudRate(std::string _port, int _curBaudRate, int _desir
  */
 int KvhDeviceConfig::CalculateRequiredBaud(KvhPacketRequest &_packetsRequested)
 {
-    std::set<packet_id_e> packetIdList;
-    int dataThroughput = 0;
+  std::set<packet_id_e> packetIdList;
+  int dataThroughput = 0;
 
-    for (int i = 0; i < _packetsRequested.size(); i++)
+  for (int i = 0; i < _packetsRequested.size(); i++)
+  {
+    std::pair<packet_id_e, uint16_t> packet = _packetsRequested[i];
+
+    // Check for duplicate packets or unsupported packet id's
+    if (packetSize_.count(packet.first) == 0)
     {
-        std::pair<packet_id_e, uint16_t> packet = _packetsRequested[i];
-
-        // Check for duplicate packets or unsupported packet id's
-        if (packetSize_.count(packet.first) == 0)
-        {
-            return -1;
-        }
-        else if (packetIdList.count(packet.first) > 0)
-        {
-            return -2;
-        }
-
-        // Max allowed hz is 1000
-        if (packet.second > 1000)
-        {
-            return -3;
-        }
-
-        // Increase required baudrate by (struct_size + 5) * rate
-        dataThroughput += (packetSize_[packet.first] + 5) * packet.second;
-        packetIdList.insert(packet.first);
+      return -1;
+    }
+    else if (packetIdList.count(packet.first) > 0)
+    {
+      return -2;
     }
 
-    return dataThroughput * 11; // Minimum baud = Data throughput * 11
+    // Max allowed hz is 1000
+    if (packet.second > 1000)
+    {
+      return -3;
+    }
+
+    // Increase required baudrate by (struct_size + 5) * rate
+    dataThroughput += (packetSize_[packet.first] + 5) * packet.second;
+    packetIdList.insert(packet.first);
+  }
+
+  return dataThroughput * 11; // Minimum baud = Data throughput * 11
 }
 
 } // namespace kvh

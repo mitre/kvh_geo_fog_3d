@@ -16,6 +16,7 @@
 #include <set>
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
 
 // RS232
 #include "rs232.h"
@@ -119,7 +120,8 @@ int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, 
 {
   int returnValue = 0;
   debug_ = _initOptions.debugOn;
-  if (debug_) printf("Debug statements enabled.\n");
+  if (debug_)
+    printf("Debug statements enabled.\n");
 
   if (packetStorage_.Init(_packetsRequested) != 0)
   {
@@ -292,25 +294,43 @@ int Driver::Once()
   }
 } // END Once()
 
-bool Driver::PacketIsUpdated(packet_id_e _packetId)
-{
-  return packetStorage_.PacketIsUpdated(_packetId);
-}
+  /**
+ * @Driver::PacketIsUpdated
+ * @param _packetId The id of the packet you are checking
+ * @return True if the packet has been updated, false if not
+ * 
+ * @brief Use this function to determine if new packet data
+ * has arrived since the last time you checked
+ */
+  bool Driver::PacketIsUpdated(packet_id_e _packetId)
+  {
+    return packetStorage_.PacketIsUpdated(_packetId);
+  }
 
-int Driver::SetPacketUpdated(packet_id_e _packetId, bool _updateStatus)
-{
-  return packetStorage_.SetPacketUpdated(_packetId, _updateStatus);
-}
+  /**
+ * @Driver::SetPacketUpdated
+ * @param _packetId The id of the packet you want to set the status of
+ * @param _updateStatus The value you want to set the packet to.
+ * 
+ * @brief Use this function to set that the packet has been updated (though
+ * the driver will usually do that itself), or use it to notify the driver
+ * that you have used the most recent packet.
+ */
+  int Driver::SetPacketUpdated(packet_id_e _packetId, bool _updateStatus)
+  {
+    return packetStorage_.SetPacketUpdated(_packetId, _updateStatus);
+  }
 
-/**
+  /**
    * @fn Driver::Cleanup
    * @brief Cleanup and close our connections.
    * @return [int]: 0 = success, > 0 = warning, < 0 = failure
 */
-int Driver::Cleanup()
-{
-  if (connected_) CloseComport();
-  return 0;
-} // END Cleanup()
+  int Driver::Cleanup()
+  {
+    if (connected_)
+      CloseComport();
+    return 0;
+  } // END Cleanup()
 
 } // namespace kvh

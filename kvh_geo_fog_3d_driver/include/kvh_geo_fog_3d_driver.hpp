@@ -27,17 +27,17 @@
 
 namespace kvh
 {
-  /**
+/**
    * @struct KvhInitOptions
    * Holds initialization options for the Kvh.
    * \todo Implement gnss enabled
    */
-  struct KvhInitOptions
-  {
-    bool gnssEnabled{true};
-    int baudRate{115200};
-    bool debugOn{false};
-  };
+struct KvhInitOptions
+{
+  bool gnssEnabled{true};
+  int baudRate{115200};
+  bool debugOn{false};
+};
 
 /**
    * @class Driver
@@ -50,27 +50,25 @@ namespace kvh
 class Driver
 {
 private:
-  bool connected_; ///< True if we're connected to the localization unit.
-  std::string port_; ///< Port to connect to the kvh through. Ex. "/dev/ttyUSB0"
+  bool connected_;                  ///< True if we're connected to the localization unit.
+  std::string port_;                ///< Port to connect to the kvh through. Ex. "/dev/ttyUSB0"
   const uint32_t PACKET_PERIOD{50}; ///< Setting for determining packet rate. **Note**: Does not
-    ///< equal packet frequency. See manual for equation on how Packet Period affects packet rate. 
-  an_decoder_t anDecoder_; ///< Decoder for decoding incoming AN encoded packets.
-  bool debug_{false}; ///< Set true to print debug statements
-  std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve 
-    ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay 
-    ///< problem where the packet is already gone by the time this function is called) 
-  KvhInitOptions defaultOptions_; ///< If no init options are passed in, use this as the default
+      ///< equal packet frequency. See manual for equation on how Packet Period affects packet rate.
+  an_decoder_t anDecoder_;                  ///< Decoder for decoding incoming AN encoded packets.
+  bool debug_{false};                       ///< Set true to print debug statements
+  std::vector<packet_id_e> packetRequests_; ///< Keeps a list of packet requests we have sent that we should recieve
+      ///< achknowledgement packets for. Add to list in SendPacket, remove in Once (this may cause a time delay
+      ///< problem where the packet is already gone by the time this function is called)
+  KvhInitOptions defaultOptions_;  ///< If no init options are passed in, use this as the default
   KvhPacketStorage packetStorage_; ///< Class responsible for handling packets and ensuring consistency
-  KvhDeviceConfig deviceConfig_; ///< Class responsible for configuring kvh geo fog
+  KvhDeviceConfig deviceConfig_;   ///< Class responsible for configuring kvh geo fog
 
   // Private functions, see implementation for detailed comments
-  int DecodePacket(an_packet_t*);
-  int DecodeUtmFix(utm_fix*, an_packet_t*); // Special decode since their utm api is incorrect
-  int SendPacket(an_packet_t*);
+  int DecodePacket(an_packet_t *);
+  int DecodeUtmFix(utm_fix *, an_packet_t *); // Special decode since their utm api is incorrect
+  int SendPacket(an_packet_t *);
 
-
-  public:
-
+public:
   Driver(bool _debug = false);
   ~Driver();
 
@@ -82,7 +80,7 @@ private:
    * kvhDriver.Init(kvhPort, packetRequest);  
    * \endcode
    */
-  int Init(const std::string& _port, KvhPacketRequest&);
+  int Init(const std::string &_port, KvhPacketRequest &);
 
   /**
    * \code
@@ -95,10 +93,10 @@ private:
    * kvhDriver.Init(kvhPort, packetRequest, initOptions);  * 
    * \endcode
    */
-  int Init(const std::string& _port, KvhPacketRequest&, KvhInitOptions _initOptions);
+  int Init(const std::string &_port, KvhPacketRequest &, KvhInitOptions _initOptions);
 
   /**
-   * \code 
+   * @code 
    * std::vector<packet_id_e> packetRequest{packet_id_system_state, packet_id_satellites};
    * KvhPacketMap packetMap;
    * kvh::Driver kvhDriver;
@@ -110,19 +108,19 @@ private:
    *    system_state_packet_t sysPacket = *static_cast<system_state_packet_t *>(packetMap[packet_id_system_state].second.get());
    *    .... // Do stuff with the retrived packet
    * }
+   * @endcode
    */
   int Once();
 
-  //\todo Implement PacketIsUpdated and GetPacket functions
   bool PacketIsUpdated(packet_id_e);
   int SetPacketUpdated(packet_id_e, bool);
 
   template <class T>
-  int GetPacket(packet_id_e _packetId, T& packet)
+  int GetPacket(packet_id_e _packetId, T &packet)
   {
     return packetStorage_.GetPacket(_packetId, packet);
   }
-  
+
   /**
    * \code
    * kvh::Driver kvhDriver
