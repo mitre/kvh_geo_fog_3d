@@ -10,6 +10,7 @@ do
     dir=${dir%*/}
     if [ -f "${dir}/clean_deb.sh" ]; then
         echo "Cleaning ${dir}..."
+        echo ./${dir}/clean_deb.sh
         ./${dir}/clean_deb.sh
     fi
 done
