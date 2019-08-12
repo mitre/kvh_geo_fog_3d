@@ -101,8 +101,8 @@ pipeline
         {
             steps
             {
-                //PackageDebian()
-                sh script: 'echo "Packaging disabled for now"', label: "Packaging"
+                PackageDebian()
+                //sh script: 'echo "Packaging disabled for now"', label: "Packaging"
             }
         }
     } //end: stages
