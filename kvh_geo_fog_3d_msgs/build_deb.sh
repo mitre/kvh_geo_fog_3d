@@ -1,7 +1,5 @@
 #!/bin/bash
 
-pushd "${0%/*}" >& /dev/null
-
 export ROSDISTRO_INDEX_URL=https://gitlab.mitre.org/dart-release/rosdistro/raw/dart/index-v4.yaml
 export PYTHONHTTPSVERIFY=0
 
@@ -15,5 +13,3 @@ echo "Done!"
 
 unset ROSDISTRO_INDEX_URL=https://gitlab.mitre.org/dart-release/rosdistro/raw/dart/index-v4.yaml
 unset PYTHONHTTPSVERIFY=0
-
-popd >& /dev/null

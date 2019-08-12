@@ -11,8 +11,9 @@ do
     # Remove trailing slash
     dir=${dir%*/}
     if [ -f "${dir}/build_deb.sh" ]; then
-        echo "Building ${dir}..."
-        ./${dir}/build_deb.sh
+        pushd ${dir}
+        ./build_deb.sh
+        popd >& /dev/null
     fi
 done
 

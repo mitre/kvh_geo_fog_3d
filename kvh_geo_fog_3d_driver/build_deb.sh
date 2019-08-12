@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pushd "${0%/*}" >& /dev/null
+echo `pwd`
 
 export ROSDISTRO_INDEX_URL=https://gitlab.mitre.org/dart-release/rosdistro/raw/dart/index-v4.yaml
 export PYTHONHTTPSVERIFY=0
@@ -12,9 +12,5 @@ bloom-generate rosdebian --os-name ubuntu --os-version xenial --ros-distro kinet
 bash packaging/fix_rules.sh
 fakeroot debian/rules binary
 
-echo "Done!"
-
 unset ROSDISTRO_INDEX_URL
 unset PYTHONHTTPSVERIFY
-
-popd >& /dev/null
