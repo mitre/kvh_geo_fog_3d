@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>kvh_geo_fog_3d</name>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <description>Provides a driver node for KVH GEO FOG 3D INS sensors, messages, and rviz plugins.</description>
   <author email="zlacelle@mitre.org">Zach LaCelle</author>
   <maintainer email="zlacelle@mitre.org">Zach LaCelle</maintainer>

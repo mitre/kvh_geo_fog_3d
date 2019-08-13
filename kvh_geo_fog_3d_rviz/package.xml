@@ -12,7 +12,7 @@ let us know where this software is being used.
 
 <package format="2">
   <name>kvh_geo_fog_3d_rviz</name>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <description>The KVH GEO FOG 3D rviz plugin package</description>
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
