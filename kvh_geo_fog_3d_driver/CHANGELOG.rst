@@ -2,7 +2,7 @@
 Changelog for package kvh_geo_fog_3d_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.0.1 (2019-08-13)
+1.1.0 (2019-08-13)
 -----------
 * Moving msgs into their own package
 * Updating package.xml and CMakeLists.txt to handle the new packaging scheme
