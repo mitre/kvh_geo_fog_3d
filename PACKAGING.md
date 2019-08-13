@@ -10,7 +10,7 @@ For each subdirectory containing a package:
 
 ```
 catkin_generate_changelog
-(edit CHANGELOG.rst)
+(edit CHANGELOG.rst. THE VERSION YOU SET HERE SHOULD MATCH WHAT YOU'RE BUMPING **TO**)
 (save, add, commit, and push CHANGELOG.rst)
 catkin_prepare_release --bump {major,minor,patch}
 git push --tags
@@ -49,7 +49,7 @@ Run the following commands:
 
 2) Edit and fix up CHANGELOG.rst
 
-This should be done in an editor. You need to manually put in your release number and date, in
+This should be done in an editor. You need to manually put in your release number that you're bumping **TO** as well as the date in
 ISO 8601 format (YYYY-MM-DD).
 
 An example of a good changelog is here: https://github.com/ros-infrastructure/ros_buildfarm/blob/master/CHANGELOG.rst
