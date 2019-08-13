@@ -106,6 +106,9 @@ The script packaging/release.sh will perform the bloom-release command for you, 
 You must already have a release repository ready. It should be located under the Gitlab group DART-release, and should have the
 suffix "-release". It should be initialized with a README.md.
 
+NOTE: If you get a failure in the "rosdep update" section, check to make sure that if you need a proxy, it's set up on that terminal!
+The test is to run "rosdep update" yourself and make sure that it doesn't throw errors.
+
 ## Generating local debian
 
 ### Bloom for Debian files
