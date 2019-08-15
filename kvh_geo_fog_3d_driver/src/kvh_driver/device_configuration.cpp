@@ -197,15 +197,15 @@ int KvhDeviceConfig::FindCurrentBaudRate(std::string _port)
     an_decoder_t anDecoder;
     an_packet_t *anPacket;
     an_decoder_initialise(&anDecoder);
-    int bytesRec = 0;
  
     // Check for data over the next second
     for (int i = 0; i < 20; i++)
     {
+      int bytesRec = 0;
+      
       // Check if new packets have been sent
       if ((bytesRec = PollComport(an_decoder_pointer(&anDecoder), an_decoder_size(&anDecoder))) > 0)
       {
-        // printf("Bytes Recieved: %d", bytesRec);
         an_decoder_increment(&anDecoder, bytesRec);
         // See if we can decode a packet
         while ((anPacket = an_packet_decode(&anDecoder)) != NULL)

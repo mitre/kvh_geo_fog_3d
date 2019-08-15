@@ -65,8 +65,8 @@ int Driver::SendPacket(an_packet_t *_anPacket)
   // Send AN packet via serial port
   if (SendBuf(an_packet_pointer(_anPacket), an_packet_size(_anPacket)))
   {
-    return 0;
     packetRequests_.push_back(static_cast<packet_id_e>(_anPacket->id));
+    return 0;
   }
   else
   {
@@ -249,7 +249,7 @@ int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, 
 int Driver::Once()
 {
   an_packet_t *anPacket;
-  int bytesRec;
+  int bytesRec = 0;
   int unexpectedPackets = 0;
 
   // Check if new packets have been sent
@@ -292,6 +292,8 @@ int Driver::Once()
       an_packet_free(&anPacket);
     }
   }
+
+  if (debug_) printf("Recieved %d unexpected packets during transmission.", unexpectedPackets);
 } // END Once()
 
   /**

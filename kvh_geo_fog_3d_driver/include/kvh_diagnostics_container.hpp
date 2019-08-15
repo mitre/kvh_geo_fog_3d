@@ -26,10 +26,10 @@ namespace mitre
       void UpdateFilterStatus(diagnostic_updater::DiagnosticStatusWrapper &stat);
 
     private:
-      uint16_t systemStatus_;
-      bool receivedSystemStatus_;
-      uint16_t filterStatus_;
-      bool receivedFilterStatus_;
+      uint16_t systemStatus_{0xFFFF}; // Assume all errors until stated otherwise
+      bool receivedSystemStatus_{false};
+      uint16_t filterStatus_{0x0000}; // Assume no initialization until stated otherwise
+      bool receivedFilterStatus_{false};
     }; //end: class DiagnosticsContainer
   } //end: namespace KVH
 } //end: namespace mitre
