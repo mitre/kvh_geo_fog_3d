@@ -22,6 +22,7 @@
 
 // KVH GEO FOG
 #include "kvh_geo_fog_3d_driver.hpp"
+#include "kvh_geo_fog_3d_global_vars.hpp"
 #include "spatial_packets.h"
 #include "kvh_diagnostics_container.hpp"
 
@@ -214,7 +215,7 @@ int main(int argc, char **argv)
     satellites_packet_t satellitesPacket;
     detailed_satellites_packet_t detailSatellitesPacket;
     local_magnetics_packet_t localMagPacket;
-    utm_position_packet_t utmPosPacket;
+    kvh::utm_fix utmPosPacket;
     ecef_position_packet_t ecefPosPacket;
     north_seeking_status_packet_t northSeekingStatPacket;
     euler_orientation_standard_deviation_packet_t eulStdDevPack;
@@ -691,7 +692,12 @@ int main(int argc, char **argv)
                 // the ros ENU standard
                 nav_msgs::Odometry odomMsgENU;
                 nav_msgs::Odometry odomMsgNED;
-                kvhDriver.GetPacket(packet_id_utm_position, utmPosPacket);
+                int error = kvhDriver.GetPacket(packet_id_utm_position, utmPosPacket);
+                if (error < 0)
+                {
+                  printf("Error Code: %d\n", error);
+                  printf("UTM PACKET: %f, %f, %f\n", utmPosPacket.position[0], utmPosPacket.position[1], utmPosPacket.position[2]);
+                }
 
                 odomMsgENU.header = header;
                 odomMsgENU.header.frame_id = "utm_enu";     //The nav_msgs/Odometry "Pose" section should be in this frame

@@ -36,7 +36,7 @@ std::map<packet_id_e, std::string> packetTypeStr_ = {
     {packet_id_satellites, typeid(satellites_packet_t).name()},
     {packet_id_satellites_detailed, typeid(detailed_satellites_packet_t).name()},
     {packet_id_local_magnetics, typeid(local_magnetics_packet_t).name()},
-    {packet_id_utm_position, typeid(utm_position_packet_t).name()},
+    {packet_id_utm_position, typeid(utm_fix).name()},
     {packet_id_ecef_position, typeid(ecef_position_packet_t).name()},
     {packet_id_north_seeking_status, typeid(north_seeking_status_packet_t).name()},
     {packet_id_euler_orientation_standard_deviation, typeid(euler_orientation_standard_deviation_packet_t).name()},
