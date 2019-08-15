@@ -69,7 +69,7 @@ private:
   int SendPacket(an_packet_t *);
 
 public:
-  Driver(bool _debug = false);
+  explicit Driver(bool _debug = false);
   ~Driver();
 
   /**
