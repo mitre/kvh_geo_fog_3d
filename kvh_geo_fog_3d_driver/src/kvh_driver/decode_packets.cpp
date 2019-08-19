@@ -194,6 +194,7 @@ int Driver::DecodePacket(an_packet_t *_anPacket)
         utm_fix utmPacket;
         if (DecodeUtmFix(&utmPacket, _anPacket) == 0)
         {
+            if (debug_) printf("UTM: %f, %f, %f\n", utmPacket.position[0], utmPacket.position[1], utmPacket.position[2]);
             packetStorage_.UpdatePacket(packet_id_utm_position, utmPacket);
             packetStorage_.SetPacketUpdated(packet_id_utm_position, true);
 
