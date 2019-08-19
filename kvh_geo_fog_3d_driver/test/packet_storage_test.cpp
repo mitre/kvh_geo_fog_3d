@@ -81,7 +81,7 @@ TEST(PacketStorage, updateUncontained)
 {
     kvh::KvhPacketStorage packetStorage;
     EXPECT_EQ(0, packetStorage.Init(KvhPackReqEnv::smallRequest));
-    utm_position_packet_t utmPacket;
+    kvh::utm_fix utmPacket;
     utmPacket.position[0] = 12;
 
     EXPECT_EQ(-2, packetStorage.UpdatePacket(packet_id_utm_position, utmPacket));
@@ -159,7 +159,7 @@ TEST(PacketStorage, getPacketUncontained)
 {
     kvh::KvhPacketStorage packetStorage;
     EXPECT_EQ(0, packetStorage.Init(KvhPackReqEnv::smallRequest));
-    utm_position_packet_t utmPacket;
+    kvh::utm_fix utmPacket;
     EXPECT_EQ(-2, packetStorage.GetPacket(packet_id_utm_position, utmPacket));
 }
 
@@ -228,6 +228,31 @@ TEST(PacketStorage, updatePacketandGetPacket)
     EXPECT_EQ(sysPacket.standard_deviation[0], sysPacket2.standard_deviation[0]);
     EXPECT_EQ(sysPacket.standard_deviation[1], sysPacket2.standard_deviation[1]);
     EXPECT_EQ(sysPacket.standard_deviation[2], sysPacket2.standard_deviation[2]);
+}
+
+// This test is included in addtion to the one above since we needed to make
+// modifications to the utm packet. 
+TEST(PacketStorage, UTM_UpdateAndGetPacket)
+{
+    kvh::KvhPacketStorage packetStorage;
+    kvh::utm_fix utmPacket;
+    utmPacket.position[0] = 32;
+    utmPacket.position[1] = 42;
+    utmPacket.position[2] = 133;
+    utmPacket.zone = 'B';
+    utmPacket.zone_num = 12;
+
+    EXPECT_EQ(0, packetStorage.Init(KvhPackReqEnv::largeRequest));
+    EXPECT_EQ(0, packetStorage.UpdatePacket(packet_id_utm_position, utmPacket));
+    kvh::utm_fix utmPacket2;
+    EXPECT_EQ(0, packetStorage.GetPacket<kvh::utm_fix>(packet_id_utm_position, utmPacket2));
+
+    // Compare structs
+    EXPECT_EQ(utmPacket.position[0], utmPacket2.position[0]);
+    EXPECT_EQ(utmPacket.position[1], utmPacket2.position[1]);
+    EXPECT_EQ(utmPacket.position[2], utmPacket2.position[2]);
+    EXPECT_EQ(utmPacket.zone, utmPacket2.zone);
+    EXPECT_EQ(utmPacket.zone_num, utmPacket2.zone_num);
 }
 
 TEST(PacketStorage, containsTrue)
