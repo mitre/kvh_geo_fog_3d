@@ -174,7 +174,8 @@ int main(int argc, char **argv)
         freqPair(packet_id_local_magnetics, 50),
         freqPair(packet_id_utm_position, 50),
         freqPair(packet_id_ecef_position, 50),
-        freqPair(packet_id_north_seeking_status, 50)
+        freqPair(packet_id_north_seeking_status, 50),
+        freqPair(packet_id_odometer_state, 50),
     };
 
     std::string kvhPort("/dev/ttyUSB0");

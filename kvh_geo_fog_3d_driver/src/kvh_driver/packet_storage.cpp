@@ -71,6 +71,9 @@ int KvhPacketStorage::Init(KvhPacketRequest& _packRequest)
     case packet_id_euler_orientation_standard_deviation:
       packetMap_[packet_id_euler_orientation_standard_deviation] = std::make_pair(false, std::make_shared<euler_orientation_standard_deviation_packet_t>());
       break;
+    case packet_id_odometer_state:
+      packetMap_[packet_id_odometer_state] = std::make_pair(false, std::make_shared<odometer_state_packet_t>());
+      break;
     default:
       return -2;
     }
