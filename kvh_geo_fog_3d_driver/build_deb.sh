@@ -2,8 +2,8 @@
 
 echo `pwd`
 
-# export ROSDISTRO_INDEX_URL=https://gitlab.mitre.org/dart-release/rosdistro/raw/dart/index-v4.yaml
-# export PYTHONHTTPSVERIFY=0
+export ROSDISTRO_INDEX_URL=https://gitlab.mitre.org/dart-release/rosdistro/raw/dart/index-v4.yaml
+export PYTHONHTTPSVERIFY=0
 
 . clean_deb.sh
 
