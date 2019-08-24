@@ -57,7 +57,7 @@ public:
     * kvh::KvhDeviceConfig::SetBaudRate(port, curBaud, prevBaud);
     * @endcode
     */
-    static int SetBaudRate(std::string, int, int);
+    static int SetBaudRate(std::string _port, int _curBaudRate, int _primaryBaudRate, int _gpioBaudRate = 115200, int _auxBaudRate = 115200);
 
     /**
     * @code

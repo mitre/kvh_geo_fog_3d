@@ -134,14 +134,14 @@ int KvhDeviceConfig::CreateFilterOptionsPacket(
  *  -1 = Failure to open port
  *  -2 = Failure to set baud rate
  */
-int KvhDeviceConfig::SetBaudRate(std::string _port, int _curBaudRate, int _desiredBaudRate)
+int KvhDeviceConfig::SetBaudRate(std::string _port, int _curBaudRate, int _primaryBaudRate, int _gpioBaudRate, int _auxBaudRate)
 {
   // Create the baud rate packet that we want to send
   baud_rates_packet_t baudRatePacket;
   baudRatePacket.permanent = 1;
-  baudRatePacket.primary_baud_rate = _desiredBaudRate;
-  baudRatePacket.gpio_1_2_baud_rate = _desiredBaudRate;
-  baudRatePacket.auxiliary_baud_rate = _desiredBaudRate;
+  baudRatePacket.primary_baud_rate = _primaryBaudRate;
+  baudRatePacket.gpio_1_2_baud_rate = _gpioBaudRate;
+  baudRatePacket.auxiliary_baud_rate = _auxBaudRate;
   baudRatePacket.reserved = 0;
 
   an_packet_t *requestPacket = encode_baud_rates_packet(&baudRatePacket);

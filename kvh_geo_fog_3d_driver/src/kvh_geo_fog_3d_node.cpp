@@ -794,6 +794,8 @@ int main(int argc, char **argv)
       kvhDriver.GetPacket(packet_id_odometer_state, odomStatePacket);
       nav_msgs::Odometry kvhOdomStateMsg;
 
+      kvhOdomStateMsg.header = header;
+      kvhOdomStateMsg.header.frame_id = "base_link";
       kvhOdomStateMsg.twist.twist.linear.x = odomStatePacket.speed;
       kvhOdomStateMsg.twist.twist.linear.y = 0;
       kvhOdomStateMsg.twist.twist.linear.z = 0;
