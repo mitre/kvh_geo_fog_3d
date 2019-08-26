@@ -8,10 +8,20 @@
        detailed satellite information packets. -->
   <arg name="baud" default="921600" />
   <arg name="debug" default="false" />
+  <arg name="filterVehicleType" default="2" /> <!-- 2 is for car, see documentation for full list -->
+  <arg name="atmosphericAltitudeEnabled" default="true" />
+  <arg name="velocityHeadingEnabled" default="true" />
+  <arg name="reversingDetectionEnabled" default="true" />
+  <arg name="motionAnalysisEnabled" default="true" />
 
   <node pkg="kvh_geo_fog_3d_driver" type="kvh_geo_fog_3d_driver_node" name="kvh_geo_fog_3d_driver_node" output="screen">
     <param name="port" value="$(arg port)" />
     <param name="baud" value="$(arg baud)" />
     <param name="debug" value="$(arg debug)" />
+    <param name="filterVehicleType" value="$(arg filterVehicleType)" />
+    <param name="atmosphericAltitudeEnabled" value="$(arg atmosphericAltitudeEnabled)" />
+    <param name="velocityHeadingEnabled" value="$(arg velocityHeadingEnabled)" />
+    <param name="reversingDetectionEnabled" value="$(arg reversingDetectionEnabled)" />
+    <param name="motionAnalysisEnabled" value="$(arg motionAnalysisEnabled") />
   </node>
 </launch>

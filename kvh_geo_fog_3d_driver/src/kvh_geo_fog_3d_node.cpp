@@ -121,6 +121,38 @@ void SetupUpdater(diagnostic_updater::Updater *_diagnostics, mitre::KVH::Diagnos
   _diagnostics->add("KVH Filters", _diagContainer, &mitre::KVH::DiagnosticsContainer::UpdateFilterStatus);
 }
 
+int GetInitOptions(ros::NodeHandle& _node, kvh::KvhInitOptions& _initOptions)
+{
+
+  // Check if the port has been set on the ros param server
+  _node.getParam("port", _initOptions.port);
+  _node.getParam("baud", _initOptions.baudRate);
+  _node.getParam("debug", _initOptions.debugOn);
+
+  int filterVehicleType;
+  if (_node.getParam("filterVehicleType", filterVehicleType))
+  {
+    // node.getParam doesn't have an overload for uint8_t
+    _initOptions.filterVehicleType = filterVehicleType;
+  }
+
+  _node.getParam("atmosphericAltitudeEnabled", _initOptions.atmosphericAltitudeEnabled);
+  _node.getParam("velocityHeadingEnabled", _initOptions.velocityHeadingEnabled);
+  _node.getParam("reversingDetectionEnabled", _initOptions.reversingDetectionEnabled);
+  _node.getParam("motionAnalysisEnabled", _initOptions.motionAnalysisEnabled);
+
+  ROS_INFO_STREAM("Port: " << _initOptions.port);
+  ROS_INFO_STREAM("Baud: " << _initOptions.baudRate);
+  ROS_INFO_STREAM("Debug: " << _initOptions.debugOn);
+  ROS_INFO_STREAM("Filter Vehicle Type: " << _initOptions.filterVehicleType);
+  ROS_INFO_STREAM("Atmospheric Altitude Enabled: " << _initOptions.atmosphericAltitudeEnabled);
+  ROS_INFO_STREAM("Velocity Heading Enabled: " << _initOptions.velocityHeadingEnabled);
+  ROS_INFO_STREAM("Reversing Detection Enabled: " << _initOptions.reversingDetectionEnabled);
+  ROS_INFO_STREAM("Motion Analysis Enabled: " << _initOptions.motionAnalysisEnabled);
+
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "kvh_geo_fog_3d_driver");
@@ -180,38 +212,16 @@ int main(int argc, char **argv)
       freqPair(packet_id_odometer_state, 50),
   };
 
-  std::string kvhPort("/dev/ttyUSB0");
-  // Can pass true to this constructor to get print outs. Is currently messy but usable
   kvh::Driver kvhDriver;
-  // Check if the port has been set on the ros param server
-  if (node.getParam("port", kvhPort))
-  {
-    ROS_INFO_STREAM("Connecting to KVH on port " << kvhPort);
-  }
-  else
-  {
-    ROS_WARN("No port specified by param, defaulting to USB0!");
-  }
-
   kvh::KvhInitOptions initOptions;
-  if (node.getParam("baud", initOptions.baudRate))
+
+  if (GetInitOptions(node, initOptions) < 0)
   {
-    ROS_INFO_STREAM("Connecting with baud rate " << initOptions.baudRate);
-  }
-  else
-  {
-    ROS_WARN("No baud specified, using baud %d.", initOptions.baudRate);
+    ROS_ERROR("Unable to get init options. Exiting.");
+    exit(1);
   }
 
-  if (node.getParam("debug", initOptions.debugOn))
-  {
-    if (initOptions.debugOn)
-    {
-      ROS_INFO_STREAM("Showing debug statements.");
-    }
-  }
-
-  kvhDriver.Init(kvhPort, packetRequest, initOptions);
+  kvhDriver.Init(initOptions.port, packetRequest, initOptions);
 
   // Declare these for reuse
   system_state_packet_t systemStatePacket;
