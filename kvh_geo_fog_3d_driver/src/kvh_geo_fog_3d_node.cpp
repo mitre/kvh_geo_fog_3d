@@ -144,7 +144,7 @@ int GetInitOptions(ros::NodeHandle& _node, kvh::KvhInitOptions& _initOptions)
   ROS_INFO_STREAM("Port: " << _initOptions.port);
   ROS_INFO_STREAM("Baud: " << _initOptions.baudRate);
   ROS_INFO_STREAM("Debug: " << _initOptions.debugOn);
-  ROS_INFO_STREAM("Filter Vehicle Type: " << _initOptions.filterVehicleType);
+  ROS_INFO_STREAM("Filter Vehicle Type: " << (int) _initOptions.filterVehicleType);
   ROS_INFO_STREAM("Atmospheric Altitude Enabled: " << _initOptions.atmosphericAltitudeEnabled);
   ROS_INFO_STREAM("Velocity Heading Enabled: " << _initOptions.velocityHeadingEnabled);
   ROS_INFO_STREAM("Reversing Detection Enabled: " << _initOptions.reversingDetectionEnabled);

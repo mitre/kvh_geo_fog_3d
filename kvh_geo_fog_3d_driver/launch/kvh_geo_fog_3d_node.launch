@@ -22,6 +22,6 @@
     <param name="atmosphericAltitudeEnabled" value="$(arg atmosphericAltitudeEnabled)" />
     <param name="velocityHeadingEnabled" value="$(arg velocityHeadingEnabled)" />
     <param name="reversingDetectionEnabled" value="$(arg reversingDetectionEnabled)" />
-    <param name="motionAnalysisEnabled" value="$(arg motionAnalysisEnabled") />
+    <param name="motionAnalysisEnabled" value="$(arg motionAnalysisEnabled)" />
   </node>
 </launch>
