@@ -262,6 +262,22 @@ int Driver::DecodePacket(an_packet_t *_anPacket)
             return -2;
         }
         break;
+    case packet_id_odometer_state:
+        odometer_state_packet_t odometerStatePacket;
+        if (decode_odometer_state_packet(&odometerStatePacket, _anPacket) == 0)
+        {
+            packetStorage_.UpdatePacket(packet_id_odometer_state, odometerStatePacket);
+            packetStorage_.SetPacketUpdated(packet_id_odometer_state, true);
+
+            if (debug_)
+                printf("Collected odometer state packet.");
+        }
+        else
+        {
+            if (debug_)
+                printf("Failed to decode odometer state packet.");
+            return -2;
+        }
     default:
         break;
     }

@@ -2,11 +2,13 @@
 
 Driver for the KVH GEO FOG 3D inertial navigation system.
 
-# Installation
+# Setup
+
+## Installation
 
 TODO
 
-# Serial Port Configuration
+## Serial Port Configuration
 
 By default, the serial port is owned by root.dialout. To run this driver
 without root privileges, you must add your user to the dialout group.
@@ -16,11 +18,46 @@ bandwidth to handle large amounts of KVH data. Some have higher speeds enabled
 by multiplying baud rates in userspace by some value, e.g. x8. The FTDI debug
 cable that comes with the KVH does not have this limitation.
 
+## Quick Start Using the Driver
+
+Below is some sample code that shows how you can leverage this Kvh Driver to get data.
+
+```cpp
+    typedef std::pair<packet_id_e, int> freqPair;
+
+    kvh::KvhPacketRequest packetRequest{
+        freqPair(packet_id_utm_position, 50),
+        freqPair(packet_id_system_state, 50),
+        ... // Any additional packets
+    };
+
+    // Set connected port
+    std::string kvhPort("/dev/ttyUSB0");
+
+    kvhDriver.Init(kvhPort, packetRequest);
+
+    system_state_packet_t sysPacket;
+
+    while(1)
+    {
+        kvhDriver.Once(); // Check for new published packets
+
+        if (kvhDriver.PacketIsUpdated(packet_id_system_state))
+        {
+            kvhDriver.GetPacket(packet_id_system_state, sysPacket);
+
+            ... // Use System State Packet
+        }
+        usleep(10000); // Usually will want to sleep for some amount of time
+    }
+
+```
+
 # Packaging
 
 For information on packaging and releasing this package at MITRE, see PACKAGING.md
 
-# ROS conformance
+# ROS conformance and Conventions
 
 This driver attempts to conform to ROS Enhancement Proposals (REPs) when appropriate.
 
@@ -66,14 +103,14 @@ For frame_id strings, we will deviate from REP 103 and use the following:
 * imu_link_frd and imu_link_flu - These frames will be used for raw data.
 * utm_ned and utm_enu - These frames are necessary because the orientation data is north-oriented.
 
-# Bearing Convention
+## Bearing Convention
 
 This sensor produces bearing measurements with respect to true north. The other two forms of north are
 magnetic north and grid north. Grid north differs very slightly from true north, and is dependent upon
 where in the UTM grid your sensor is located. Magnetic north differs significantly from true north, and
 is dependent upon the fluctuation of the magnetic field.
 
-# Orientation Convention
+## Orientation Convention
 
 The orientations presented by the sensor are either in ENU or NED conventions. Practically, this means
 a sign change in pitch and yaw between the two conventions. Yaw is aligned with true north.
@@ -84,3 +121,47 @@ by not having a separate frame_id for orientation (which is measured w.r.t. a re
 rates and accelerations (which are measured w.r.t. the body frame), and is not present in nav_msgs/Odometry
 which separates these two frames. Orientation data within sensor_msgs/Imu conforms to the same conventions
 as nav_msgs/Odometry, and is globally fixed in the NED and ENU frames.
+
+# Contributing
+
+Below are instructions on how to complete several common tasks that may be required depending on your uses.
+
+## Adding a new packet type
+1. Add packet to each set/map currently in *src/kvh_driver/kvh_global_vars.cpp*. 
+
+For the most part, you should be able to follow the predefined pattern, but you will be adding the packet_id to the supportedPackets_, the packet size to packetSize_, and the string literal of the packet type to packetTypeStr_. Note, this is essentially registering your desired packet. **Developer Note: The packetSize_ and packetTypeStr_ could be inferred from the packet_id, except for the fact that some packets exist that were not properly implemented in kvh's api, and which we have had to extend. We have chosen to modify here, instead of modifying their api for our purposes.**
+
+2. Add packet-specific decoding function to **DecodePacket** function in *src/kvh_driver/decode_packets.cpp* 
+
+You should be able to just follow the pattern shown by the previously implemented packets, but will be included here for comprehensiveness.
+
+```cpp
+    case packet_id:
+        packet_type_t packet;
+        if (decode_packet_type(&packet, _anPacket) == 0)
+        {
+            packetStorage_.UpdatePacket(packet_type_id, packet);
+            packetStorage_.SetPacketUpdated(packet_type_id, true);
+        }
+```
+
+3. Add packet to initialisation mapping in the **Init** function of *src/kvh_driver/packet_storage.cpp*
+
+The packet storage is initialised with the requested packets at the beginning. You must add a line similar to the following to make sure the initialization succeeds.
+
+```cpp
+    case packet_type_id:
+      packetMap_[packet_type_id] = std::make_pair(false, std::make_shared<packet_type_struct_t>());
+      break;
+```
+
+4. Add to the `KvhPacketRequest` that you are sending upon creation of the driver.
+
+# Limitations
+Here is just a list of some currently know limitations of the current architecture
+
+1. Inability to change packets without restarting entire driver. This could potentially be added by creating a function in the **kvh::Driver** class for sending the packet request packet, and then re-initialising/recreating the packet storage object with the new requested packets.
+
+2. Added complexity due to make changes to struct outside of API classes. Many of the steps shown in the *Adding a new packet type* section could be done automatically if we did not need to account for the possibility of extended structs. Currently the only example we have is the utm_fix struct type which extends the utm_position packet the kvh api has. We did this since we did not want to change their API in any way, but there may be a time the added complexity is not worth it. 
+
+

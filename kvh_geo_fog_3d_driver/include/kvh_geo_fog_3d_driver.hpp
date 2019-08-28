@@ -36,7 +36,13 @@ struct KvhInitOptions
 {
   bool gnssEnabled{true};
   int baudRate{115200};
+  std::string port{"/tty/USB0"};
   bool debugOn{false};
+  uint8_t filterVehicleType{vehicle_type_car};
+  bool atmosphericAltitudeEnabled{true};
+  bool velocityHeadingEnabled{true};
+  bool reversingDetectionEnabled{true};
+  bool motionAnalysisEnabled{true};
 };
 
 /**
