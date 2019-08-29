@@ -86,4 +86,3 @@ uint8 time_valid
 uint8 external_gnss
 uint8 tilt_valid
 uint8 heading_valid
-uint8 floating_ambiguity_heading
