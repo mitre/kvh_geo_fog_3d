@@ -42,6 +42,8 @@
 #include <kvh_geo_fog_3d_msgs/KvhGeoFog3DECEFPos.h>
 #include <kvh_geo_fog_3d_msgs/KvhGeoFog3DNorthSeekingInitStatus.h>
 #include <kvh_geo_fog_3d_msgs/KvhGeoFog3DOdometerState.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DRawGNSS.h>
+#include <kvh_geo_fog_3d_msgs/KvhGeoFog3DRawSensors.h>
 
 // Standard ROS msgs
 #include "sensor_msgs/Imu.h"
@@ -173,7 +175,9 @@ int main(int argc, char **argv)
       {packet_id_utm_position, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DUTMPosition>("kvh_utm_position", 1)},
       {packet_id_ecef_position, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DECEFPos>("kvh_ecef_pos", 1)},
       {packet_id_north_seeking_status, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DNorthSeekingInitStatus>("kvh_north_seeking_status", 1)},
-      {packet_id_odometer_state, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DOdometerState>("kvh_odometer_state", 1)}};
+      {packet_id_odometer_state, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DOdometerState>("kvh_odometer_state", 1)},
+      {packet_id_raw_sensors, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DRawSensors>("kvh_raw_sensors", 1)},
+      {packet_id_raw_gnss, node.advertise<kvh_geo_fog_3d_msgs::KvhGeoFog3DRawGNSS>("kvh_raw_gnss", 1)}};
 
   // Publishers for standard ros messages
   ros::Publisher imuDataRawPub = node.advertise<sensor_msgs::Imu>("imu/data_raw_frd", 1);
@@ -210,6 +214,8 @@ int main(int argc, char **argv)
       freqPair(packet_id_ecef_position, 50),
       freqPair(packet_id_north_seeking_status, 50),
       freqPair(packet_id_odometer_state, 50),
+      freqPair{packet_id_raw_sensors, 50},
+      freqPair{packet_id_raw_gnss, 50},
   };
 
   kvh::Driver kvhDriver;
@@ -233,6 +239,8 @@ int main(int argc, char **argv)
   north_seeking_status_packet_t northSeekingStatPacket;
   euler_orientation_standard_deviation_packet_t eulStdDevPack;
   odometer_state_packet_t odomStatePacket;
+  raw_sensors_packet_t rawSensorsPacket;
+  raw_gnss_packet_t rawGnssPacket;
 
   while (ros::ok())
   {
@@ -429,6 +437,67 @@ int main(int argc, char **argv)
       odometerStateMsg.odometer_active = odomStatePacket.active;
 
       kvhPubMap[packet_id_odometer_state].publish(odometerStateMsg);
+    }
+
+    if (kvhDriver.PacketIsUpdated(packet_id_raw_sensors))
+    {
+      ROS_DEBUG("Raw sensors packet updated. Publishing...");
+      kvhDriver.GetPacket(packet_id_raw_sensors, rawSensorsPacket);
+      kvh_geo_fog_3d_msgs::KvhGeoFog3DRawSensors rawSensorMsg;
+
+      rawSensorMsg.header = header;
+      rawSensorMsg.accelerometer_x_mpss = rawSensorsPacket.accelerometers[0];
+      rawSensorMsg.accelerometer_y_mpss = rawSensorsPacket.accelerometers[1];
+      rawSensorMsg.accelerometer_z_mpss = rawSensorsPacket.accelerometers[2];
+      rawSensorMsg.gyro_x_rps = rawSensorsPacket.gyroscopes[0];
+      rawSensorMsg.gyro_y_rps = rawSensorsPacket.gyroscopes[1];
+      rawSensorMsg.gyro_z_rps = rawSensorsPacket.gyroscopes[2];
+      rawSensorMsg.magnetometer_x_mG = rawSensorsPacket.magnetometers[0];
+      rawSensorMsg.magnetometer_y_mG = rawSensorsPacket.magnetometers[1];
+      rawSensorMsg.magnetometer_z_mG = rawSensorsPacket.magnetometers[2];
+      rawSensorMsg.imu_temp_c = rawSensorsPacket.imu_temperature;
+      rawSensorMsg.pressure_pa = rawSensorsPacket.pressure;
+      rawSensorMsg.pressure_temp_c = rawSensorsPacket.pressure_temperature;
+
+      kvhPubMap[packet_id_raw_sensors].publish(rawSensorMsg);
+    }
+
+    /**
+     * @attention The raw gnss has an additional field called floating
+     * ambiguity heading. It is not implemented in their api. If we wish to
+     * implement this, we would need to make an extension similar to what we
+     * did for the UTM packet.
+     */
+    if (kvhDriver.PacketIsUpdated(packet_id_raw_gnss))
+    {
+      ROS_DEBUG("Raw GNSS packet updated. Publishing...");
+      kvhDriver.GetPacket(packet_id_raw_gnss, rawGnssPacket);
+      kvh_geo_fog_3d_msgs::KvhGeoFog3DRawGNSS rawGnssMsg;
+
+      rawGnssMsg.header = header;
+      rawGnssMsg.unix_time_s = rawGnssPacket.unix_time_seconds;
+      rawGnssMsg.unix_time_us = rawGnssPacket.microseconds;
+      rawGnssMsg.latitude_rad = rawGnssPacket.position[0];
+      rawGnssMsg.longitude_rad = rawGnssPacket.position[1];
+      rawGnssMsg.height_m = rawGnssPacket.position[2];
+      rawGnssMsg.latitude_stddev_m = rawGnssPacket.position_standard_deviation[0];
+      rawGnssMsg.longitude_stddev_m = rawGnssPacket.position_standard_deviation[1];
+      rawGnssMsg.height_stddev_m = rawGnssPacket.position_standard_deviation[2];
+      rawGnssMsg.vel_north_m = rawGnssPacket.velocity[0];
+      rawGnssMsg.vel_east_m = rawGnssPacket.velocity[1];
+      rawGnssMsg.vel_down_m = rawGnssPacket.velocity[2];
+      rawGnssMsg.tilt_rad = rawGnssPacket.tilt;
+      rawGnssMsg.heading_rad = rawGnssPacket.heading;
+      rawGnssMsg.tilt_stddev_rad = rawGnssPacket.tilt_standard_deviation;
+      rawGnssMsg.heading_stddev_rad = rawGnssPacket.heading_standard_deviation;
+      rawGnssMsg.gnss_fix = rawGnssPacket.flags.b.fix_type;
+      rawGnssMsg.doppler_velocity_valid = rawGnssPacket.flags.b.velocity_valid;
+      rawGnssMsg.time_valid = rawGnssPacket.flags.b.time_valid;
+      rawGnssMsg.external_gnss = rawGnssPacket.flags.b.external_gnss;
+      rawGnssMsg.tilt_valid = rawGnssPacket.flags.b.tilt_valid;
+      rawGnssMsg.heading_valid = rawGnssPacket.flags.b.heading_valid;
+      
+      kvhPubMap[packet_id_raw_gnss].publish(rawGnssMsg);
     }
 
     ////////////////////////////////////

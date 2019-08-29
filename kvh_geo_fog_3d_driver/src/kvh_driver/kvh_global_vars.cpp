@@ -15,6 +15,7 @@ namespace kvh
     packet_id_north_seeking_status,
     packet_id_euler_orientation_standard_deviation,
     packet_id_odometer_state,
+    packet_id_raw_gnss,
 };
 
 std::map<packet_id_e, int> packetSize_ = {
@@ -29,6 +30,7 @@ std::map<packet_id_e, int> packetSize_ = {
     {packet_id_north_seeking_status, sizeof(north_seeking_status_packet_t)},
     {packet_id_euler_orientation_standard_deviation, sizeof(euler_orientation_standard_deviation_packet_t)},
     {packet_id_odometer_state, sizeof(odometer_state_packet_t)},
+    {packet_id_raw_gnss, sizeof(raw_gnss_packet_t)},
 };
 
 std::map<packet_id_e, std::string> packetTypeStr_ = {
@@ -43,5 +45,6 @@ std::map<packet_id_e, std::string> packetTypeStr_ = {
     {packet_id_north_seeking_status, typeid(north_seeking_status_packet_t).name()},
     {packet_id_euler_orientation_standard_deviation, typeid(euler_orientation_standard_deviation_packet_t).name()},
     {packet_id_odometer_state, typeid(odometer_state_packet_t).name()},
+    {packet_id_raw_gnss, typeid(raw_gnss_packet_t).name()},
 };
 }

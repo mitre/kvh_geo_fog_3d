@@ -270,14 +270,30 @@ int Driver::DecodePacket(an_packet_t *_anPacket)
             packetStorage_.SetPacketUpdated(packet_id_odometer_state, true);
 
             if (debug_)
-                printf("Collected odometer state packet.");
+                printf("Collected odometer state packet.\n");
         }
         else
         {
             if (debug_)
-                printf("Failed to decode odometer state packet.");
+                printf("Failed to decode odometer state packet.\n");
             return -2;
         }
+    case packet_id_raw_gnss:
+        raw_gnss_packet_t rawGnssPacket;
+        if (decode_raw_gnss_packet(&rawGnssPacket, _anPacket) == 0)
+        {
+            packetStorage_.UpdatePacket(packet_id_raw_gnss, rawGnssPacket);
+            packetStorage_.SetPacketUpdated(packet_id_raw_gnss, true);
+
+            if (debug_)
+                printf("Collected raw gnss packet\n");
+        }
+        else
+        {
+            if (debug_)
+                printf("Failed to decode raw gnss packet\n");
+            return -2;
+        }  
     default:
         break;
     }
