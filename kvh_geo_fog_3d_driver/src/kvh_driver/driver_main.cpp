@@ -119,12 +119,15 @@ int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested)
 int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, KvhInitOptions _initOptions)
 {
   int returnValue = 0;
+  int errorCode;
   debug_ = _initOptions.debugOn;
   if (debug_)
     printf("Debug statements enabled.\n");
 
-  if (packetStorage_.Init(_packetsRequested) != 0)
+  if ((errorCode = packetStorage_.Init(_packetsRequested)) != 0)
   {
+    if (debug_)
+      printf("Unable to intialize packet storage. Error code: %d", errorCode);
     return -1;
   }
   ////////////////////////////////
@@ -171,7 +174,7 @@ int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, 
   {
     if (debug_)
       printf("Unable to establish connection.\n");
-    return -1;
+    return -3;
   }
   // We are connected to the KVH!
   connected_ = true;
@@ -192,7 +195,7 @@ int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, 
   requestPacket = nullptr;
   if (packetError)
   {
-    return -2;
+    return -4;
   }
 
   if (debug_)
@@ -203,7 +206,7 @@ int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, 
   requestPacket = nullptr;
   if (packetError != 0)
   {
-    return -3;
+    return -5;
   }
 
   /////////////////////////////////////

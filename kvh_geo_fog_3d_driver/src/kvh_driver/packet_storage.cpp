@@ -74,6 +74,9 @@ int KvhPacketStorage::Init(KvhPacketRequest& _packRequest)
     case packet_id_odometer_state:
       packetMap_[packet_id_odometer_state] = std::make_pair(false, std::make_shared<odometer_state_packet_t>());
       break;
+    case packet_id_raw_gnss:
+      packetMap_[packet_id_raw_gnss] = std::make_pair(false, std::make_shared<raw_gnss_packet_t>());
+      break;
     default:
       return -2;
     }

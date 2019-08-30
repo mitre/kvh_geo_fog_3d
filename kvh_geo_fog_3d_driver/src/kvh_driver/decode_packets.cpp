@@ -278,6 +278,7 @@ int Driver::DecodePacket(an_packet_t *_anPacket)
                 printf("Failed to decode odometer state packet.\n");
             return -2;
         }
+        break;
     case packet_id_raw_gnss:
         raw_gnss_packet_t rawGnssPacket;
         if (decode_raw_gnss_packet(&rawGnssPacket, _anPacket) == 0)

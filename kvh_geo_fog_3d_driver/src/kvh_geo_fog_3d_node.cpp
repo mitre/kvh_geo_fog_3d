@@ -189,10 +189,13 @@ int main(int argc, char **argv)
   ros::Publisher imuDataRpyENUPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_enu", 1);
   ros::Publisher imuDataRpyENUDegPub = node.advertise<geometry_msgs::Vector3Stamped>("imu/rpy_enu_deg", 1);
   ros::Publisher navSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/fix", 1);
+  ros::Publisher rawNavSatFixPub = node.advertise<sensor_msgs::NavSatFix>("gps/raw_fix", 1);
   ros::Publisher magFieldPub = node.advertise<sensor_msgs::MagneticField>("mag", 1);
   ros::Publisher odomPubNED = node.advertise<nav_msgs::Odometry>("gps/utm_ned", 1);
   ros::Publisher odomPubENU = node.advertise<nav_msgs::Odometry>("gps/utm_enu", 1);
   ros::Publisher odomStatePub = node.advertise<nav_msgs::Odometry>("odom/wheel_encoder", 1);
+  ros::Publisher rawSensorImuPub = node.advertise<sensor_msgs::Imu>("imu/raw_sensor_frd", 1);
+  ros::Publisher rawSensorImuFluPub = node.advertise<sensor_msgs::Imu>("imu/raw_sensor_flu", 1);
 
   //////////////////////////
   // KVH Setup
@@ -214,8 +217,8 @@ int main(int argc, char **argv)
       freqPair(packet_id_ecef_position, 50),
       freqPair(packet_id_north_seeking_status, 50),
       freqPair(packet_id_odometer_state, 50),
-      freqPair{packet_id_raw_sensors, 50},
-      freqPair{packet_id_raw_gnss, 50},
+      freqPair(packet_id_raw_sensors, 50),
+      freqPair(packet_id_raw_gnss, 50),
   };
 
   kvh::Driver kvhDriver;
@@ -227,7 +230,12 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  kvhDriver.Init(initOptions.port, packetRequest, initOptions);
+  int errorCode;
+  if ((errorCode = kvhDriver.Init(initOptions.port, packetRequest, initOptions)) < 0)
+  {
+    ROS_ERROR("Unable to initialize driver. Error Code %d", errorCode);
+    exit(1);
+  };
 
   // Declare these for reuse
   system_state_packet_t systemStatePacket;
@@ -880,6 +888,84 @@ int main(int argc, char **argv)
       kvhOdomStateMsg.twist.twist.linear.z = 0;
 
       odomStatePub.publish(kvhOdomStateMsg);
+    }
+
+    if (kvhDriver.PacketIsUpdated(packet_id_raw_gnss))
+    {
+      kvhDriver.GetPacket(packet_id_raw_gnss, rawGnssPacket);
+      sensor_msgs::NavSatFix rawNavSatFixMsg;
+
+      rawNavSatFixMsg.header = header;
+      rawNavSatFixMsg.header.frame_id = "gps";
+      rawNavSatFixMsg.latitude = rawGnssPacket.position[0];
+      rawNavSatFixMsg.longitude = rawGnssPacket.position[1];
+      rawNavSatFixMsg.altitude = rawGnssPacket.position[2];
+
+      int status = systemStatePacket.filter_status.b.gnss_fix_type;
+      switch (status)
+      {
+      case 0:
+        rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_NO_FIX;
+        break;
+      case 1:
+      case 2:
+        rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_FIX;
+        break;
+      case 3:
+        rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_SBAS_FIX;
+        break;
+      default:
+        rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_GBAS_FIX;
+      }
+
+      rawNavSatFixMsg.position_covariance_type = rawNavSatFixMsg.COVARIANCE_TYPE_DIAGONAL_KNOWN;
+      // They use ENU for mat for this matrix. To me it makes sense that we should use
+      // the longitude standard deviation for east.
+      rawNavSatFixMsg.position_covariance[0] = pow(rawGnssPacket.position_standard_deviation[1], 2);
+      rawNavSatFixMsg.position_covariance[4] = pow(rawGnssPacket.position_standard_deviation[0], 2);
+      rawNavSatFixMsg.position_covariance[8] = pow(rawGnssPacket.position_standard_deviation[2], 2);
+
+      rawNavSatFixPub.publish(rawNavSatFixMsg);
+
+    }
+
+    if (kvhDriver.PacketIsUpdated(packet_id_raw_sensors))
+    {
+      kvhDriver.GetPacket(packet_id_raw_sensors, rawSensorsPacket);
+
+      // DATA_RAW Topic
+      sensor_msgs::Imu imuDataRaw;
+      imuDataRaw.header = header;
+      imuDataRaw.header.frame_id = "imu_link_frd";
+
+      // ANGULAR VELOCITY
+      imuDataRaw.angular_velocity.x = rawSensorsPacket.gyroscopes[0];
+      imuDataRaw.angular_velocity.y = rawSensorsPacket.gyroscopes[1];
+      imuDataRaw.angular_velocity.z = rawSensorsPacket.gyroscopes[2];
+
+      // LINEAR ACCELERATION
+      imuDataRaw.linear_acceleration.x = rawSensorsPacket.accelerometers[0];
+      imuDataRaw.linear_acceleration.y = rawSensorsPacket.accelerometers[1];
+      imuDataRaw.linear_acceleration.z = rawSensorsPacket.accelerometers[2];
+
+      rawSensorImuPub.publish(imuDataRaw);
+
+      // DATA_RAW_FLU
+      sensor_msgs::Imu imuDataRawFLU;
+      imuDataRawFLU.header = header;
+      imuDataRawFLU.header.frame_id = "imu_link_flu";
+
+      // ANGULAR VELOCITY
+      imuDataRawFLU.angular_velocity.x = rawSensorsPacket.gyroscopes[0];
+      imuDataRawFLU.angular_velocity.y = -1 * rawSensorsPacket.gyroscopes[1];
+      imuDataRawFLU.angular_velocity.z = -1 * rawSensorsPacket.gyroscopes[2]; // To account for east north up system
+
+      // LINEAR ACCELERATION
+      imuDataRawFLU.linear_acceleration.x = rawSensorsPacket.accelerometers[0];
+      imuDataRawFLU.linear_acceleration.y = -1 * rawSensorsPacket.accelerometers[1];
+      imuDataRawFLU.linear_acceleration.z = -1 * rawSensorsPacket.accelerometers[2];
+
+      rawSensorImuFluPub.publish(imuDataRawFLU);
     }
 
     if (kvhDriver.PacketIsUpdated(packet_id_local_magnetics))
