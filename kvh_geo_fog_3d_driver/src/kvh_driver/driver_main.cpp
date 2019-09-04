@@ -157,7 +157,9 @@ int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, 
   ///////////////////////////////////////
 
   filter_options_packet_t filterOptions;
-  if (deviceConfig_.CreateFilterOptionsPacket(filterOptions) != 0)
+  if (deviceConfig_.CreateFilterOptionsPacket(filterOptions, true, _initOptions.filterVehicleType,
+  _initOptions.gnssEnabled, _initOptions.atmosphericAltitudeEnabled, _initOptions.velocityHeadingEnabled,
+  _initOptions.reversingDetectionEnabled, _initOptions.motionAnalysisEnabled) != 0)
   {
     return -2;
   }
