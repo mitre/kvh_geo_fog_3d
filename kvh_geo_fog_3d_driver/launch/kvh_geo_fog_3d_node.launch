@@ -10,7 +10,7 @@
   <arg name="debug" default="false" />
   <arg name="filterVehicleType" default="2" /> <!-- 2 is for car, see documentation for full list -->
   <arg name="atmosphericAltitudeEnabled" default="true" />
-  <arg name="velocityHeadingEnabled" default="true" />
+  <arg name="velocityHeadingEnabled" default="false" />
   <arg name="reversingDetectionEnabled" default="true" />
   <arg name="motionAnalysisEnabled" default="true" />
 
