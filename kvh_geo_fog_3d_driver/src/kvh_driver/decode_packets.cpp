@@ -172,7 +172,7 @@ int Driver::DecodePacket(an_packet_t *_anPacket)
     case packet_id_local_magnetics:
         local_magnetics_packet_t magPacket;
         if (decode_local_magnetics_packet(&magPacket, _anPacket) == 0)
-        {
+        {         
             packetStorage_.UpdatePacket(packet_id_local_magnetics, magPacket);
             packetStorage_.SetPacketUpdated(packet_id_local_magnetics, true);
 
@@ -253,12 +253,12 @@ int Driver::DecodePacket(an_packet_t *_anPacket)
             packetStorage_.SetPacketUpdated(packet_id_euler_orientation_standard_deviation, true);
 
             if (debug_)
-                printf("Collected euler orientation standard deviation packet.");
+                printf("Collected euler orientation standard deviation packet.\n");
         }
         else
         {
             if (debug_)
-                printf("Failed to decode euler orientation standard devation packet.");
+                printf("Failed to decode euler orientation standard devation packet.\n");
             return -2;
         }
         break;
