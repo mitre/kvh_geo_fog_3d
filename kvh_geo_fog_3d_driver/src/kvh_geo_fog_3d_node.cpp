@@ -966,20 +966,17 @@ int main(int argc, char **argv)
       imuDataRawFLU.linear_acceleration.z = -1 * rawSensorsPacket.accelerometers[2];
 
       rawSensorImuFluPub.publish(imuDataRawFLU);
-    }
 
-    if (kvhDriver.PacketIsUpdated(packet_id_local_magnetics))
-    {
       sensor_msgs::MagneticField magFieldMsg;
-      kvhDriver.GetPacket(packet_id_local_magnetics, localMagPacket);
 
       magFieldMsg.header = header;
       magFieldMsg.header.frame_id = "imu_link_frd";
-      magFieldMsg.magnetic_field.x = localMagPacket.magnetic_field[0];
-      magFieldMsg.magnetic_field.y = localMagPacket.magnetic_field[1];
-      magFieldMsg.magnetic_field.z = localMagPacket.magnetic_field[2];
+      magFieldMsg.magnetic_field.x = rawSensorsPacket.magnetometers[0];
+      magFieldMsg.magnetic_field.y = rawSensorsPacket.magnetometers[1];
+      magFieldMsg.magnetic_field.z = rawSensorsPacket.magnetometers[2];
 
       magFieldPub.publish(magFieldMsg);
+      
     }
 
     // Set the "first" of all packets to false to denote they have not been updated
@@ -991,6 +988,9 @@ int main(int argc, char **argv)
     kvhDriver.SetPacketUpdated(packet_id_north_seeking_status, false);
     kvhDriver.SetPacketUpdated(packet_id_local_magnetics, false);
     kvhDriver.SetPacketUpdated(packet_id_euler_orientation_standard_deviation, false);
+    kvhDriver.SetPacketUpdated(packet_id_odometer_state, false);
+    kvhDriver.SetPacketUpdated(packet_id_raw_gnss, false);
+    kvhDriver.SetPacketUpdated(packet_id_raw_sensors, false);
 
     diagnostics.update();
 
