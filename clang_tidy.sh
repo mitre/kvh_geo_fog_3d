@@ -25,6 +25,8 @@ PROJECT_NAME=kvh_geo_fog_3d
 PACKAGE_NAME=($(ls -d ${PROJECT_NAME}*/ | tr " " "\n" | sed 's:/*$::'))
 # OLD WAY
 #PACKAGE_NAME=(kvh_geo_fog_3d_driver kvh_geo_fog_3d_msgs kvh_geo_fog_3d_rviz kvh_geo_fog_3d)
+# Directory in which to store all of our suggested changes to files from clang_format
+CLANG_FORMAT_DIR=clang_format_output
 
 # Arguments:
 # $1 : String of source paths for the package, usually with regex. Example: "src/*.cpp"
@@ -91,7 +93,7 @@ else
             BUILD_PATH=${WORKSPACE_ROOT}/build/${package}
 
             run_clang_tidy "${PACKAGE_SOURCE_PATHS}" "${BUILD_PATH}" "${PROJECT_ROOT}" "${package}"
-            run_clang_format "${PACKAGE_SOURCE_PATHS}" "clang_format_output/${package}"
+            run_clang_format "${PACKAGE_SOURCE_PATHS}" "${CLANG_FORMAT_DIR}/${package}"
         else
             echo "WARNING: Package doesn't have a source directory, skipping..."
         fi
@@ -102,3 +104,8 @@ if [ "${GOT_CLANG_FORMAT}" -eq "1" ]; then
     echo "Removing fetched .clang_format..."
     rm .clang_format
 fi
+
+echo "Packaging up clang_format results..."
+tar -czf clang_format_${PROJECT_NAME}.tar.gz ${CLANG_FORMAT_DIR}
+
+echo "Done! See the *_clangtidy.xml files and the outputs under ${CLANG_FORMAT_DIR}"
