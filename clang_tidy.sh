@@ -34,6 +34,22 @@ run_clang_tidy() {
     rm ${TMP_CLANGTIDY}    
 }
 
+# Arguments:
+# $1 : String of source paths for the package, usually with regex. Example: "src/*.cpp"
+# $2 : Output directory, usually some prefix (e.g. clang_format_output)/package_name.
+run_clang_format() {
+    if [ ! -d ${2} ]; then
+        mkdir -p ${2}
+    fi
+    tmp_cpp=.tmpcpp
+    for file in ${1}; do
+        echo ${file}
+        clang-format ${file} > ${tmp_cpp}
+        diff -u ${file} ${tmp_cpp} > ${2}/$(basename ${file}).diff
+        rm ${tmp_cpp}
+    done
+}
+
 # Get our sourced WS
 WORKSPACE_ROOT=""
 IFS=':'
@@ -67,6 +83,7 @@ else
             BUILD_PATH=${WORKSPACE_ROOT}/build/${package}
 
             run_clang_tidy "${PACKAGE_SOURCE_PATHS}" "${BUILD_PATH}" "${PROJECT_ROOT}" "${package}"
+            run_clang_format "${PACKAGE_SOURCE_PATHS}" "clang_format_output/${package}"
         else
             echo "WARNING: Package doesn't have a source directory, skipping..."
         fi
