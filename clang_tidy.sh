@@ -9,6 +9,14 @@
 # Also requires you to compile your code with the flag -DCMAKE_EXPORT_COMPILE_COMMANDS=1,
 # which will write the compile_commands.json to the build directory of the catkin project.
 
+# If we don't have a local .clang_format, get it from the repo
+GOT_CLANG_FORMAT=0
+if [ ! -f .clang_format ]; then
+    echo "Pulling .clang_format for ROS from the MITRE repos..."
+    wget --no-check-certificate https://gitlab.mitre.org/DART-release/roscpp_code_format/raw/mitre/.clang-format -O .clang_format
+    GOT_CLANG_FORMAT=1
+fi
+
 # Checks to run using clang-tidy
 CLANG_TIDY_CHECKS=clang-analyzer-core*,clang-analyzer-cplusplus,clang-analyzer-llvm*,clang-analyzer,nullability*,clang-analyzer-security*,clang-analyzer-unix*,readability-braces-around-statements,modernize-pass-by-value,modernize-use-nullptr,misc-inefficient-algorithm
 # Overall project name
@@ -88,4 +96,9 @@ else
             echo "WARNING: Package doesn't have a source directory, skipping..."
         fi
     done
+fi
+
+if [ "${GOT_CLANG_FORMAT}" -eq "1" ]; then
+    echo "Removing fetched .clang_format..."
+    rm .clang_format
 fi
