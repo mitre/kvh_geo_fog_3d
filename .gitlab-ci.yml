@@ -2,8 +2,5 @@ default:
     image: artifacts.mitre.org:8200/dart/dart_gitlab_runner_kinetic:latest
     tags:
         - docker
-
-    before_script:
-        - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     script:
         - catkin build
