@@ -55,15 +55,19 @@ RUN update-ca-certificates
 # Add a build user
 RUN useradd -rm -d /home/gitlab -s /bin/bash -g root -G sudo -u 1000 gitlab
 
+# Setup DART repos
+RUN wget -qO - http://dart-repos.mitre.org/public.asc | sudo apt-key add -
+RUN echo "deb http://dart-repos.mitre.org/ppa `lsb_release -sc` main" > /etc/apt/sources.list.d/dart-repos.list
+RUN apt-get update
+
 # Install python
 RUN apt-get install -y --no-install-recommends python-minimal python-pip
 RUN pip install --no-cache-dir --upgrade pip setuptools
 
-# ROS
-RUN apt-get install -y ros-kinetic-desktop-full
+# DART development setup
+RUN apt-get install -y dart-dev
 USER gitlab
 RUN sudo rosdep init
-RUN rosdep update
 USER root
 
 # Set ROS update
