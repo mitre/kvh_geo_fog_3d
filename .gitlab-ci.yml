@@ -15,6 +15,10 @@ build:
     script:
         - cd $CI_BUILDS_DIR
         - echo ${PWD}
+        - which sh
         - ls
+        - echo ${USER}
+        - env
+        - . /opt/ros/kinetic/setup.bash
         - echo "Trying to build with catkin..."
         - catkin build
