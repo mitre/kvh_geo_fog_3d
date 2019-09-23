@@ -3,7 +3,7 @@ image:
     entrypoint: ['bash', '-c', 'exec su gitlab -c bash']
 
 variables:
-    GIT_CLONE_PATH: $CI_BUILD_PATH/src/
+    GIT_CLONE_PATH: $CI_BUILDS_DIR/src/
 
 stages:
     - build
