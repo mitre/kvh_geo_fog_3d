@@ -10,4 +10,6 @@ build:
     tags:
         - docker
     script:
+        - echo ${PWD}
+        - echo "Trying to build with catkin..."
         - catkin build
