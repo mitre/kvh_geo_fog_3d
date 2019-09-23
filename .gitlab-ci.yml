@@ -1,24 +1,17 @@
-image:
-    name: artifacts.mitre.org:8200/dart/dart_gitlab_runner_kinetic:latest
-    entrypoint: ['bash', '-c', 'exec su gitlab -c bash']
-
 variables:
-    GIT_CLONE_PATH: $CI_BUILDS_DIR/catkin_ws/src/
+    ROS_DISTRO: "kinetic"
+    CI_SOURCE_PATH: "$CI_PROJECT_DIR"
+    GIT_SUBMODULE_STRATEGY: recursive
+
+before_script:
+    - docker info
 
 stages:
     - build
 
 build:
     stage: build
-    tags:
-        - docker
     script:
-        - cd $CI_BUILDS_DIR/catkin_ws
-        - echo ${PWD}
-        - which sh
-        - ls
-        - echo ${USER}
-        - env
-        - . /opt/ros/kinetic/setup.bash
-        - echo "Trying to build with catkin..."
-        - catkin build -DCMAKE_BUILD_TYPE=Release
+        - docker build -t kvh_geo_fog_3d -f docker/Dockerfile .
+    tags:
+        - docker-shell
