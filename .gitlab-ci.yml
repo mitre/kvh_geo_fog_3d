@@ -1,6 +1,10 @@
-default:
-    image: artifacts.mitre.org:8200/dart/dart_gitlab_runner_kinetic:latest
-    pull_policy: if-not-present
+image: artifacts.mitre.org:8200/dart/dart_gitlab_runner_kinetic:latest
+
+stages:
+    - build
+
+build:
+    stage: build
     tags:
         - docker
     script:
