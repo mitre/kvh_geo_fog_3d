@@ -2,6 +2,9 @@ image:
     name: artifacts.mitre.org:8200/dart/dart_gitlab_runner_kinetic:latest
     entrypoint: ['bash', '-c', 'exec su gitlab -c bash']
 
+variables:
+    GIT_CLONE_PATH: $CI_BUILD_PATH/src/
+
 stages:
     - build
 
