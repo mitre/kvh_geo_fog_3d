@@ -1,5 +1,6 @@
-image: artifacts.mitre.org:8200/dart/dart_gitlab_runner_kinetic:latest
-entrypoint: ['bash', '-c', 'exec su gitlab -c bash']
+image:
+    name: artifacts.mitre.org:8200/dart/dart_gitlab_runner_kinetic:latest
+    entrypoint: ['bash', '-c', 'exec su gitlab -c bash']
 
 stages:
     - build
