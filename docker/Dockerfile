@@ -4,13 +4,13 @@ MAINTAINER Zach LaCelle <zlacelle@mitre.org>
 # catkin and ROS really like bash over sh
 SHELL ["/bin/bash", "-c"]
 
-ARG catkin_ws=kvh_geo_fog_3d_ws
+ARG catkin_ws=catkin_ws
 
 RUN mkdir -p ${catkin_ws}/src
-COPY [".", "${catkin_ws}/src"]
+COPY --chown=build:root [".", "${catkin_ws}/src"]
 RUN source /opt/ros/kinetic/setup.bash && \
     pushd ${catkin_ws} && \
-    catkin build -DCMAKE_BUILD_TYPE=Release --verbose && \
+    catkin build -DCMAKE_BUILD_TYPE=Release && \
     popd
 
 ADD docker/ros_entrypoint.sh /ros_entrypoint.sh
