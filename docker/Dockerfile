@@ -1,4 +1,4 @@
-FROM artifacts.mitre.org:8200/dart/dart_gitlab_runner_kinetic:latest
+FROM artifacts.mitre.org:8200/untrusted-mitrewide-overwritable/dart/dart_gitlab_runner_kinetic:latest
 MAINTAINER Zach LaCelle <zlacelle@mitre.org>
 
 # catkin and ROS really like bash over sh
