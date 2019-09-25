@@ -10,7 +10,7 @@ let us know where this software is being used.
 
 <library path="lib/libkvh_geo_fog_3d_rviz">
   <class name="kvh_geo_fog_3d_rviz/StatusPanel"
-         type="kvh_geo_fog_3d_rviz::StatusPanel"
+         type="kvh::StatusPanel"
          base_class_type="rviz::Panel">
     <description>
       A panel that allows us to view status of the KVH GEO FOG 3D sensor.
