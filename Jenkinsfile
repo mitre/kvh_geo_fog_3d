@@ -22,9 +22,6 @@ pipeline
     {
         //Trigger builds every night at 2AM
         cron('H 2 * * *')
-        //Don't trigger on SCM changes--too much to do in Jenkins for that.
-        //For fast SCM builds without metrics, use Gitlab runners.
-        //pollSCM('H/10 * * * *')
     }
     stages
     {
@@ -196,18 +193,6 @@ void CheckoutMaster()
 }
 void SetupKinetic()
 {
-    sh script: """
-        sudo sh -c 'echo \"deb http://packages.ros.org/ros/ubuntu \$(lsb_release -sc) main\" > /etc/apt/sources.list.d/ros-latest.list'
-        sudo sh -c 'apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654'
-        sudo apt-get update
-        #Install "base" ROS kinetic packages. Includes basic build tools, the
-        #ros-base meta-package, rosdep, and catkin.
-        sudo apt-get -y install build-essential ros-kinetic-ros-base \
-            python-rosdep python-catkin-tools python-catkin-lint python-bloom \
-            fakeroot dpkg-dev debhelper
-        """, label: 'Setup ROS Repository'
-    //Initialize rosdep. Must be called with sudo.
-    sh script: "sudo rosdep init", label: "rosdep init"
     //Use rosdep to install dependencies for our package, as defined by its
     //package.xml. Assumes that the current user has nopasswd set for sudo,
     //since rosdep calls sudo for apt-get install.
