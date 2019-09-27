@@ -53,29 +53,17 @@ pipeline
             {
                 script
                 {
-                    try
+                    warnError('Catkin Linter Failed!')
                     {
                         CatkinLint()
                     }
-                    catch(exc)
-                    {
-                        currentBuild.result = 'UNSTABLE'
-                    }
-                    try
+                    warnError('CppCheck Failed!')
                     {
                         CppCheck()
                     }
-                    catch(exc)
-                    {
-                        currentBuild.result = 'UNSTABLE'
-                    }
-                    try
+                    warnError('Lizard Complexity Analysis Failed!')
                     {
                         Lizard()
-                    }
-                    catch(exc)
-                    {
-                        currentBuild.result = 'UNSTABLE'
                     }
                 }
             }
@@ -116,48 +104,32 @@ pipeline
             ////////////////////////////////////////////////////////////////////
             // Due to how fragile plugin publishers are with Declarative
             // Pipelines in Jenkins right now, I'm wrapping all of the publisher
-            // calls in try/catch. Once the plugin maintainers get their stuff
+            // calls in warnError(). Once the plugin maintainers get their stuff
             // together, I will be smarter about this.
             ////////////////////////////////////////////////////////////////////
             script
             {
                 //CPPCHECK
-                try
+                warnError('Publishing CppCheck Results Failed!')
                 {
                     //Using the warnings-ng plugin
                     recordIssues enabledForFailure: false, aggregatingResults : false, tool: cppCheck(pattern: 'cppcheck-result.xml')
                 }
-                catch(exc)
-                {
-                    currentBuild.result = 'UNSTABLE'
-                }
                 //LIZARD
-                try
-                {
-                    step([$class: 'hudson.plugins.cppncss.CppNCSSPublisher', reportFilenamePattern: 'lizard.xml', functionCcnViolationThreshold: 5, functionNcssViolationThreshold: 10, targets: []])
-                }
-                catch(exc)
-                {
-                    sh script: 'echo THIS IS BROKEN FOR NOW!!!', label: 'Lizard Publisher'
-                }
+                //warnError('Publishing Lizard Results Failed!')
+                //{
+                //    step([$class: 'hudson.plugins.cppncss.CppNCSSPublisher', reportFilenamePattern: 'lizard.xml', functionCcnViolationThreshold: 5, functionNcssViolationThreshold: 10, targets: []])
+                //}
                 //GCC Warnings/Errors
-                try
+                warnError('Publishing GCC Warnings/Errors Failed!')
                 {
                     recordIssues enabledForFailure: false, aggregatingResults : false, tool: gcc4()
                 }
-                catch(exc)
-                {
-                    currentBuild.result = 'UNSTABLE'
-                }
 
-                try
+                warnError('Publishing Unit Test Results Failed!')
                 {
                     xunit (thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
                         tools: [ GoogleTest(pattern: 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml') ])
-                }
-                catch(exc)
-                {
-                    sh script: 'echo XUNIT PLUGIN NOT AVAILABLE', label: 'XUNIT Parsing'
                 }
             }
         }
