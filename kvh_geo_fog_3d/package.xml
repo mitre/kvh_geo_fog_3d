@@ -9,9 +9,9 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <run_depend>kvh_geo_fog_3d_msgs</run_depend>
-  <run_depend>kvh_geo_fog_3d_driver</run_depend>
-  <run_depend>kvh_geo_fog_3d_rviz</run_depend>
+  <exec_depend>kvh_geo_fog_3d_msgs</exec_depend>
+  <exec_depend>kvh_geo_fog_3d_driver</exec_depend>
+  <exec_depend>kvh_geo_fog_3d_rviz</exec_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <rosdoc external="http://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d-dual/commercial-geo-fog-3d-dual/"/>
