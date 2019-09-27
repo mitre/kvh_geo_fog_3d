@@ -11,6 +11,10 @@ select yn in "Yes" "No"; do
     esac
 done
 
+#
+# TODO check for package python-rosdep being installed!
+#
+
 echo "OK, proceeding!"
 
 FIRST_RELEASE=0
@@ -23,7 +27,7 @@ fi
 # Get into the base directory of the repository
 pushd "${0%/*}" >& /dev/null
 
-export ROSDISTRO_INDEX_URL=https://gitlab.mitre.org/dart-release/rosdistro/raw/master/index-v4.yaml
+export ROSDISTRO_INDEX_URL=https://gitlab.mitre.org/dart-release/rosdistro/raw/dart/index-v4.yaml
 export PYTHONHTTPSVERIFY=0
 if [ ${FIRST_RELEASE} -eq 0 ]; then
     bloom-release --rosdistro kinetic --track kinetic kvh_geo_fog_3d --no-web

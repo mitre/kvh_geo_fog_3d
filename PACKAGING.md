@@ -13,8 +13,7 @@ catkin_generate_changelog
 (edit CHANGELOG.rst. THE VERSION YOU SET HERE SHOULD MATCH WHAT YOU'RE BUMPING **TO**)
 (save, add, commit, and push CHANGELOG.rst)
 catkin_prepare_release --bump {major,minor,patch}
-git push --tags
-./packaging/release.sh
+./release.sh
 bloom-generate rosdebian --os-name ubuntu --os-version <version here> --ros-distro <ROS distro here>
 ./packaging/fix_rules.sh
 fakeroot debian/rules binary
