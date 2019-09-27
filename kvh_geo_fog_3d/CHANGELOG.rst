@@ -2,6 +2,10 @@
 Changelog for package kvh_geo_fog_3d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2019-09-27)
+-----------
+* Updating metapackage.
+
 1.1.0 (2019-08-13 16:32:35 -0400)
 ---------------------------------
 * Adding a metadata package.
