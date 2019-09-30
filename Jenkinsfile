@@ -157,14 +157,14 @@ pipeline
             archiveArtifacts 'catkin_ws/src/*.deb'
             archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.xml'
     	}
-        failure
-        {
-            //SendEmail()
-        }
-        fixed
-        {
-            //SendEmail()
-        }
+//        failure
+//        {
+//            SendEmail()
+//        }
+//        fixed
+//        {
+//            SendEmail()
+//        }
     }
 } //end: pipeline
 
