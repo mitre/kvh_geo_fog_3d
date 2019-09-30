@@ -252,8 +252,16 @@ void ClangTidy()
     sh script: """#!/bin/bash
         cd catkin_ws/src/kvh_geo_fog_3d
         source ../../devel/setup.bash
-        ./clang_tidy.sh
+        ./devops/clang_tidy.sh
     """, label: 'Clang-tidy'
+}
+void RosLint()
+{
+    sh script: """#!/bin/bash
+        cd catkin_ws/src/kvh_geo_fog_3d
+        source ../../devel/setup.bash
+        ./devops/roslint.sh
+    """, label: 'Roslint'
 }
 void PackageDebian()
 {
