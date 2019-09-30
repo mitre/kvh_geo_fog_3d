@@ -162,13 +162,8 @@ pipeline
 	success
 	{
             archiveArtifacts 'catkin_ws/src/*.deb'
-            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.xml'
-            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt'
-    	}
-    	unstable
-    	{
-    	    archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/**/*'
-    	    archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/**/*'
+            archiveArtifacts artifacts: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy', onlyIfSuccessful: true
+            archiveArtifacts artifacts: 'catkin_ws/src/kvh_geo_fog_3d/roslint_output', onlyIfSuccessful: true
     	}
 //        failure
 //        {
