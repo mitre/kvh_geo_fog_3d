@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   nodelet
   pluginlib
   roscpp
+  roslint
   sensor_msgs
   std_msgs
   tf2_ros
@@ -276,6 +277,9 @@ install(DIRECTORY scripts/
 #############
 ## Testing ##
 #############
+
+## Add roslint target
+roslint_cpp()
 
 ## Add gtest based cpp test target and link libraries
 include_directories(

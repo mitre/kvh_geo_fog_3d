@@ -16,6 +16,7 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  roslint
   rviz
   kvh_geo_fog_3d_msgs
 )
@@ -123,6 +124,9 @@ install(FILES
 #############
 ## Testing ##
 #############
+
+# Add roslint target
+roslint_cpp()
 
 ## Add gtest based cpp test target and link libraries
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_ublox_rviz.cpp)
