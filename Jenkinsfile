@@ -167,8 +167,6 @@ pipeline
     	}
     	unstable
     	{
-    	    script
-    	    {
     	    archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/**/*'
     	    archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/**/*'
     	}
