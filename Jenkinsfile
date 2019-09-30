@@ -85,6 +85,10 @@ pipeline
                     {
                         ClangTidy()
                     }
+                    warnError('RosLint Failed!')
+                    {
+                        RosLint()
+                    }
                 }
             }
         }
