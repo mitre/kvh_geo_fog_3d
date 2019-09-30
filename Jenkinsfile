@@ -148,7 +148,10 @@ pipeline
                 //Clang-tidy
                 warnError('Publishing Clang-Tidy Results Failed!')
                 {
-                    xunit([JUnit(deleteOutputFiles: true, failIfNotNew: false, pattern: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*_clangtidy.xml', skipNoTestFiles: true, stopProcessingIfError: true)])
+                    //Use the old junit publisher
+                    junit 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*_clangtidy.xml'
+                    //xUnit publisher doesn't work well for JUnit-formatted files
+                    //xunit([JUnit(deleteOutputFiles: true, failIfNotNew: false, pattern: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*_clangtidy.xml', skipNoTestFiles: true, stopProcessingIfError: true)])
                 }
             }
         }
