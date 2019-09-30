@@ -162,17 +162,17 @@ pipeline
 	success
 	{
             archiveArtifacts 'catkin_ws/src/*.deb'
-            archiveArtifacts artifacts: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy', onlyIfSuccessful: true
-            archiveArtifacts artifacts: 'catkin_ws/src/kvh_geo_fog_3d/roslint_output', onlyIfSuccessful: true
+            archiveArtifacts artifacts: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*_clangtidy.xml', onlyIfSuccessful: true
+            archiveArtifacts artifacts: 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt', onlyIfSuccessful: true
     	}
-//        failure
-//        {
-//            SendEmail()
-//        }
-//        fixed
-//        {
-//            SendEmail()
-//        }
+        failure
+        {
+            SendEmail()
+        }
+        fixed
+        {
+            SendEmail()
+        }
     }
 } //end: pipeline
 
