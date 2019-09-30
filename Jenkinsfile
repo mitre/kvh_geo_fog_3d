@@ -11,8 +11,8 @@ pipeline
 {
     options
     {
-        // Keep N most recent builds
-        buildDiscarder(logRotator(numToKeepStr:'20'))
+	// Keep N most recent builds
+	buildDiscarder(logRotator(numToKeepStr:'20'))
     }
     agent
     {
@@ -154,15 +154,21 @@ pipeline
                     //xunit([JUnit(deleteOutputFiles: true, failIfNotNew: false, pattern: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*_clangtidy.xml', skipNoTestFiles: true, stopProcessingIfError: true)])
                 }
             }
-        }
-	    success
-	    {
+	}
+	success
+	{
             archiveArtifacts 'catkin_ws/src/*.deb'
             archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.xml'
             archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt'
     	}
     	unstable
     	{
+	    script
+	    {
+	        ls
+		ls catkin_ws/src/kvh_geo_fog_3d
+		ls catkin_ws/src/kvh_geo_fog_3d/roslint_output/
+	    }
     	    archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.xml'
     	    archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt'
     	}
