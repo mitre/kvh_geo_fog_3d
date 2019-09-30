@@ -163,12 +163,11 @@ pipeline
     	}
     	unstable
     	{
-	    script
-	    {
-	        ls
-		ls catkin_ws/src/kvh_geo_fog_3d
-		ls catkin_ws/src/kvh_geo_fog_3d/roslint_output/
-	    }
+    	    sh script:"""!#/bin/bash
+    	        ls
+		        ls catkin_ws/src/kvh_geo_fog_3d
+		        ls catkin_ws/src/kvh_geo_fog_3d/roslint_output/
+		    """, label: "LS"
     	    archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.xml'
     	    archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt'
     	}
