@@ -47,7 +47,7 @@ pipeline
                 SetupKinetic()
             }
         } //end: stage('Setup')
-        stage('Code Analysis')
+        stage('Pre-Build Code Analysis')
         {
             steps
             {
@@ -75,6 +75,19 @@ pipeline
                 BuildRelease()
             }
         } //end: stage('Build')
+        stage('Post-Build Code Analysis')
+        {
+            steps
+            {
+                script
+                {
+                    warnError('ClangTidy Failed!')
+                    {
+                        ClangTidy()
+                    }
+                }
+            }
+        }
         stage('Test')
         {
             steps
@@ -100,6 +113,7 @@ pipeline
             archiveArtifacts 'cppcheck-result.xml'
             archiveArtifacts 'lizard.xml'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
+            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clang_format_kvh_geo_fog_3d.tar.gz'
             
             ////////////////////////////////////////////////////////////////////
             // Due to how fragile plugin publishers are with Declarative
@@ -125,25 +139,31 @@ pipeline
                 {
                     recordIssues enabledForFailure: false, aggregatingResults : false, tool: gcc4()
                 }
-
+                //Unit Testing
                 warnError('Publishing Unit Test Results Failed!')
                 {
                     xunit (thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
                         tools: [ GoogleTest(pattern: 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml') ])
+                }
+                //Clang-tidy
+                warnError('Publishing Clang-Tidy Results Failed!')
+                {
+                    xunit([JUnit(deleteOutputFiles: true, failIfNotNew: false, pattern: 'clangtidy/*_clangtidy.xml', skipNoTestFiles: true, stopProcessingIfError: true)])
                 }
             }
         }
 	    success
 	    {
             archiveArtifacts 'catkin_ws/src/*.deb'
+            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.xml'
     	}
         failure
         {
-            SendEmail()
+            //SendEmail()
         }
         fixed
         {
-            SendEmail()
+            //SendEmail()
         }
     }
 } //end: pipeline
@@ -226,6 +246,14 @@ void Lizard()
     sh script: """
         lizard -l cpp catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/src/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/include/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/src/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/include/ --xml > lizard.xml 2>&1
     """, label: 'Lizard'
+}
+void ClangTidy()
+{
+    sh script: """#!/bin/bash
+        cd catkin_ws/src/kvh_geo_fog_3d
+        source ../../devel/setup.bash
+        ./clang_tidy.sh
+    """, label: 'Clang-tidy'
 }
 void PackageDebian()
 {
