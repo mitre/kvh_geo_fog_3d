@@ -125,8 +125,21 @@ install(FILES
 ## Testing ##
 #############
 
-# Add roslint target
-roslint_cpp()
+## Add roslint target
+# Note that roslint requires explicit lists of source/header
+# files, which is not ideal. There's an issue open from 2014
+# about this (https://github.com/ros/roslint/issues/27)
+#
+# Ignore ROS's suggestions for:
+# * Comment spacing
+# * Parentesis whitespace
+set(ROSLINT_CPP_OPTS "--filter=-whitespace/comments,-whitespace/parens")
+roslint_cpp(
+  src/kvh_geo_fog_3d_status_panel.cpp
+  src/kvh_status_painter.cpp
+  include/kvh_geo_fog_3d_status_panel.hpp
+  include/kvh_status_painter.hpp
+)
 
 ## Add gtest based cpp test target and link libraries
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_ublox_rviz.cpp)

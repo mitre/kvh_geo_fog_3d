@@ -279,7 +279,31 @@ install(DIRECTORY scripts/
 #############
 
 ## Add roslint target
-roslint_cpp()
+# Note that roslint requires explicit lists of source/header
+# files, which is not ideal. There's an issue open from 2014
+# about this (https://github.com/ros/roslint/issues/27)
+#
+# Ignore ROS's suggestions for:
+# * Comment spacing
+# * Parentesis whitespace
+set(ROSLINT_CPP_OPTS "--filter=-whitespace/comments,-whitespace/parens")
+roslint_cpp(
+  src/kvh_diagnostics_container.cpp
+  src/kvh_geo_fog_3d_node.cpp
+  src/kvh_geo_fog_3d_nodelet.cpp
+  src/kvh_driver/decode_packets.cpp
+  src/kvh_driver/device_configuration.cpp
+  src/kvh_driver/driver_main.cpp
+  src/kvh_driver/kvh_global_vars.cpp
+  src/kvh_driver/packet_storage.cpp
+  src/utility/determine_baud_node.cpp
+  include/kvh_diagnostics_container.hpp
+  include/kvh_geo_fog_3d_device_configuration.hpp
+  include/kvh_geo_fog_3d_driver.hpp
+  include/kvh_geo_fog_3d_global_vars.hpp
+  include/kvh_geo_fog_3d_nodelet.hpp
+  include/kvh_geo_fog_3d_packet_storage.hpp
+)
 
 ## Add gtest based cpp test target and link libraries
 include_directories(
