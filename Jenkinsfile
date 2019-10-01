@@ -118,6 +118,8 @@ pipeline
             archiveArtifacts 'lizard.xml'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
             archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clang_format_kvh_geo_fog_3d.tar.gz'
+            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.clangtidy'
+            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt'
             
             ////////////////////////////////////////////////////////////////////
             // Due to how fragile plugin publishers are with Declarative
@@ -160,8 +162,6 @@ pipeline
 	success
 	{
             archiveArtifacts 'catkin_ws/src/*.deb'
-            archiveArtifacts artifacts: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.clangtidy', onlyIfSuccessful: true
-            archiveArtifacts artifacts: 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt', onlyIfSuccessful: true
     	}
         failure
         {
