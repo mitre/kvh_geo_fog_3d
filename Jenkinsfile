@@ -143,19 +143,17 @@ pipeline
                 {
                     recordIssues enabledForFailure: false, aggregatingResults : false, tool: gcc4()
                 }
+		//Clang-tidy
+                warnError('Publishing Clang-Tidy Results Failed!')
+                {
+		    //Use warnings-ng to publish clangtidy
+		    recordIssues(tools: [clangTidy(pattern: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.clangtidy')])
+                }
                 //Unit Testing
                 warnError('Publishing Unit Test Results Failed!')
                 {
                     xunit (thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
                         tools: [ GoogleTest(pattern: 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml') ])
-                }
-                //Clang-tidy
-                warnError('Publishing Clang-Tidy Results Failed!')
-                {
-                    //Use the old junit publisher
-                    //junit 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*_clangtidy.xml'
-		    //Use warnings-ng to publish clangtidy
-		    recordIssues(tools: [clangTidy(pattern: 'clangtidy/*.clangtidy')])
                 }
             }
 	}
