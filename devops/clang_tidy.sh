@@ -39,14 +39,11 @@ run_clang_tidy() {
     if [ ! -d ${5} ]; then
 	mkdir -p ${5}
     fi
-    TMP_CLANGTIDY=.tmp_clangtidy
-    parallel -m clang-tidy -p ${2} {} --checks=${CLANG_TIDY_CHECKS} ::: ${1} > ${TMP_CLANGTIDY}
+    CLANGTIDY_OUT=${4}.clangtidy
+    parallel -m clang-tidy -p ${2} {} --checks=${CLANG_TIDY_CHECKS} ::: ${1} > ${5}/${CLANGTIDY_OUT}
     
     # Re-format into JUnit and put into collection directory
-    cat ${TMP_CLANGTIDY} | clang-tidy-to-junit.py ${3}/ > ${5}/${4}_clangtidy.xml
-
-    # Remove temp file
-    rm ${TMP_CLANGTIDY}    
+    cat ${5}/${CLANGTIDY_OUT} | clang-tidy-to-junit.py ${3}/ > ${5}/${4}_clangtidy_junit.xml
 }
 
 # Arguments:
