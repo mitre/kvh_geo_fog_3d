@@ -47,13 +47,14 @@ PACKAGE_DIRS=()
 PACKAGE_NAMES=()
 # Check toplevel for package
 if [ -f "package.xml" ]; then
+    echo "Found package.xml in top-level directory"
     while read_dom; do
 	if [ "${ENTITY}" = "name" ]; then
 	    PACKAGE_NAMES+=(${CONTENT})
 	    PACKAGE_DIRS+=(".")
 	    break
 	fi
-    done < ${DIR}/package.xml
+    done < package.xml
 fi
 for DIR in *; do
     if [[ -d "${DIR}" && ! -L "${DIR}" ]]; then
