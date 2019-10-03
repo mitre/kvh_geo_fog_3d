@@ -258,9 +258,7 @@ void ClangTidy()
     sh script: """#!/bin/bash
         cd catkin_ws/src/kvh_geo_fog_3d
         source ../../devel/setup.bash
-        ./devops/clang_tidy.sh
-        ls clangtidy/
-        cat clangtidy/*.clangtidy
+        ./devops/clang_tidy.sh kvh_geo_fog_3d
     """, label: 'Clang-tidy'
 }
 void RosLint()

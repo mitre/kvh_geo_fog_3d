@@ -9,6 +9,29 @@
 # Also requires you to compile your code with the flag -DCMAKE_EXPORT_COMPILE_COMMANDS=1,
 # which will write the compile_commands.json to the build directory of the catkin project.
 
+# Get project name
+if [ $# -ne 1 ]; then
+    echo "Usage:"
+    echo " $0 <project name>"
+    echo " (project name should be the directory you've cloned)"
+    exit 1
+fi
+# Overall project name
+PROJECT_NAME=$1
+
+# Helper to read package.xml
+read_dom ()
+{
+    ORIGINAL_IFS=${IFS}
+    IFS=\>
+    read -d \< ENTITY CONTENT
+    local ret=$?
+    TAG_NAME=${ENTITY%% *}
+    ATTRIBUTES=${ENTITY#* }
+    IFS=${ORIGINAL_IFS}
+    return $ret
+}
+
 # If we don't have a local .clang_format, get it from the repo
 GOT_CLANG_FORMAT=0
 if [ ! -f .clang_format ]; then
@@ -19,12 +42,42 @@ fi
 
 # Checks to run using clang-tidy
 CLANG_TIDY_CHECKS=clang-analyzer-core*,clang-analyzer-cplusplus,clang-analyzer-llvm*,clang-analyzer,nullability*,clang-analyzer-security*,clang-analyzer-unix*,readability-braces-around-statements,modernize-pass-by-value,modernize-use-nullptr,misc-inefficient-algorithm
-# Overall project name
-PROJECT_NAME=kvh_geo_fog_3d
 # Bash array of packages within this project
-PACKAGE_NAME=($(ls -d ${PROJECT_NAME}*/ | tr " " "\n" | sed 's:/*$::'))
-# OLD WAY
-#PACKAGE_NAME=(kvh_geo_fog_3d_driver kvh_geo_fog_3d_msgs kvh_geo_fog_3d_rviz kvh_geo_fog_3d)
+PACKAGE_DIRS=()
+PACKAGE_NAMES=()
+# Check toplevel for package
+if [ -f "package.xml" ]; then
+    while read_dom; do
+	if [ "${ENTITY}" = "name" ]; then
+	    PACKAGE_NAMES+=(${CONTENT})
+	    PACKAGE_DIRS+=(".")
+	    break
+	fi
+    done < ${DIR}/package.xml
+fi
+for DIR in *; do
+    if [[ -d "${DIR}" && ! -L "${DIR}" ]]; then
+	if [ -f ${DIR}/package.xml ]; then
+	    echo "Found package.xml in ${DIR}"
+	    while read_dom; do
+		if [ "${ENTITY}" = "name" ]; then
+		    PACKAGE_NAMES+=(${CONTENT})
+		    PACKAGE_DIRS+=(${DIR})
+		    break
+		fi
+	    done < ${DIR}/package.xml
+	fi
+    fi
+done
+echo "DIRS:"
+echo ${PACKAGE_DIRS[*]}
+echo "NAMES:"
+echo ${PACKAGE_NAMES[*]}
+
+if [ "${#PACKAGE_DIRS[@]}" = "0" ]; then
+    echo "Failed to find any packages, exiting..."
+    exit 0
+fi
 # Directory in which to store all of our suggested changes to files from clang_format
 CLANG_FORMAT_DIR=clang_format_output
 CLANGTIDY_DIR=clangtidy
@@ -55,7 +108,7 @@ run_clang_format() {
     fi
     tmp_cpp=.tmpcpp
     for file in ${1}; do
-        echo ${file}
+        echo "clang-format on ${file}..."
         clang-format ${file} > ${tmp_cpp}
         diff -u ${file} ${tmp_cpp} > ${2}/$(basename ${file}).diff
         rm ${tmp_cpp}
@@ -78,29 +131,20 @@ done
 PROJECT_ROOT=${WORKSPACE_ROOT}/src/${PROJECT_NAME}
 # If this is a simple project (i.e. one package within the whole project) then
 # PACKAGE_NAME will be blank
-if [ -z "${PACKAGE_NAME}" ]; then
-    if [ -d ${package}/src ]; then
-        PACKAGE_SOURCE_PATHS=${PROJECT_ROOT}/src/*.cpp
-        BUILD_PATH=${WORKSPACE_ROOT}/build/${PROJECT_NAME}/
+for i in "${!PACKAGE_DIRS[@]}"; do
+    dir=${PACKAGE_DIRS[$i]}
+    package=${PACKAGE_NAMES[$i]}
+    if [ -d ${dir}/src ]; then
+        PACKAGE_SOURCE_PATHS=${PROJECT_ROOT}/${dir}/src/*.cpp
+        BUILD_PATH=${WORKSPACE_ROOT}/build/${package}/
 
-        run_clang_tidy "${PACKAGE_SOURCE_PATHS}" "${BUILD_PATH}" "${PROJECT_ROOT}" "${PROJECT_NAME}" "${CLANGTIDY_DIR}"
+	echo "clang-tidy and clang-format on ${PACKAGE_SOURCE_PATHS}..."
+	run_clang_tidy "${PACKAGE_SOURCE_PATHS}" "${BUILD_PATH}" "${PROJECT_ROOT}" "${package}" "${CLANGTIDY_DIR}" >& /dev/null
+	run_clang_format "${PACKAGE_SOURCE_PATHS}" "${CLANG_FORMAT_DIR}/${package}" >& /dev/null
     else
         echo "WARNING: Project doesn't have a source directory, skipping..."
     fi
-else
-    for package in ${PACKAGE_NAME[@]}; do
-        echo "Entering package ${package}..."
-        if [ -d ${package}/src ]; then
-            PACKAGE_SOURCE_PATHS=${package}/src/*.cpp
-            BUILD_PATH=${WORKSPACE_ROOT}/build/${package}
-
-            run_clang_tidy "${PACKAGE_SOURCE_PATHS}" "${BUILD_PATH}" "${PROJECT_ROOT}" "${package}" "${CLANGTIDY_DIR}"
-            run_clang_format "${PACKAGE_SOURCE_PATHS}" "${CLANG_FORMAT_DIR}/${package}"
-        else
-            echo "WARNING: Package doesn't have a source directory, skipping..."
-        fi
-    done
-fi
+done
 
 if [ "${GOT_CLANG_FORMAT}" -eq "1" ]; then
     echo "Removing fetched .clang_format..."
