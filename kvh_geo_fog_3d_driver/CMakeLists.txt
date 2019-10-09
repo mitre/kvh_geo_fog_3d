@@ -13,8 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   kvh_geo_fog_3d_msgs
   message_generation
   nav_msgs
-  nodelet
-  pluginlib
   roscpp
   roslint
   sensor_msgs
@@ -104,7 +102,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
   INCLUDE_DIRS include include/geo_fog_sdk include/rs232
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS dynamic_reconfigure kvh_geo_fog_3d_msgs message_runtime nodelet pluginlib roscpp std_msgs tf2_ros
+  CATKIN_DEPENDS dynamic_reconfigure kvh_geo_fog_3d_msgs message_runtime roscpp std_msgs tf2_ros
 )
 
 ###########
@@ -142,22 +140,6 @@ add_library(${PROJECT_NAME}
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
-)
-
-add_library(${PROJECT_NAME}_nodelet 
-  src/kvh_geo_fog_3d_nodelet.cpp
-)
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-add_dependencies(${PROJECT_NAME}_nodelet
-  ${PROJECT_NAME}_gencfg
-)
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_nodelet
-  ${catkin_LIBRARIES}
-  ${PROJECT_NAME}
 )
 
 ## Add cmake target dependencies of the library
@@ -233,7 +215,7 @@ target_link_libraries(determine_baud_node
 # )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node ${PROJECT_NAME}_nodelet determine_baud_node
+install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node determine_baud_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -260,13 +242,8 @@ install(DIRECTORY include/rs232
 install(DIRECTORY launch 
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-## Install our nodelet_plugins.xml for nodelet support
-install(FILES
-  nodelet_plugins.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
 
-## Install our nodelet_plugins.xml for nodelet support
+## Install our scripts
 install(DIRECTORY scripts/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   USE_SOURCE_PERMISSIONS
@@ -290,7 +267,6 @@ set(ROSLINT_CPP_OPTS "--filter=-whitespace/comments,-whitespace/parens")
 roslint_cpp(
   src/kvh_diagnostics_container.cpp
   src/kvh_geo_fog_3d_node.cpp
-  src/kvh_geo_fog_3d_nodelet.cpp
   src/kvh_driver/decode_packets.cpp
   src/kvh_driver/device_configuration.cpp
   src/kvh_driver/driver_main.cpp
@@ -301,7 +277,6 @@ roslint_cpp(
   include/kvh_geo_fog_3d_device_configuration.hpp
   include/kvh_geo_fog_3d_driver.hpp
   include/kvh_geo_fog_3d_global_vars.hpp
-  include/kvh_geo_fog_3d_nodelet.hpp
   include/kvh_geo_fog_3d_packet_storage.hpp
 )
 
