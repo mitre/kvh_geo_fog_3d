@@ -143,7 +143,7 @@ for i in "${!PACKAGE_DIRS[@]}"; do
 	run_clang_tidy "${PACKAGE_SOURCE_PATHS}" "${BUILD_PATH}" "${PROJECT_ROOT}" "${package}" "${CLANGTIDY_DIR}" >& /dev/null
 	run_clang_format "${PACKAGE_SOURCE_PATHS}" "${CLANG_FORMAT_DIR}/${package}" >& /dev/null
     else
-        echo "WARNING: Project doesn't have a source directory, skipping..."
+        echo "WARNING: Package ${package} doesn't have a source directory, skipping..."
     fi
 done
 
