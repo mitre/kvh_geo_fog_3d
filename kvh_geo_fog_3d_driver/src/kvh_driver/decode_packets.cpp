@@ -17,6 +17,14 @@
  * limitations under the License.
  *********************************************************************/
 
+/**
+ * @file decode_packets.cpp
+ * @brief KVH Geo Fog 3D packet decoder
+ * @author Trevor Bostic
+ *
+ * Leverages the AN packet library to convert to our internal structures
+ */
+
 #include "kvh_geo_fog_3d_driver.hpp"
 #include <cmath>
 

@@ -25,15 +25,6 @@
  * @todo Switch publishers to DiagnosticPublisher, which will let us track frequencies (see http://docs.ros.org/api/diagnostic_updater/html/classdiagnostic__updater_1_1DiagnosedPublisher.html)
  */
 
-/**
-* Messages
-* We want nav_msgs/Odometry, geometry_msgs/PoseWithCovarianceStamped, geometry_msgs/TwistWithCovarianceStamped,
-* sensor_msgs/Imu for our node
-* 
-* sensor_msgs::Imu -> imu/data_raw
-* nav_msgs/Odometry -> gps/utm
-*/
-
 // STD
 #include "unistd.h"
 #include <map>
@@ -223,7 +214,7 @@ int main(int argc, char **argv)
   // To get packets from the driver, we first create a vector
   // that holds a pair containing the packet id and the desired frequency for it to be published
   // See documentation for all id's.
-  // \todo: Put all id's we support in our documentation. Full list is in KVH's
+  /** @todo Put all id's we support in our documentation. Full list is in KVH's **/
   typedef std::pair<packet_id_e, int> freqPair;
 
   kvh::KvhPacketRequest packetRequest{
@@ -530,23 +521,6 @@ int main(int argc, char **argv)
     ////////////////////////////////////
     // STANDARD ROS MESSAGES
     ////////////////////////////////////
-
-    /* Logic below for the types of data we get from each packet
-           if we have system state packet we can publish
-           {
-               IMU MSG
-               NAVSATFIXMSG
-
-               additionally, if we have the utm packet we can publish
-               {
-                   ODOMETRY_MSG
-               }
-           }
-           if we hav the local magnetics packet we can publish
-           {
-               LOCAL_MAG_MSG
-           }
-        */
     if (kvhDriver.PacketIsUpdated(packet_id_system_state) && kvhDriver.PacketIsUpdated(packet_id_euler_orientation_standard_deviation))
     {
       kvhDriver.GetPacket(packet_id_system_state, systemStatePacket);
@@ -560,7 +534,7 @@ int main(int argc, char **argv)
       // float64[9] angular_velocity_covariance
       // Vector3 linear_acceleration
       // float64[9] linear_acceleration_covariance
-      // \todo fill out covariance matrices for each of the below.
+      /** @todo fill out covariance matrices for each of the below. **/
 
       // [-pi,pi) bounded yaw
       double boundedBearingPiToPi = BoundFromNegPiToPi(systemStatePacket.orientation[2]);
@@ -831,7 +805,7 @@ int main(int argc, char **argv)
         odomMsgNED.header.frame_id = "utm_ned";     //The nav_msgs/Odometry "Pose" section should be in this frame
         odomMsgNED.child_frame_id = "imu_link_frd"; //The nav_msgs/Odometry "Twist" section should be in this frame
 
-        // \todo Fill covarience matrices for both of these
+        /** @todo Fill covarience matrices for both of these **/
         // Covariance matrices are 6x6 so we need to fill the diagonal at
         // 0, 7, 14, 21, 28, 35
 

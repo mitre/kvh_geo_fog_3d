@@ -17,6 +17,12 @@
  * limitations under the License.
  *********************************************************************/
 
+/**
+ * @file packet_storage.cpp
+ * @brief Container for data coming in from the KVH
+ * @author Trevor Bostic
+ */
+
 #include "kvh_geo_fog_3d_driver.hpp"
 #include "kvh_geo_fog_3d_packet_storage.hpp"
 

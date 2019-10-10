@@ -17,6 +17,12 @@
  * limitations under the License.
  *********************************************************************/
 
+/**
+ * @file kvh_diagnostics_container.cpp
+ * @brief Wrapper around ROS diagnostics information for the KVH
+ * @author Trevor Bostic
+ */
+
 #include "kvh_diagnostics_container.hpp"
 
 mitre::KVH::DiagnosticsContainer::DiagnosticsContainer()

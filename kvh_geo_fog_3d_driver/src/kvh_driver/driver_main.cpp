@@ -20,6 +20,7 @@
 /**
  * @file kvh_geo_fog_3d_driver.cpp
  * @brief KVH Geo Fog 3D driver class definitions.
+ * @author Trevor Bostic
  *
  * This file implements all functions defined in kvh_geo_fog_3d_driver.hpp. The driver 
  * is used for for interfacing with KVH GEO FOG over serial connection.

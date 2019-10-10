@@ -17,6 +17,12 @@
  * limitations under the License.
  *********************************************************************/
 
+/**
+ * @file kvh_global_vars.cpp
+ * @brief KVH Geo Fog 3D driver global variables, used to pass data in the driver
+ * @author Trevor Bostic
+ */
+
 #include "kvh_geo_fog_3d_global_vars.hpp"
 #include <typeinfo>
 
