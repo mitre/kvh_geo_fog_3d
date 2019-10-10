@@ -14,46 +14,16 @@ fi
 # Overall project name
 PROJECT_NAME=$1
 
-# Helper to read package.xml
-read_dom ()
-{
-    ORIGINAL_IFS=${IFS}
-    IFS=\>
-    read -d \< ENTITY CONTENT
-    local ret=$?
-    TAG_NAME=${ENTITY%% *}
-    ATTRIBUTES=${ENTITY#* }
-    IFS=${ORIGINAL_IFS}
-    return $ret
-}
+# Get script directory
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
+# Import functions.sh
+. ${SCRIPT_DIR}/functions.sh
 
 PACKAGE_DIRS=()
 PACKAGE_NAMES=()
-# Check toplevel for package
-if [ -f "package.xml" ]; then
-    echo "Found package.xml in top-level directory"
-    while read_dom; do
-	if [ "${ENTITY}" = "name" ]; then
-	    PACKAGE_NAMES+=(${CONTENT})
-	    PACKAGE_DIRS+=(".")
-	    break
-	fi
-    done < package.xml
-fi
-for DIR in *; do
-    if [[ -d "${DIR}" && ! -L "${DIR}" ]]; then
-	if [ -f ${DIR}/package.xml ]; then
-	    echo "Found package.xml in ${DIR}"
-	    while read_dom; do
-		if [ "${ENTITY}" = "name" ]; then
-		    PACKAGE_NAMES+=(${CONTENT})
-		    PACKAGE_DIRS+=(${DIR})
-		    break
-		fi
-	    done < ${DIR}/package.xml
-	fi
-    fi
-done
+find_ros_packages
+
 echo "DIRS:"
 echo ${PACKAGE_DIRS[*]}
 echo "NAMES:"
@@ -64,15 +34,17 @@ if [ "${#PACKAGE_DIRS[@]}" = "0" ]; then
     exit 0
 fi
 
-
 # Arguments:
+# 1: cppcheck output directory (usually the project name)
+# 2: package name
+# 3: space-separated list of cpp files
 run_cppcheck() {
     if [ ! -d ${1} ]; then
 	mkdir -p ${1}
     fi
-    CPPCHECK_OUT=${2}.cppcheck
+    CPPCHECK_OUT=${1}/${2}.cppcheck
 
-    touch ${1}/${CPPCHECK_OUT}
+    cppcheck --enable=warning,style,performance,portability --language=c++ --platform=unix64 --std=c++11 -I kvh_geo_fog_3d_driver/include/ -I kvh_geo_fog_3d_rviz/include/ --xml --xml-version=2 ${3} 2> "${CPPCHECK_OUT}"
 }
 
 # Directory in which to store all of our suggested changes to files from clang_format
@@ -85,11 +57,14 @@ for i in "${!PACKAGE_DIRS[@]}"; do
     dir=${PACKAGE_DIRS[$i]}
     package=${PACKAGE_NAMES[$i]}
     if [ -d ${dir}/src ]; then
-        PACKAGE_SOURCE_PATHS=${PROJECT_ROOT}/${dir}/src/*.cpp
-        BUILD_PATH=${WORKSPACE_ROOT}/build/${package}/
+        #PACKAGE_SOURCE_PATHS=${PROJECT_ROOT}/${dir}/src/*.cpp
+	for f in $(find ${dir}/src -name *.cpp); do
+	    PACKAGE_SOURCE_PATHS+=$(realpath ${f})
+	    PACKAGE_SOURCE_PATHS+=" "
+	done
 
 	echo "cppcheck on ${PACKAGE_SOURCE_PATHS}..."
-	run_cppcheck "${CPPCHECK_DIR}" "${package}"
+	run_cppcheck "${CPPCHECK_DIR}" "${package}" "${PACKAGE_SOURCE_PATHS}"
     else
         echo "WARNING: Package ${package} doesn't have a source directory, skipping..."
     fi

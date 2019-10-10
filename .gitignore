@@ -1,2 +1,4 @@
 .vscode
 ros-kinetic-*
+cppcheck_output
+clangtidy
