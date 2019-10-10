@@ -8,6 +8,12 @@ echo " have sourced your workspace's setup.bash!"
 
 ROSLINT_DIR=$(pwd)/roslint_output
 
+# Get script directory
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
+# Import functions.sh
+. ${SCRIPT_DIR}/functions.sh
+
 if [ ! -d ${ROSLINT_DIR} ]; then
     mkdir -p ${ROSLINT_DIR}
 else
@@ -20,16 +26,8 @@ fi
 
 # Get our sourced WS
 WORKSPACE_ROOT=""
-IFS=':'
-read -ra CATKIN_WSES <<< "${CMAKE_PREFIX_PATH}"
-IFS=' '
-for ws in ${CATKIN_WSES}
-do
-    if [[ ${ws} != *"/opt/ros/"* ]]; then
-        # Remove /devel from string to get root
-        WORKSPACE_ROOT=${ws//\/devel/}
-    fi
-done
+# Get our workspace root
+get_workspace_root
 
 pushd ${WORKSPACE_ROOT}/build
 

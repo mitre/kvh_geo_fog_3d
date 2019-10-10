@@ -34,6 +34,10 @@ if [ "${#PACKAGE_DIRS[@]}" = "0" ]; then
     exit 0
 fi
 
+# Get our workspace root
+WORKSPACE_ROOT=""
+get_workspace_root
+
 # Arguments:
 # 1: cppcheck output directory (usually the project name)
 # 2: package name
