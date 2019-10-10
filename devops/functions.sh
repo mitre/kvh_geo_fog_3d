@@ -41,3 +41,18 @@ find_ros_packages ()
         fi
     done
 }
+
+# Requires local devel setup.bash to be sourced
+get_workspace_root ()
+{
+    IFS=':'
+    read -ra CATKIN_WSES <<< "${CMAKE_PREFIX_PATH}"
+    IFS=' '
+    for ws in ${CATKIN_WSES}
+    do
+        if [[ ${ws} != *"/opt/ros/"* ]]; then
+            # Remove /devel from string to get root
+            WORKSPACE_ROOT=${ws//\/devel/}
+        fi
+    done
+}

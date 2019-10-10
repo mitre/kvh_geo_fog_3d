@@ -19,18 +19,19 @@ fi
 # Overall project name
 PROJECT_NAME=$1
 
-# Helper to read package.xml
-read_dom ()
-{
-    ORIGINAL_IFS=${IFS}
-    IFS=\>
-    read -d \< ENTITY CONTENT
-    local ret=$?
-    TAG_NAME=${ENTITY%% *}
-    ATTRIBUTES=${ENTITY#* }
-    IFS=${ORIGINAL_IFS}
-    return $ret
-}
+# Get script directory
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
+# Import functions.sh
+. ${SCRIPT_DIR}/functions.sh
+
+PACKAGE_DIRS=()
+PACKAGE_NAMES=()
+find_ros_packages
+echo "DIRS:"
+echo ${PACKAGE_DIRS[*]}
+echo "NAMES:"
+echo ${PACKAGE_NAMES[*]}
 
 # If we don't have a local .clang_format, get it from the repo
 GOT_CLANG_FORMAT=0
@@ -42,38 +43,6 @@ fi
 
 # Checks to run using clang-tidy
 CLANG_TIDY_CHECKS=clang-analyzer-core*,clang-analyzer-cplusplus,clang-analyzer-llvm*,clang-analyzer,nullability*,clang-analyzer-security*,clang-analyzer-unix*,readability-braces-around-statements,modernize-pass-by-value,modernize-use-nullptr,misc-inefficient-algorithm
-# Bash array of packages within this project
-PACKAGE_DIRS=()
-PACKAGE_NAMES=()
-# Check toplevel for package
-if [ -f "package.xml" ]; then
-    echo "Found package.xml in top-level directory"
-    while read_dom; do
-	if [ "${ENTITY}" = "name" ]; then
-	    PACKAGE_NAMES+=(${CONTENT})
-	    PACKAGE_DIRS+=(".")
-	    break
-	fi
-    done < package.xml
-fi
-for DIR in *; do
-    if [[ -d "${DIR}" && ! -L "${DIR}" ]]; then
-	if [ -f ${DIR}/package.xml ]; then
-	    echo "Found package.xml in ${DIR}"
-	    while read_dom; do
-		if [ "${ENTITY}" = "name" ]; then
-		    PACKAGE_NAMES+=(${CONTENT})
-		    PACKAGE_DIRS+=(${DIR})
-		    break
-		fi
-	    done < ${DIR}/package.xml
-	fi
-    fi
-done
-echo "DIRS:"
-echo ${PACKAGE_DIRS[*]}
-echo "NAMES:"
-echo ${PACKAGE_NAMES[*]}
 
 if [ "${#PACKAGE_DIRS[@]}" = "0" ]; then
     echo "Failed to find any packages, exiting..."
@@ -118,16 +87,7 @@ run_clang_format() {
 
 # Get our sourced WS
 WORKSPACE_ROOT=""
-IFS=':'
-read -ra CATKIN_WSES <<< "${CMAKE_PREFIX_PATH}"
-IFS=' '
-for ws in ${CATKIN_WSES}
-do
-    if [[ ${ws} != *"/opt/ros/"* ]]; then
-        # Remove /devel from string to get root
-        WORKSPACE_ROOT=${ws//\/devel/}
-    fi
-done
+get_workspace_root ${WORKSPACE_ROOT}
 
 PROJECT_ROOT=${WORKSPACE_ROOT}/src/${PROJECT_NAME}
 # If this is a simple project (i.e. one package within the whole project) then
