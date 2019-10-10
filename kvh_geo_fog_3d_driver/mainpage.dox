@@ -1,0 +1,155 @@
+/**
+@mainpage
+@htmlinclude manifest.html
+
+\b kvh_geo_fog_3d_driver is a ROS-compatible hardware driver for the KVH
+GEO FOG 3D family of localization systems. 
+... In addition to providing an overview of your package,
+this is the section where the specification and design/architecture
+should be detailed. While the original specification may be done on the
+wiki, it should be transferred here once your package starts to take shape.
+You can then link to this documentation page from the Wiki.
+
+
+@section codeapi Code API
+
+Provide links to specific auto-generated API documentation within your
+package that is of particular interest to a reader. Doxygen will
+document pretty much every part of your code, so do your best here to
+point the reader to the actual API.
+
+If your codebase is fairly large or has different sets of APIs, you
+should use the doxygen 'group' tag to keep these APIs together. For
+example, the roscpp documentation has 'libros' and 'botherder' groups
+so that those can be viewed separately. The rospy documentation
+similarly has a 'client-api' group that pulls together APIs for a
+Client API page.
+
+
+@section rosapi ROS API
+
+Every ROS name in your code must be documented. Names are very
+important in ROS because they are the API to nodes and services. They
+are also capable of being remapped on the command-line, so it is VERY
+IMPORTANT THAT YOU LIST NAMES AS THEY APPEAR IN THE CODE. It is also
+important that you write your code so that the names can be easily
+remapped.
+
+List of nodes:
+- \b kvh_geo_fog_3d_driver_node
+- \b determine_baud_node
+
+
+<!-- START: copy for each node -->
+
+<hr>
+
+@subsection node_name kvh_geo_fog_3d_driver_node
+
+kvh_geo_fog_3d_driver_node connects to the device via a serial connection,
+reads data using the AN packet protocol, re-publishes the data as
+pass-through KVH messages (present in the kvh_geo_fog_3d_msgs package),
+and interprets the data into ROS-compatible data, published as standard
+ROS types. This interpretation takes into consideration ROS REP-103
+(standard units of measure), ROS REP-105 (coordinate frames for
+mobile robots), and ROS REP-145 (conventions for IMU sensor data).
+
+@subsubsection Usage
+@verbatim
+$ kvh_geo_fog_3d_driver_node port:=<serial port> baud:=<baud>
+@endverbatim
+
+@par Example
+
+@verbatim
+$ kvh_geo_fog_3d_driver_node port:=/dev/ttyUSB0 baud:=115200
+@endverbatim
+
+
+@subsubsection topics ROS topics
+
+Publishes to:
+- \b "kvh_system_state": [kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState]                    KVH System State packet
+- \b "kvh_satellites": [kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites]                       KVH satellite information
+- \b "kvh_detailed_satellites": [kvh_geo_fog_3d_msgs/KvhGeoFog3DDetailSatellites]        KVH detailed satellite information
+- \b "kvh_local_magnetics": [kvh_geo_fog_3d_msgs/KvhGeoFog3DLocalMagneticField]          KVH local magnetics packet
+- \b "kvh_utm_position": [kvh_geo_fog_3d_msgs/KvhGeoFog3DUTMPosition]                    KVH UTM position packet
+- \b "kvh_ecef_pos": [kvh_geo_fog_3d_msgs/KvhGeoFog3DECEFPos]                            KVH ECEF position packet
+- \b "kvh_north_seeking_status": [kvh_geo_fog_3d_msgs/KvhGeoFog3DNorthSeekingInitStatus] KVH north-seeking status
+- \b "kvh_odometer_state": [kvh_geo_fog_3d_msgs/KvhGeoFog3DOdometerState]                KVH odometer state packet (from an external sensor)
+- \b "kvh_raw_sensors": [kvh_geo_fog_3d_msgs/KvhGeoFog3DRawSensors]                      KVH raw sensor information (accels, velocities, and other internal sensors)
+- \b "kvh_raw_gnss": [kvh_geo_fog_3d_msgs/KvhGeoFog3DRawGNSS]                            KVH unfiltered GNSS solution
+- \b "imu/data_raw_frd": [sensor_msgs/Imu]              Raw IMU data, in FRD convention
+- \b "imu/data_raw_flu": [sensor_msgs/Imu]              Raw IMU data, in FLU convention (REP-105)
+- \b "imu/data_ned": [sensor_msgs/Imu]                  IMU data with orientation, in NED convention
+- \b "imu/data_enu": [sensor_msgs/Imu]                  IMU data with orientation, in ENU convention (REP-105)
+- \b "imu/rpy_ned":  [geometry_msgs/Vector3Stamped]     IMU roll/pitch/yaw, in NED convention (radians)
+- \b "imu/rpy_ned_deg": [geometry_msgs/Vector3Stamped]  IMU roll/pitch/yaw, in NED convention (degrees)
+- \b "imu/rpy_enu":  [geometry_msgs/Vector3Stamped]     IMU roll/pitch/yaw, in ENU convention (radians)
+- \b "imu/rpy_enu_deg": [geometry_msgs/Vector3Stamped]  IMU roll/pitch/yaw, in ENU convention (degrees)
+- \b "gps/fix": [sensor_msgs/NavSatFix]                 Filtered GPS location, as NavSatFix message
+- \b "gps/raw_fix": [sensor_msgs/NavSatFix]             Raw GPS location, as NavSatFix message
+- \b "gps/mag": [sensor_msgs/MagneticField]             Magnetic field measurement around the sensor
+- \b "gps/utm_ned": [nav_msgs/Odometry]                 UTM position, formatted as ROS Odometry, in NED convention
+- \b "gps/utm_enu": [nav_msgs/Odometry]                 UTM position, formatted as ROS Odometry, in ENU convention (REP-105)
+- \b "odom/wheel_encoder": [nav_msgs/Odometry]          Wheel encoder distance and speed
+- \b "imu/raw_sensor_frd": [nav_msgs/Odometry]          Raw sensor (unfiltered) outputs, in FRD convention
+- \b "odom/raw_sensor_flu": [nav_msgs/Odometry]         Raw sensor (unfiltered) outputs, in FLU convention (REP-105)
+
+\subsubsection parameters ROS parameters
+
+Reads the following parameters from the parameter server
+
+- \b "~param_name" : \b [type] description of param_name
+- \b "~my_param" : \b [string] description of my_param
+
+Sets the following parameters on the parameter server
+
+- \b "~param_name" : \b [type] description of param_name
+
+
+\subsubsection services ROS services
+- \b "foo_service": [std_srvs/FooType] description of foo_service
+
+
+<!-- END: copy for each node -->
+
+\section commandline Command-line tools
+
+This section is a catch-all for any additional tools that your package
+provides or uses that may be of use to the reader. For example:
+
+- tools/scripts (e.g. rospack, roscd)
+- roslaunch .launch files
+- xmlparam files
+
+\subsection script_name script_name
+
+Description of what this script/file does.
+
+\subsubsection Usage
+\verbatim
+$ ./script_name [args]
+\endverbatim
+
+\par Example
+
+\verbatim
+$ ./script_name foo bar
+\endverbatim
+*/
+
+© 2019 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Help
+
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+
