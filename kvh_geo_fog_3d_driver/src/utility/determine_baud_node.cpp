@@ -18,7 +18,7 @@
  *********************************************************************/
 
 /**
- * @file determine_baud.cpp
+ * @file determine_baud_node.cpp
  * @brief This utility can be used to determine the required baud rate given 
  * the existing packet requests. It can also be used to determine the current
  * baud of the kvh.

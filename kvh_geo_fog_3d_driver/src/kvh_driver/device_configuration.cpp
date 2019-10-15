@@ -187,8 +187,8 @@ int KvhDeviceConfig::SetBaudRate(std::string _port, int _curBaudRate, int _prima
 }
 
 /**
- * @Driver::FindCurrentBaudRate
- * @param [in] port The port on the computer the kvh is connected to (e.g. '/dev/ttyUSB0')
+ * @fn Driver::FindCurrentBaudRate
+ * @param [in] _port The port on the computer the kvh is connected to (e.g. '/dev/ttyUSB0')
  * @return int The current baudrate of the kvh if found, -1 otherwise
  * 
  * @brief This function tries each possible setting of baudrates until it

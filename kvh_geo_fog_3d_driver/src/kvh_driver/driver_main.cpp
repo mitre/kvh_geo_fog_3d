@@ -18,7 +18,7 @@
  *********************************************************************/
 
 /**
- * @file kvh_geo_fog_3d_driver.cpp
+ * @file driver_main.cpp
  * @brief KVH Geo Fog 3D driver class definitions.
  * @author Trevor Bostic
  *
@@ -243,11 +243,9 @@ int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, 
 
 } // END Init()
 
-/**
+  /**
    * @fn Driver::Once
    * @brief Do a single data read from the device
-   * @param _messageType [out] The type of message read
-   * @param _data [out] An array containing the read data
    * 
    * @return [int]:
    *   0  = success
@@ -322,27 +320,27 @@ int Driver::Once()
 } // END Once()
 
   /**
- * @Driver::PacketIsUpdated
- * @param _packetId The id of the packet you are checking
- * @return True if the packet has been updated, false if not
- * 
- * @brief Use this function to determine if new packet data
- * has arrived since the last time you checked
- */
+   * @fn Driver::PacketIsUpdated
+   * @param _packetId The id of the packet you are checking
+   * @return True if the packet has been updated, false if not
+   * 
+   * @brief Use this function to determine if new packet data
+   * has arrived since the last time you checked
+   */
   bool Driver::PacketIsUpdated(packet_id_e _packetId)
   {
     return packetStorage_.PacketIsUpdated(_packetId);
   }
 
   /**
- * @Driver::SetPacketUpdated
- * @param _packetId The id of the packet you want to set the status of
- * @param _updateStatus The value you want to set the packet to.
- * 
- * @brief Use this function to set that the packet has been updated (though
- * the driver will usually do that itself), or use it to notify the driver
- * that you have used the most recent packet.
- */
+   * @fn Driver::SetPacketUpdated
+   * @param _packetId The id of the packet you want to set the status of
+   * @param _updateStatus The value you want to set the packet to.
+   * 
+   * @brief Use this function to set that the packet has been updated (though
+   * the driver will usually do that itself), or use it to notify the driver
+   * that you have used the most recent packet.
+   */
   int Driver::SetPacketUpdated(packet_id_e _packetId, bool _updateStatus)
   {
     return packetStorage_.SetPacketUpdated(_packetId, _updateStatus);
