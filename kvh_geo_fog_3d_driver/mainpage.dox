@@ -4,12 +4,12 @@
 
 \b kvh_geo_fog_3d_driver is a ROS-compatible hardware driver for the KVH
 GEO FOG 3D family of localization systems. 
+
 ... In addition to providing an overview of your package,
 this is the section where the specification and design/architecture
 should be detailed. While the original specification may be done on the
 wiki, it should be transferred here once your package starts to take shape.
 You can then link to this documentation page from the Wiki.
-
 
 @section codeapi Code API
 
@@ -28,19 +28,9 @@ Client API page.
 
 @section rosapi ROS API
 
-Every ROS name in your code must be documented. Names are very
-important in ROS because they are the API to nodes and services. They
-are also capable of being remapped on the command-line, so it is VERY
-IMPORTANT THAT YOU LIST NAMES AS THEY APPEAR IN THE CODE. It is also
-important that you write your code so that the names can be easily
-remapped.
-
 List of nodes:
 - \b kvh_geo_fog_3d_driver_node
 - \b determine_baud_node
-
-
-<!-- START: copy for each node -->
 
 <hr>
 
@@ -98,21 +88,51 @@ Publishes to:
 
 \subsubsection parameters ROS parameters
 
-Reads the following parameters from the parameter server
+Reads the following parameters from the parameter server. For detailed information regarding these configuration
+options, see the KVH technical reference manual.
 
-- \b "~param_name" : \b [type] description of param_name
-- \b "~my_param" : \b [string] description of my_param
+@todo What are the defaults?
 
-Sets the following parameters on the parameter server
+- \b "~port"  : \b [string] The serial port to use to connect to the KVH
+- \b "~baud"  : \b [int] Baud rate to use
+- \b "~debug" : \b [bool] Enable/disable debugging
+- \b "~filterVehicleType" : \b [int] Vehicle filter setting, used to constrain filters. From spatial_packets.h (part of geo_fog_sdk, unlimited is 0, bicycle is 1, etc).
+- \b "~atmosphericAltitudeEnabled" : \b [bool] Enable/disable atmospheric altitude
+- \b "~velocityHeadingEnabled" : \b [bool] Enable/disable velocity-based (i.e. course-over-ground) heading
+- \b "~reversingDetectionEnabled" : \b [bool] Enable/disable automatic reverse detection
+- \b "~motionAnalysisEnabled" : \b [bool] Enable/disable KVH's motion analysis filters.
 
-- \b "~param_name" : \b [type] description of param_name
+<hr>
 
+@subsection node_name determine_baud_node
 
-\subsubsection services ROS services
-- \b "foo_service": [std_srvs/FooType] description of foo_service
+determine_baud_node attempts to auto-baud to the device over the specified
+serial port. It listens for messages and, if none come in, it tries the
+next baud rate.
 
+The only baud rates attempted are the ones supported by the device by
+default. To learn more about supported baud rates, consult the KVH
+technical reference.
 
-<!-- END: copy for each node -->
+Once a baud rate is determined, the software offers the opportunity to
+reconfigure the baud rate.
+
+@subsubsection Usage
+@verbatim
+$ determine_baud_node port:=<port>
+@endverbatim
+
+@par Example
+
+@verbatim
+$ determine_baud_node port:=/dev/ttyUSB0
+@endverbatim
+
+\subsubsection parameters ROS parameters
+
+Reads the following parameters from the parameter server.
+
+- \b "~port"  : \b [string] The serial port to use to connect to the KVH. Default: /dev/ttyUSB0
 
 \section commandline Command-line tools
 
@@ -123,33 +143,52 @@ provides or uses that may be of use to the reader. For example:
 - roslaunch .launch files
 - xmlparam files
 
-\subsection script_name script_name
+\subsection launch_file kvh_geo_fog_3d_node.launch
 
-Description of what this script/file does.
+Default launch file for the kvh_geo_fog_3d_driver node, which
+will attach to the USB port with the default baud rate and
+some sane default configurations for a bicycle-model
+ground vehicle.
+
+\subsection Usage
+\verbatim
+$ roslaunch kvh_geo_fog_3d_driver kvh_geo_fog_3d_node.launch
+\endverbatim
+
+\subsection script_name enable_debug.sh
+
+Enables debugging logging of the ROS KVH driver, using ROS
+service calls.
 
 \subsubsection Usage
 \verbatim
-$ ./script_name [args]
+$ ./enable_debug.sh
+\endverbatim
+
+\subsection script_name disable_debug.sh
+
+Disables debugging logging of the ROS KVH driver, using ROS
+service calls.
+
+\subsubsection Usage
+\verbatim
+$ ./disable_debug.sh
+\endverbatim
+
+\subsection script_name run_tests.sh
+
+Use the ROS build system to run the unit tests for the
+driver.
+
+\subsubsection Usage
+\verbatim
+$ ./run_tests.sh {-v,-b}
 \endverbatim
 
 \par Example
 
 \verbatim
-$ ./script_name foo bar
+$ ./run_tests.sh -v
 \endverbatim
+
 */
-
-© 2019 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Help
-
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
-

@@ -1,4 +1,4 @@
-/*********************************************************************
+o/*********************************************************************
  * Software License Agreement (Apache 2.0)
  * 
  *  Copyright (c) 2019, The MITRE Corporation.
@@ -83,9 +83,8 @@ int main(int argc, char **argv)
         {
             printf("If you wish to modify the baud rate, please input a new rate.\n%s", possibleRates.c_str());
             printf("********************************\n");
-            printf("Keep in mind that AM1 runs on hyper mode which multiplies all baud rates\n");
+            printf("Keep in mind that if your port runs on hyper mode, divide your baud rate\n");
             printf("by a factor of 8. Example, if you wish to enter 921600, enter 115200 (921600/115200)\n");
-            printf("Only a few of the rates are currently supported in this mode.\n");
             printf("********************************\n");
             printf("If you wish to exit, please enter a negative number.\n");
 

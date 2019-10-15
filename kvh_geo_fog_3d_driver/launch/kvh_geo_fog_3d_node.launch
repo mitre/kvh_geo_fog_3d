@@ -2,11 +2,12 @@
 
 <launch>
   <arg name="port" default="/dev/ttyUSB0" />
-  <!-- We default to a baud rate of 921600 because it's 8x 115200,
+  <!-- The default baud rate of the sensor is 115200. The suggestions is
+       to use a baud rate of 921600 because it can handle much more data,
+       specifically the Detailed Satellites packets. It's also 8x 115200,
        which works for high speed ports that use a frequency multiplexer
-       to achieve higher baud rates. 115200 is too slow to handle
-       detailed satellite information packets. -->
-  <arg name="baud" default="921600" />
+       to achieve higher baud rates. -->
+  <arg name="baud" default="115200" />
   <arg name="debug" default="false" />
   <arg name="filterVehicleType" default="2" /> <!-- 2 is for car, see documentation for full list -->
   <arg name="atmosphericAltitudeEnabled" default="true" />
