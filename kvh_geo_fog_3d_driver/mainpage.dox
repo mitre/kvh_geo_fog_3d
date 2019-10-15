@@ -128,13 +128,13 @@ $ determine_baud_node port:=<port>
 $ determine_baud_node port:=/dev/ttyUSB0
 @endverbatim
 
-\subsubsection determine_baud_node_parameters ROS parameters
+@subsubsection determine_baud_node_parameters ROS parameters
 
 Reads the following parameters from the parameter server.
 
 - \b "~port"  : \b [string] The serial port to use to connect to the KVH. Default: /dev/ttyUSB0
 
-\section commandline Command-line tools
+@section commandline Command-line tools
 
 This section is a catch-all for any additional tools that your package
 provides or uses that may be of use to the reader. For example:
@@ -143,52 +143,52 @@ provides or uses that may be of use to the reader. For example:
 - roslaunch .launch files
 - xmlparam files
 
-\subsection node_launch_file kvh_geo_fog_3d_node.launch
+@subsection node_launch_file kvh_geo_fog_3d_node.launch
 
 Default launch file for the kvh_geo_fog_3d_driver node, which
 will attach to the USB port with the default baud rate and
 some sane default configurations for a bicycle-model
 ground vehicle.
 
-\subsection node_launch_file_usage Usage
-\verbatim
+@subsection node_launch_file_usage Usage
+@verbatim
 $ roslaunch kvh_geo_fog_3d_driver kvh_geo_fog_3d_node.launch
-\endverbatim
+@endverbatim
 
-\subsection enable_debug.sh enable_debug.sh
+@subsection enable_debug enable_debug.sh
 
 Enables debugging logging of the ROS KVH driver, using ROS
 service calls.
 
-\subsubsection enable_debug_usage Usage
-\verbatim
+@subsubsection enable_debug_usage Usage
+@verbatim
 $ ./enable_debug.sh
-\endverbatim
+@endverbatim
 
-\subsection disable_debug.sh disable_debug.sh
+@subsection disable_debug disable_debug.sh
 
 Disables debugging logging of the ROS KVH driver, using ROS
 service calls.
 
-\subsubsection disable_debug_usage Usage
-\verbatim
+@subsubsection disable_debug_usage Usage
+@verbatim
 $ ./disable_debug.sh
-\endverbatim
+@endverbatim
 
-\subsection run_tests.sh run_tests.sh
+@subsection run_tests run_tests.sh
 
 Use the ROS build system to run the unit tests for the
 driver.
 
-\subsubsection run_tests_usage Usage
-\verbatim
+@subsubsection run_tests_usage Usage
+@verbatim
 $ ./run_tests.sh {-v,-b}
-\endverbatim
+@endverbatim
 
-\par run_tests_example Example
+@par run_tests_example Example
 
-\verbatim
+@verbatim
 $ ./run_tests.sh -v
-\endverbatim
+@endverbatim
 
 */
