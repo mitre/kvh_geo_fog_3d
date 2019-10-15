@@ -34,7 +34,7 @@ List of nodes:
 
 <hr>
 
-@subsection node_name kvh_geo_fog_3d_driver_node
+@subsection kvh_geo_fog_3d_driver_node kvh_geo_fog_3d_driver_node
 
 kvh_geo_fog_3d_driver_node connects to the device via a serial connection,
 reads data using the AN packet protocol, re-publishes the data as
@@ -44,7 +44,7 @@ ROS types. This interpretation takes into consideration ROS REP-103
 (standard units of measure), ROS REP-105 (coordinate frames for
 mobile robots), and ROS REP-145 (conventions for IMU sensor data).
 
-@subsubsection Usage
+@subsubsection kvh_geo_fog_3d_driver_node_usage Usage
 @verbatim
 $ kvh_geo_fog_3d_driver_node port:=<serial port> baud:=<baud>
 @endverbatim
@@ -56,7 +56,7 @@ $ kvh_geo_fog_3d_driver_node port:=/dev/ttyUSB0 baud:=115200
 @endverbatim
 
 
-@subsubsection topics ROS topics
+@subsubsection kvh_geo_fog_3d_driver_node_topics ROS topics
 
 Publishes to:
 - \b "kvh_system_state": [kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState]                    KVH System State packet
@@ -86,7 +86,7 @@ Publishes to:
 - \b "imu/raw_sensor_frd": [nav_msgs/Odometry]          Raw sensor (unfiltered) outputs, in FRD convention
 - \b "odom/raw_sensor_flu": [nav_msgs/Odometry]         Raw sensor (unfiltered) outputs, in FLU convention (REP-105)
 
-\subsubsection parameters ROS parameters
+\subsubsection kvh_geo_fog_3d_driver_node_parameters ROS parameters
 
 Reads the following parameters from the parameter server. For detailed information regarding these configuration
 options, see the KVH technical reference manual.
@@ -104,7 +104,7 @@ options, see the KVH technical reference manual.
 
 <hr>
 
-@subsection node_name determine_baud_node
+@subsection determine_baud_node determine_baud_node
 
 determine_baud_node attempts to auto-baud to the device over the specified
 serial port. It listens for messages and, if none come in, it tries the
@@ -117,7 +117,7 @@ technical reference.
 Once a baud rate is determined, the software offers the opportunity to
 reconfigure the baud rate.
 
-@subsubsection Usage
+@subsubsection determine_baud_node_usage Usage
 @verbatim
 $ determine_baud_node port:=<port>
 @endverbatim
@@ -128,7 +128,7 @@ $ determine_baud_node port:=<port>
 $ determine_baud_node port:=/dev/ttyUSB0
 @endverbatim
 
-\subsubsection parameters ROS parameters
+\subsubsection determine_baud_node_parameters ROS parameters
 
 Reads the following parameters from the parameter server.
 
@@ -143,49 +143,49 @@ provides or uses that may be of use to the reader. For example:
 - roslaunch .launch files
 - xmlparam files
 
-\subsection launch_file kvh_geo_fog_3d_node.launch
+\subsection node_launch_file kvh_geo_fog_3d_node.launch
 
 Default launch file for the kvh_geo_fog_3d_driver node, which
 will attach to the USB port with the default baud rate and
 some sane default configurations for a bicycle-model
 ground vehicle.
 
-\subsection Usage
+\subsection node_launch_file_usage Usage
 \verbatim
 $ roslaunch kvh_geo_fog_3d_driver kvh_geo_fog_3d_node.launch
 \endverbatim
 
-\subsection script_name enable_debug.sh
+\subsection enable_debug.sh enable_debug.sh
 
 Enables debugging logging of the ROS KVH driver, using ROS
 service calls.
 
-\subsubsection Usage
+\subsubsection enable_debug_usage Usage
 \verbatim
 $ ./enable_debug.sh
 \endverbatim
 
-\subsection script_name disable_debug.sh
+\subsection disable_debug.sh disable_debug.sh
 
 Disables debugging logging of the ROS KVH driver, using ROS
 service calls.
 
-\subsubsection Usage
+\subsubsection disable_debug_usage Usage
 \verbatim
 $ ./disable_debug.sh
 \endverbatim
 
-\subsection script_name run_tests.sh
+\subsection run_tests.sh run_tests.sh
 
 Use the ROS build system to run the unit tests for the
 driver.
 
-\subsubsection Usage
+\subsubsection run_tests_usage Usage
 \verbatim
 $ ./run_tests.sh {-v,-b}
 \endverbatim
 
-\par Example
+\par run_tests_example Example
 
 \verbatim
 $ ./run_tests.sh -v
