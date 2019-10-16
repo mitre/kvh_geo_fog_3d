@@ -1,6 +1,30 @@
 # kvh-geo-fog-3d-driver
 
-Driver for the KVH GEO FOG 3D inertial navigation system.
+Driver for the KVH GEO FOG 3D inertial navigation system. Connects over serial
+to the KVH GEO FOG 3D device and publishes out both KVH-specific and generic
+ROS-ified messages, as well as performs basic transforms to convert data to
+the ROS-conformant conventions.
+
+For detailed information on the KVH GEO FOG 3D functionality, consult the 
+technical reference manual.
+
+# ROS API
+
+## kvh_geo_fog_3d_driver_node
+
+The main driver node.
+
+### Published Topics
+
+- `~<node_name>/kvh_system_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState)
+&Tab;KVH System State message
+- `<node_name>/kvh_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
+&Tab;KVH satellite information
+
+### Parameters
+
+- `~<node_name>/port` (string, default: /dev/ttyUSB0)
+&tab;Serial port to use to connect to the device
 
 # Setup
 
@@ -52,10 +76,6 @@ Below is some sample code that shows how you can leverage this Kvh Driver to get
     }
 
 ```
-
-# Packaging
-
-For information on packaging and releasing this package at MITRE, see PACKAGING.md
 
 # ROS conformance and Conventions
 
@@ -156,6 +176,10 @@ The packet storage is initialised with the requested packets at the beginning. Y
 ```
 
 4. Add to the `KvhPacketRequest` that you are sending upon creation of the driver.
+
+# Packaging
+
+For information on packaging and releasing this package at MITRE, see PACKAGING.md
 
 # Limitations
 Here is just a list of some currently know limitations of the current architecture
