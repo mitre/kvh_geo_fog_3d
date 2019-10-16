@@ -1,5 +1,16 @@
 <?xml version="1.0"?>
 
+<!--
+  These static transforms are for data fixed to the sensor or gps phase center.
+  Other measurements, such as UTM or ECEF position data, require additional
+  transforms to be published. Those are not covered in this sample launch
+  file.
+  
+  Keep in mind that the TF2 order is "x y z yaw pitch roll" or "x y z qx qy qz qw"
+  For all of our transforms, we use yaw-pitch-roll in this file for simplicity.
+-->
+
+
 <launch>
   <!-- This is the ROS REP-105 conformant frame_id on the KVH where inertial measurements are made from.
        It should exist in your current TF tree, outside of this file. -->
@@ -13,10 +24,4 @@
 
   <!-- All of the concurrent rotational transforms, so our data can be converted properly. -->
   <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_flu_to_imu_link_frd" args="0 0 0 0 0 -3.14159 imu_link_flu imu_link_frd" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_frd_to_imu_link_ned" args="0 0 0 0 0 0 imu_link_frd imu_link_ned" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="imu_link_flu_to_imu_link_enu" args="0 0 0 -1.57080 0 0 imu_link_flu imu_link_enu" />
-
-  <!-- The GPS transforms. -->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="gps_to_gps_enu" args="0 0 0 -1.57080 0 0 $(arg base_gps_frame_id) gps_enu" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="gps_enu_to_gps_ned" args="0 0 0 1.57080 3.14159 0 gps_enu gps_ned" />
 </launch>
