@@ -86,6 +86,15 @@ is different than the KVH messages, which report latitude/longitude in radians.
 - `~<node_name>/reversingDetectionEnabled` (bool, default: true)
 - `~<node_name>/motionAnalysisEnabled` (bool, default: true)
 
+## determine_baud_node
+
+A node to determine and, optionally, set the baud rate of the sensor. The supported
+baud rates are listed out in the technical reference manual.
+
+### Parameters
+
+- `~<node_name>/port` (string, default: /dev/ttyUSB0)
+
 # Setup
 
 ## Installation
