@@ -28,6 +28,8 @@ The main driver node.
 
 #### KVH-specific messages
 
+All of these messages are defined as part of the kvh_geo_fog_3d_msgs package.
+
 - `~<node_name>/kvh_system_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState)
 - `<node_name>/kvh_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
 - `<node_name>/kvh_detailed_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DDetailSatellites)
@@ -41,13 +43,43 @@ The main driver node.
 
 #### Conventional ROS messages
 
+Not all of these messages conform to ROS REP-105 or REP-145. See the
+"ROS Conformance and Conventions" section below for more details.
 
+Generally speaking, anything with a "_flu" or a "_enu" suffix conforms to ROS
+REPs.
+
+All angles are measured in radians unless suffixed with "_deg".
+
+NavSatFix latitude/longitude measured in degrees (see message definition).
+
+- `~<node_name>/imu/data_raw_frd` (sensor_msgs/Imu)
+- `~<node_name>/imu/data_raw_flu` (sensor_msgs/Imu) *REP-105, REP-145 compliant*
+- `~<node_name>/imu/data_ned` (sensor_msgs/Imu)
+- `~<node_name>/imu/data_enu` (sensor_msgs/Imu) *REP-105, REP-145 compliant*
+- `~<node_name>/imu/rpy_ned` (geometry_msgs/Vector3Stamped)
+- `~<node_name>/imu/rpy_ned_deg` (geometry_msgs/Vector3Stamped)
+- `~<node_name>/imu/rpy_enu` (geometry_msgs/Vector3Stamped)
+- `~<node_name>/imu/rpy_enu_deg` (geometry_msgs/Vector3Stamped)
+- `~<node_name>/gps/fix` (sensor_msgs/NavSatFix) *Filtered GNSS location*
+- `~<node_name>/gps/raw_fix` (sensor_msgs/NavSatFix) *Raw GNSS location*
+- `~<node_name>/gps/mag` (sensor_msgs/MagneticField)
+- `~<node_name>/gps/utm_ned` (nav_msgs/Odometry)
+- `~<node_name>/gps/utm_enu` (nav_msgs/Odometry) *REP-105 compliant*
+- `~<node_name>/odom/wheel_encoder` (nav_msgs/Odometry)
+- `~<node_name>imu/raw_sensor_frd` (nav_msgs/Odometry)
+- `~<node_name>/odom/raw_sensor_flu` (nav_msgs/Odometry) *REP-105 compliant*
 
 ### Parameters
 
 - `~<node_name>/port` (string, default: /dev/ttyUSB0)
-
-&tab;Serial port to use to connect to the device
+- `~<node_name>/baud` (int, default: 115200)
+- `~<node_name>/debug` (bool, default: false)
+- `~<node_name>/filterVehicleType` (string, default: 2 (car, see spatial_packets.h))
+- `~<node_name>/atmosphericAltitudeEnabled` (bool, default: true)
+- `~<node_name>/velocityHeadingEnabled` (bool, default: false)
+- `~<node_name>/reversingDetectionEnabled` (bool, default: true)
+- `~<node_name>/motionAnalysisEnabled` (bool, default: true)
 
 # Setup
 
