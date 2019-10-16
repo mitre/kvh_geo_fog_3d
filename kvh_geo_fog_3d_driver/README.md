@@ -1,12 +1,20 @@
 # kvh-geo-fog-3d-driver
 
-Driver for the KVH GEO FOG 3D inertial navigation system. Connects over serial
+Driver for the KVH GEO FOG 3D inertial navigation systems. Connects over serial
 to the KVH GEO FOG 3D device and publishes out both KVH-specific and generic
 ROS-ified messages, as well as performs basic transforms to convert data to
 the ROS-conformant conventions.
 
+Initial testing at The MITRE Corporation was done on the "Dual" model, which
+provides dual-antenna heading solutions. However, the API should match between
+the dual and non-dual models.
+
 For detailed information on the KVH GEO FOG 3D functionality, consult the 
 technical reference manual.
+
+Product pages:
+[KVH GEO FOG 3D](https://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d/commercial-geo-fog-3d)
+[KVH GEO FOG 3D Dual](https://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d-dual/commercial-geo-fog-3d-dual)
 
 # ROS API
 
@@ -17,13 +25,16 @@ The main driver node.
 ### Published Topics
 
 - `~<node_name>/kvh_system_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState)
+
 &Tab;KVH System State message
 - `<node_name>/kvh_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
+
 &Tab;KVH satellite information
 
 ### Parameters
 
 - `~<node_name>/port` (string, default: /dev/ttyUSB0)
+
 &tab;Serial port to use to connect to the device
 
 # Setup
