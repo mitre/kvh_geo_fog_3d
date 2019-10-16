@@ -13,7 +13,9 @@ For detailed information on the KVH GEO FOG 3D functionality, consult the
 technical reference manual.
 
 Product pages:
+
 [KVH GEO FOG 3D](https://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d/commercial-geo-fog-3d)
+
 [KVH GEO FOG 3D Dual](https://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d-dual/commercial-geo-fog-3d-dual)
 
 # ROS API
@@ -24,12 +26,22 @@ The main driver node.
 
 ### Published Topics
 
+#### KVH-specific messages
+
 - `~<node_name>/kvh_system_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState)
-
-&Tab;KVH System State message
 - `<node_name>/kvh_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
+- `<node_name>/kvh_detailed_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DDetailSatellites)
+- `<node_name>/kvh_local_magnetics` (kvh_geo_fog_3d_msgs/KvhGeoFog3DLocalMagneticField)
+- `<node_name>/kvh_utm_position` (kvh_geo_fog_3d_msgs/KvhGeoFog3DUTMPosition)
+- `<node_name>/kvh_ecef_pos` (kvh_geo_fog_3d_msgs/KvhGeoFog3DECEFPos)
+- `<node_name>/kvh_north_seeking_status` (kvh_geo_fog_3d_msgs/KvhGeoFog3DNorthSeekingInitStatus)
+- `<node_name>/kvh_odometer_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
+- `<node_name>/kvh_raw_sensors` (kvh_geo_fog_3d_msgs/KvhGeoFog3DRawSensors)
+- `<node_name>/kvh_raw_gnss` (kvh_geo_fog_3d_msgs/KvhGeoFog3DRawGNSS)
 
-&Tab;KVH satellite information
+#### Conventional ROS messages
+
+
 
 ### Parameters
 
