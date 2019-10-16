@@ -28,18 +28,22 @@ The main driver node.
 
 #### KVH-specific messages
 
-All of these messages are defined as part of the kvh_geo_fog_3d_msgs package.
+All of these messages are defined as part of the kvh_geo_fog_3d_msgs package. They
+are direct pass-throughs of KVH messages, so almost universally do not conform
+with ROS REPs (103, 105, or 145).
+
+KVH reports latitude and longitude in radians.
 
 - `~<node_name>/kvh_system_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState)
-- `<node_name>/kvh_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
-- `<node_name>/kvh_detailed_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DDetailSatellites)
-- `<node_name>/kvh_local_magnetics` (kvh_geo_fog_3d_msgs/KvhGeoFog3DLocalMagneticField)
-- `<node_name>/kvh_utm_position` (kvh_geo_fog_3d_msgs/KvhGeoFog3DUTMPosition)
-- `<node_name>/kvh_ecef_pos` (kvh_geo_fog_3d_msgs/KvhGeoFog3DECEFPos)
-- `<node_name>/kvh_north_seeking_status` (kvh_geo_fog_3d_msgs/KvhGeoFog3DNorthSeekingInitStatus)
-- `<node_name>/kvh_odometer_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
-- `<node_name>/kvh_raw_sensors` (kvh_geo_fog_3d_msgs/KvhGeoFog3DRawSensors)
-- `<node_name>/kvh_raw_gnss` (kvh_geo_fog_3d_msgs/KvhGeoFog3DRawGNSS)
+- `~<node_name>/kvh_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
+- `~<node_name>/kvh_detailed_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DDetailSatellites)
+- `~<node_name>/kvh_local_magnetics` (kvh_geo_fog_3d_msgs/KvhGeoFog3DLocalMagneticField)
+- `~<node_name>/kvh_utm_position` (kvh_geo_fog_3d_msgs/KvhGeoFog3DUTMPosition)
+- `~<node_name>/kvh_ecef_pos` (kvh_geo_fog_3d_msgs/KvhGeoFog3DECEFPos)
+- `~<node_name>/kvh_north_seeking_status` (kvh_geo_fog_3d_msgs/KvhGeoFog3DNorthSeekingInitStatus)
+- `~<node_name>/kvh_odometer_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
+- `~<node_name>/kvh_raw_sensors` (kvh_geo_fog_3d_msgs/KvhGeoFog3DRawSensors)
+- `~<node_name>/kvh_raw_gnss` (kvh_geo_fog_3d_msgs/KvhGeoFog3DRawGNSS)
 
 #### Conventional ROS messages
 
@@ -51,24 +55,25 @@ REPs.
 
 All angles are measured in radians unless suffixed with "_deg".
 
-NavSatFix latitude/longitude measured in degrees (see message definition).
+NavSatFix latitude/longitude measured in degrees (see message definition). This
+is different than the KVH messages, which report latitude/longitude in radians.
 
 - `~<node_name>/imu/data_raw_frd` (sensor_msgs/Imu)
-- `~<node_name>/imu/data_raw_flu` (sensor_msgs/Imu) *REP-105, REP-145 compliant*
+- `~<node_name>/imu/data_raw_flu` (sensor_msgs/Imu) **REP-105, REP-145 compliant**
 - `~<node_name>/imu/data_ned` (sensor_msgs/Imu)
-- `~<node_name>/imu/data_enu` (sensor_msgs/Imu) *REP-105, REP-145 compliant*
+- `~<node_name>/imu/data_enu` (sensor_msgs/Imu) **REP-105, REP-145 compliant**
 - `~<node_name>/imu/rpy_ned` (geometry_msgs/Vector3Stamped)
 - `~<node_name>/imu/rpy_ned_deg` (geometry_msgs/Vector3Stamped)
 - `~<node_name>/imu/rpy_enu` (geometry_msgs/Vector3Stamped)
 - `~<node_name>/imu/rpy_enu_deg` (geometry_msgs/Vector3Stamped)
-- `~<node_name>/gps/fix` (sensor_msgs/NavSatFix) *Filtered GNSS location*
-- `~<node_name>/gps/raw_fix` (sensor_msgs/NavSatFix) *Raw GNSS location*
+- `~<node_name>/gps/fix` (sensor_msgs/NavSatFix) **Filtered GNSS location**
+- `~<node_name>/gps/raw_fix` (sensor_msgs/NavSatFix) **Raw GNSS location**
 - `~<node_name>/gps/mag` (sensor_msgs/MagneticField)
 - `~<node_name>/gps/utm_ned` (nav_msgs/Odometry)
-- `~<node_name>/gps/utm_enu` (nav_msgs/Odometry) *REP-105 compliant*
+- `~<node_name>/gps/utm_enu` (nav_msgs/Odometry) **REP-105 compliant**
 - `~<node_name>/odom/wheel_encoder` (nav_msgs/Odometry)
 - `~<node_name>imu/raw_sensor_frd` (nav_msgs/Odometry)
-- `~<node_name>/odom/raw_sensor_flu` (nav_msgs/Odometry) *REP-105 compliant*
+- `~<node_name>/odom/raw_sensor_flu` (nav_msgs/Odometry) **REP-105 compliant**
 
 ### Parameters
 
