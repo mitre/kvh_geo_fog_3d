@@ -43,9 +43,10 @@ pipeline
                     ssh-keyscan -H github.com >> ~/.ssh/known_hosts
                     ssh-keyscan -H gitlab.mitre.org >> ~/.ssh/known_hosts
                 """, label: 'Setup github/gitlab SSH keys'
+                //Updating apt cache, just in case
                 sh script: """#!/bin/bash
                     sudo -E apt-get update --fix-missing
-                """: label: 'Apt Cache Update'
+                """, label: 'Apt Cache Update'
                 //Setup the OS, specifically for ROS Kinetic
                 SetupKinetic()
             }
