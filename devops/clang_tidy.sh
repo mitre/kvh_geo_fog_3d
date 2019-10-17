@@ -59,8 +59,14 @@ CLANGTIDY_DIR=clangtidy
 # $4 : Prefix to put on the clangtidy xml results file. Usually the package name.
 # $5 : Output directory (relative path)
 run_clang_tidy() {
+    if [ ! -f "${2}/compile_commands.json" ]; then
+        echo "MISSING compile_commands.json!"
+        echo "Did you build with -DCMAKE_EXPORT_COMPILE_COMMANDS=1???"
+        echo "Exiting..."
+        exit -1
+    fi
     if [ ! -d ${5} ]; then
-	mkdir -p ${5}
+	      mkdir -p ${5}
     fi
     CLANGTIDY_OUT=${4}.clangtidy
     parallel -m clang-tidy -p ${2} {} --checks=${CLANG_TIDY_CHECKS} ::: ${1} > ${5}/${CLANGTIDY_OUT}
