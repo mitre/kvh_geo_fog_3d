@@ -15,3 +15,14 @@ build:
         - docker build -t ros_${ROS_DISTRO}_kvh_geo_fog_3d -f docker/Dockerfile .
     tags:
         - docker-shell
+
+#pages:
+#  script:
+#    - docker run -it --name ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen ros_${ROS_DISTRO}_kvh_geo_fog_3d bash -c "cd catkin_ws/src/kvh_geo_fog_3d && rosdoc_lite -o doc kvh_geo_fog_3d_driver"
+#    - docker cp ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen:~/catkin_ws/src/kvh_geo_fog_3d/doc ros_${ROS_DISTRO}_kvh_geo_fog_3d_driver_doc/
+#    - docker rm ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen
+#  artifacts:
+#    paths:
+#      - ros_${ROS_DISTRO}_kvh_geo_fog_3d_driver_doc/
+#  only:
+#    - melodic-devel
