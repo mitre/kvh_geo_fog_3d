@@ -16,7 +16,7 @@ pipeline
     }
     agent
     {
-        label 'docker-ubuntu-1604'
+        label 'docker-ubuntu-1804'
     }
     triggers
     {
@@ -46,8 +46,8 @@ pipeline
                 sh script: """#!/bin/bash
                     sudo -E apt-get update --fix-missing
                 """: label: 'Apt Cache Update'
-                //Setup the OS, specifically for ROS Kinetic
-                SetupKinetic()
+                //Setup the OS, specifically for ROS Melodic
+                SetupMelodic()
             }
         } //end: stage('Setup')
         stage('Pre-Build Code Analysis')
@@ -192,7 +192,7 @@ void CheckoutMaster()
             url: 'git@gitlab.mitre.org:DART/kvh_geo_fog_3d.git']]
         ])
 }
-void SetupKinetic()
+void SetupMelodic()
 {
     //Use rosdep to install dependencies for our package, as defined by its
     //package.xml. Assumes that the current user has nopasswd set for sudo,
@@ -200,7 +200,7 @@ void SetupKinetic()
     sh script: """
         cd catkin_ws
         rosdep update
-        rosdep install --rosdistro kinetic --from-paths src -y -r src/kvh_geo_fog_3d
+        rosdep install --rosdistro melodic --from-paths src -y -r src/kvh_geo_fog_3d
     """, label: 'Install Package rosdeps'
 }
 void BuildRelease()
@@ -209,7 +209,7 @@ void BuildRelease()
     //Under here is contained catkin_ws/src/kvh_geo_fog_3d
     sh script: '''#!/bin/bash
         cd catkin_ws
-        source /opt/ros/kinetic/setup.bash
+        source /opt/ros/melodic/setup.bash
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On''', label: 'Build Release'
 }
 void BuildTest()
@@ -218,7 +218,7 @@ void BuildTest()
     //Under here is contained catkin_ws/src/kvh_geo_fog_3d
     sh script: '''#!/bin/bash
         cd catkin_ws
-        source /opt/ros/kinetic/setup.bash
+        source /opt/ros/melodic/setup.bash
         catkin build --verbose --catkin-make-args run_tests''', label: 'Build Test'
 }
 void BuildDebug()
@@ -228,7 +228,7 @@ void BuildDebug()
     sh script: '''#!/bin/bash
         cd catkin_ws
         set -o pipefail
-        source /opt/ros/kinetic/setup.bash
+        source /opt/ros/melodic/setup.bash
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On''', label: 'Build Debug'
 }
 void CatkinLint()
@@ -236,7 +236,7 @@ void CatkinLint()
     sh script: '''#!/bin/bash
         cd catkin_ws
         set -o pipefail
-        source /opt/ros/kinetic/setup.bash
+        source /opt/ros/melodic/setup.bash
         catkin lint -W2 src/kvh_geo_fog_3d |& tee catkinpackage_lint.txt
     ''', label: 'Catkin Linter'
 }
