@@ -177,7 +177,7 @@ namespace kvh
   }
 
   /**
-   * @fn StatusPanel::StatusIndicatorFactor
+   * @fn StatusPanel::StatusIndicatorFactory
    * @brief Create mappings from our diagnostics strings to painters.
    * @param _enabled [in] If we're showing this status
    * @param _label [in] The label of this status section
