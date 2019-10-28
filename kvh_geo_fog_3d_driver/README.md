@@ -1,6 +1,101 @@
 # kvh-geo-fog-3d-driver
 
-Driver for the KVH GEO FOG 3D inertial navigation system.
+Driver for the KVH GEO FOG 3D inertial navigation systems. Connects over serial
+to the KVH GEO FOG 3D device and publishes out both KVH-specific and generic
+ROS-ified messages, as well as performs basic transforms to convert data to
+the ROS-conformant conventions.
+
+Initial testing at The MITRE Corporation was done on the "Dual" model, which
+provides dual-antenna heading solutions. However, the API should match between
+the dual and non-dual models.
+
+For detailed information on the KVH GEO FOG 3D functionality, consult the 
+technical reference manual.
+
+Product pages:
+
+[KVH GEO FOG 3D](https://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d/commercial-geo-fog-3d)
+
+[KVH GEO FOG 3D Dual](https://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d-dual/commercial-geo-fog-3d-dual)
+
+Copyright 2019 The MITRE Corporation. All Rights Reserved.
+
+# ROS API
+
+## kvh_geo_fog_3d_driver_node
+
+The main driver node.
+
+### Published Topics
+
+#### KVH-specific messages
+
+All of these messages are defined as part of the kvh_geo_fog_3d_msgs package. They
+are direct pass-throughs of KVH messages, so almost universally do not conform
+with ROS REPs (103, 105, or 145).
+
+KVH reports latitude and longitude in radians.
+
+- `~<node_name>/kvh_system_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSystemState)
+- `~<node_name>/kvh_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
+- `~<node_name>/kvh_detailed_satellites` (kvh_geo_fog_3d_msgs/KvhGeoFog3DDetailSatellites)
+- `~<node_name>/kvh_local_magnetics` (kvh_geo_fog_3d_msgs/KvhGeoFog3DLocalMagneticField)
+- `~<node_name>/kvh_utm_position` (kvh_geo_fog_3d_msgs/KvhGeoFog3DUTMPosition)
+- `~<node_name>/kvh_ecef_pos` (kvh_geo_fog_3d_msgs/KvhGeoFog3DECEFPos)
+- `~<node_name>/kvh_north_seeking_status` (kvh_geo_fog_3d_msgs/KvhGeoFog3DNorthSeekingInitStatus)
+- `~<node_name>/kvh_odometer_state` (kvh_geo_fog_3d_msgs/KvhGeoFog3DSatellites)
+- `~<node_name>/kvh_raw_sensors` (kvh_geo_fog_3d_msgs/KvhGeoFog3DRawSensors)
+- `~<node_name>/kvh_raw_gnss` (kvh_geo_fog_3d_msgs/KvhGeoFog3DRawGNSS)
+
+#### Conventional ROS messages
+
+Not all of these messages conform to ROS REP-105 or REP-145. See the
+"ROS Conformance and Conventions" section below for more details.
+
+Generally speaking, anything with a "_flu" or a "_enu" suffix conforms to ROS
+REPs.
+
+All angles are measured in radians unless suffixed with "_deg".
+
+NavSatFix latitude/longitude measured in degrees (see message definition). This
+is different than the KVH messages, which report latitude/longitude in radians.
+
+- `~<node_name>/imu/data_raw_frd` (sensor_msgs/Imu)
+- `~<node_name>/imu/data_raw_flu` (sensor_msgs/Imu) **REP-105, REP-145 compliant**
+- `~<node_name>/imu/data_ned` (sensor_msgs/Imu)
+- `~<node_name>/imu/data_enu` (sensor_msgs/Imu) **REP-105, REP-145 compliant**
+- `~<node_name>/imu/rpy_ned` (geometry_msgs/Vector3Stamped)
+- `~<node_name>/imu/rpy_ned_deg` (geometry_msgs/Vector3Stamped)
+- `~<node_name>/imu/rpy_enu` (geometry_msgs/Vector3Stamped)
+- `~<node_name>/imu/rpy_enu_deg` (geometry_msgs/Vector3Stamped)
+- `~<node_name>/gps/fix` (sensor_msgs/NavSatFix) **Filtered GNSS location**
+- `~<node_name>/gps/raw_fix` (sensor_msgs/NavSatFix) **Raw GNSS location**
+- `~<node_name>/gps/mag` (sensor_msgs/MagneticField)
+- `~<node_name>/gps/utm_ned` (nav_msgs/Odometry)
+- `~<node_name>/gps/utm_enu` (nav_msgs/Odometry) **REP-105 compliant**
+- `~<node_name>/odom/wheel_encoder` (nav_msgs/Odometry)
+- `~<node_name>imu/raw_sensor_frd` (nav_msgs/Odometry)
+- `~<node_name>/odom/raw_sensor_flu` (nav_msgs/Odometry) **REP-105 compliant**
+
+### Parameters
+
+- `~<node_name>/port` (string, default: /dev/ttyUSB0)
+- `~<node_name>/baud` (int, default: 115200)
+- `~<node_name>/debug` (bool, default: false)
+- `~<node_name>/filterVehicleType` (string, default: 2 (car, see spatial_packets.h))
+- `~<node_name>/atmosphericAltitudeEnabled` (bool, default: true)
+- `~<node_name>/velocityHeadingEnabled` (bool, default: false)
+- `~<node_name>/reversingDetectionEnabled` (bool, default: true)
+- `~<node_name>/motionAnalysisEnabled` (bool, default: true)
+
+## determine_baud_node
+
+A node to determine and, optionally, set the baud rate of the sensor. The supported
+baud rates are listed out in the technical reference manual.
+
+### Parameters
+
+- `~<node_name>/port` (string, default: /dev/ttyUSB0)
 
 # Setup
 
@@ -52,10 +147,6 @@ Below is some sample code that shows how you can leverage this Kvh Driver to get
     }
 
 ```
-
-# Packaging
-
-For information on packaging and releasing this package at MITRE, see PACKAGING.md
 
 # ROS conformance and Conventions
 
@@ -156,6 +247,10 @@ The packet storage is initialised with the requested packets at the beginning. Y
 ```
 
 4. Add to the `KvhPacketRequest` that you are sending upon creation of the driver.
+
+# Packaging
+
+For information on packaging and releasing this package at MITRE, see PACKAGING.md
 
 # Limitations
 Here is just a list of some currently know limitations of the current architecture

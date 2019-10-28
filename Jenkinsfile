@@ -43,10 +43,9 @@ pipeline
                     ssh-keyscan -H github.com >> ~/.ssh/known_hosts
                     ssh-keyscan -H gitlab.mitre.org >> ~/.ssh/known_hosts
                 """, label: 'Setup github/gitlab SSH keys'
-                //Updating apt cache, just in case
                 sh script: """#!/bin/bash
                     sudo -E apt-get update --fix-missing
-                """, label: 'Apt Cache Update'
+                """: label: 'Apt Cache Update'
                 //Setup the OS, specifically for ROS Kinetic
                 SetupKinetic()
             }
@@ -118,7 +117,7 @@ pipeline
         always
         {
             archiveArtifacts 'catkin_ws/*_lint.txt'
-            archiveArtifacts 'cppcheck-result.xml'
+            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/cppcheck_output/*.cppcheck'
             archiveArtifacts 'lizard.xml'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
             archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clang_format_kvh_geo_fog_3d.tar.gz'
@@ -137,7 +136,7 @@ pipeline
                 warnError('Publishing CppCheck Results Failed!')
                 {
                     //Using the warnings-ng plugin
-                    recordIssues enabledForFailure: false, aggregatingResults : false, tool: cppCheck(pattern: 'cppcheck-result.xml')
+                    recordIssues enabledForFailure: false, aggregatingResults : false, tool: cppCheck(pattern: 'catkin_ws/src/kvh_geo_fog_3d/cppcheck_output/*.cppcheck')
                 }
                 //LIZARD
                 //warnError('Publishing Lizard Results Failed!')
@@ -248,7 +247,8 @@ void CppCheck()
         # Run this from the base of the workspace! File paths are relative to
         # the run location, and Jenkins reports want those paths to be relative
         # to the workspace root (e.g. /home/jenkins/workspace/kvh_geo_fog_3d_driver)
-        cppcheck --enable=warning,style,performance,portability --language=c++ --platform=unix64 --std=c++11 -I catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/include/ --xml --xml-version=2 catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/src catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/src 2> cppcheck-result.xml
+        cd catkin_ws/src/kvh_geo_fog_3d
+        ./devops/cppcheck.sh kvh_geo_fog_3d
     """, label: 'CPPCheck'
 }
 void Lizard()

@@ -1,2 +1,7 @@
 .vscode
 ros-kinetic-*
+cppcheck_output
+clangtidy
+clang_format_*
+roslint_output
+doc

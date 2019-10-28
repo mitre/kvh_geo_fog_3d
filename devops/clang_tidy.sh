@@ -19,18 +19,19 @@ fi
 # Overall project name
 PROJECT_NAME=$1
 
-# Helper to read package.xml
-read_dom ()
-{
-    ORIGINAL_IFS=${IFS}
-    IFS=\>
-    read -d \< ENTITY CONTENT
-    local ret=$?
-    TAG_NAME=${ENTITY%% *}
-    ATTRIBUTES=${ENTITY#* }
-    IFS=${ORIGINAL_IFS}
-    return $ret
-}
+# Get script directory
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
+# Import functions.sh
+. ${SCRIPT_DIR}/functions.sh
+
+PACKAGE_DIRS=()
+PACKAGE_NAMES=()
+find_ros_packages
+echo "DIRS:"
+echo ${PACKAGE_DIRS[*]}
+echo "NAMES:"
+echo ${PACKAGE_NAMES[*]}
 
 # If we don't have a local .clang_format, get it from the repo
 GOT_CLANG_FORMAT=0
@@ -42,38 +43,6 @@ fi
 
 # Checks to run using clang-tidy
 CLANG_TIDY_CHECKS=clang-analyzer-core*,clang-analyzer-cplusplus,clang-analyzer-llvm*,clang-analyzer,nullability*,clang-analyzer-security*,clang-analyzer-unix*,readability-braces-around-statements,modernize-pass-by-value,modernize-use-nullptr,misc-inefficient-algorithm
-# Bash array of packages within this project
-PACKAGE_DIRS=()
-PACKAGE_NAMES=()
-# Check toplevel for package
-if [ -f "package.xml" ]; then
-    echo "Found package.xml in top-level directory"
-    while read_dom; do
-	if [ "${ENTITY}" = "name" ]; then
-	    PACKAGE_NAMES+=(${CONTENT})
-	    PACKAGE_DIRS+=(".")
-	    break
-	fi
-    done < package.xml
-fi
-for DIR in *; do
-    if [[ -d "${DIR}" && ! -L "${DIR}" ]]; then
-	if [ -f ${DIR}/package.xml ]; then
-	    echo "Found package.xml in ${DIR}"
-	    while read_dom; do
-		if [ "${ENTITY}" = "name" ]; then
-		    PACKAGE_NAMES+=(${CONTENT})
-		    PACKAGE_DIRS+=(${DIR})
-		    break
-		fi
-	    done < ${DIR}/package.xml
-	fi
-    fi
-done
-echo "DIRS:"
-echo ${PACKAGE_DIRS[*]}
-echo "NAMES:"
-echo ${PACKAGE_NAMES[*]}
 
 if [ "${#PACKAGE_DIRS[@]}" = "0" ]; then
     echo "Failed to find any packages, exiting..."
@@ -90,8 +59,14 @@ CLANGTIDY_DIR=clangtidy
 # $4 : Prefix to put on the clangtidy xml results file. Usually the package name.
 # $5 : Output directory (relative path)
 run_clang_tidy() {
+    if [ ! -f "${2}/compile_commands.json" ]; then
+        echo "MISSING compile_commands.json!"
+        echo "Did you build with -DCMAKE_EXPORT_COMPILE_COMMANDS=1???"
+        echo "Exiting..."
+        exit -1
+    fi
     if [ ! -d ${5} ]; then
-	mkdir -p ${5}
+	      mkdir -p ${5}
     fi
     CLANGTIDY_OUT=${4}.clangtidy
     parallel -m clang-tidy -p ${2} {} --checks=${CLANG_TIDY_CHECKS} ::: ${1} > ${5}/${CLANGTIDY_OUT}
@@ -118,16 +93,7 @@ run_clang_format() {
 
 # Get our sourced WS
 WORKSPACE_ROOT=""
-IFS=':'
-read -ra CATKIN_WSES <<< "${CMAKE_PREFIX_PATH}"
-IFS=' '
-for ws in ${CATKIN_WSES}
-do
-    if [[ ${ws} != *"/opt/ros/"* ]]; then
-        # Remove /devel from string to get root
-        WORKSPACE_ROOT=${ws//\/devel/}
-    fi
-done
+get_workspace_root ${WORKSPACE_ROOT}
 
 PROJECT_ROOT=${WORKSPACE_ROOT}/src/${PROJECT_NAME}
 # If this is a simple project (i.e. one package within the whole project) then
@@ -143,7 +109,7 @@ for i in "${!PACKAGE_DIRS[@]}"; do
 	run_clang_tidy "${PACKAGE_SOURCE_PATHS}" "${BUILD_PATH}" "${PROJECT_ROOT}" "${package}" "${CLANGTIDY_DIR}" >& /dev/null
 	run_clang_format "${PACKAGE_SOURCE_PATHS}" "${CLANG_FORMAT_DIR}/${package}" >& /dev/null
     else
-        echo "WARNING: Project doesn't have a source directory, skipping..."
+        echo "WARNING: Package ${package} doesn't have a source directory, skipping..."
     fi
 done
 
