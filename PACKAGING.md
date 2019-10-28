@@ -146,4 +146,7 @@ This will create a debian package in the directory above your current directory.
 
 ## Uploading Packages
 
-TODO How to upload to Aptly?
+To put packages on Aptly, the repository for holding Debian package files, simply
+scp the files over to the machine "dart-repos" and follow instructions there.
+
+There is currently no remote API for uploading packages.
