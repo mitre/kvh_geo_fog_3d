@@ -139,17 +139,16 @@ namespace kvh
   }
  
   /**
-   * @fn Driver::SetBaudRate
+   * @fn KvhDeviceConfig::SetBaudRate
    * @param [in] _port The port connected to the kvh (Ex. /dev/ttyS0)
    * @param [in] _curBaudRate The current baud rate, required to connect and change baud rate
-   * @param [in] _desiredBaudRate Baud rate to set the kvh at
+   * @param [in] _primaryBaudRate The rate to use for the primary RS-422 communications
+   * @param [in] _gpioBaudRate The rate to use for the GPIO pins
+   * @param [in] _auxBaudRate The rate to use for the Auxiliary RS-232 port
    * 
    * @brief This function can be used to set the buad rate independent of the other functions
    * of the driver. In most cases baud will need to be set once at the beginning, and then 
    * left alone unless more packets are added.
-   * 
-   * @attention This currently sets the baud rate for the gpio and auxiliary to the same baud
-   * rate. This will be changed in the future.
    * 
    * \todo Add way to set gpio and auxiliary baud rates to their current values
    * \todo Figure out how this function may be tested better
@@ -192,7 +191,7 @@ namespace kvh
   }
 
   /**
-   * @fn Driver::FindCurrentBaudRate
+   * @fn KvhDeviceConfig::FindCurrentBaudRate
    * @param [in] _port The port on the computer the kvh is connected to (e.g. '/dev/ttyUSB0')
    * @return int The current baudrate of the kvh if found, -1 otherwise
    * 

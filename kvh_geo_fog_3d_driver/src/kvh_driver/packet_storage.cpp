@@ -37,9 +37,9 @@ namespace kvh
   KvhPacketStorage::KvhPacketStorage(){};
 
   /**
-   * @fn Driver::CreatePacketMap
+   * @fn KvhPacketStorage::Init
    * @brief Correctly sets up a KvhPacketMap for the requested packets
-   * 
+   * @param _packRequest [in] List of packets we'd like to request from the sensor
    * @return [int]:
    *    0 = Success,
    *    -1 = Failure, duplicate id found
@@ -117,7 +117,7 @@ namespace kvh
   } // END CreatePacketMap()
 
   /**
-   * @fn KvhPacketStorage::SetUpdated
+   * @fn KvhPacketStorage::SetPacketUpdated
    * @param [in] _packetId The packet we are setting the updated status of
    * @param [in] _updateStatus The IsUpdated value for the packet
    * @return int

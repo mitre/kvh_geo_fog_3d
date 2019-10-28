@@ -110,7 +110,7 @@ namespace kvh
      * kvhDriver.Init(kvhPort, packetRequest);  
      * \endcode
      */
-    int Init(const std::string &_port, KvhPacketRequest &);
+    int Init(const std::string &_port, KvhPacketRequest &_packetsRequested);
 
     /**
      * \code
@@ -123,7 +123,7 @@ namespace kvh
      * kvhDriver.Init(kvhPort, packetRequest, initOptions);  * 
      * \endcode
      */
-    int Init(const std::string &_port, KvhPacketRequest &, KvhInitOptions _initOptions);
+    int Init(const std::string &_port, KvhPacketRequest &_packetsRequested, KvhInitOptions _initOptions);
 
     /**
      * @code 
