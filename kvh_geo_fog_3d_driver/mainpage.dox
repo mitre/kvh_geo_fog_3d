@@ -5,26 +5,31 @@
 \b kvh_geo_fog_3d_driver is a ROS-compatible hardware driver for the KVH
 GEO FOG 3D family of localization systems. 
 
-... In addition to providing an overview of your package,
-this is the section where the specification and design/architecture
-should be detailed. While the original specification may be done on the
-wiki, it should be transferred here once your package starts to take shape.
-You can then link to this documentation page from the Wiki.
+\b Copyright 2019 The MITRE Corporation. All rights reserved.
 
-@section codeapi Code API
+This driver connects to the KVH sensor using the RS232 serial library. It
+then uses the an_packet_protocol library to encode/decode packets to the
+sensor, and creates a request packet specifying the device configuration.
+Finally, it runs at a synchronous rate defined by a ros::Rate object
+and reads the serial buffer at that rate, stores the data in member
+objects, and then walks through each object to fill out and send the
+corresponding ROS data.
 
-Provide links to specific auto-generated API documentation within your
-package that is of particular interest to a reader. Doxygen will
-document pretty much every part of your code, so do your best here to
-point the reader to the actual API.
+The driver itself has no ROS dependencies. It follows the
+Construct/Init/Once/Cleanup paradigm, and is extensible through a
+list of packet types it expects to receive and a templated GetPacket()
+fuction in the driver. The ROS node wraps this driver and performs the
+ROS interpretation of the data.
 
-If your codebase is fairly large or has different sets of APIs, you
-should use the doxygen 'group' tag to keep these APIs together. For
-example, the roscpp documentation has 'libros' and 'botherder' groups
-so that those can be viewed separately. The rospy documentation
-similarly has a 'client-api' group that pulls together APIs for a
-Client API page.
+All data is published at least as custom ROS messages which perform no
+interpretation. This allows for checking of the data for validity after
+the fact. Data may additionally be published as standard types, such
+as nav_msgs/Odometry or sensor_msgs/Imu.
 
+Sections of this project contains content developed by The MITRE Corporation.
+If this code is used in a deployment or embedded within another project,
+it is requested that you send an email to opensource@mitre.org in order to
+let us know where this software is being used.
 
 @section rosapi ROS API
 

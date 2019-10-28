@@ -18,6 +18,8 @@ Product pages:
 
 [KVH GEO FOG 3D Dual](https://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d-dual/commercial-geo-fog-3d-dual)
 
+Copyright 2019 The MITRE Corporation. All Rights Reserved.
+
 # ROS API
 
 ## kvh_geo_fog_3d_driver_node
