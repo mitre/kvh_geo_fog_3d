@@ -8,6 +8,7 @@ before_script:
 
 stages:
     - build
+    - deploy
 
 build:
     stage: build
@@ -15,3 +16,20 @@ build:
         - docker build -t ros_${ROS_DISTRO}_kvh_geo_fog_3d -f docker/Dockerfile .
     tags:
         - docker-shell
+
+pages:
+  stage: deploy
+  script:
+    - rm -rf public/ || true
+    - mkdir public/
+    - docker rm ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen || true
+    - docker run --name ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen ros_${ROS_DISTRO}_kvh_geo_fog_3d bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && cd catkin_ws/src && rosdoc_lite -o doc kvh_geo_fog_3d_driver"
+    - docker cp ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen:/home/build/catkin_ws/src/doc/. public/
+    - docker rm ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen
+  tags:
+    - docker-shell
+  artifacts:
+    paths:
+      - public/
+  only:
+    - master
