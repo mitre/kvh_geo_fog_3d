@@ -48,31 +48,31 @@
 namespace kvh
 {
 
-/**
+  /**
    * @typedef KvhPacketMap
    * Defines mapping from packet id's given in spatial_packets.h to a pair
    * that contains a pointer to a struct of the type represented by the id, and a boolean
    * denoting if the struct has been changed (for use when the map is passed to the
    * Driver::Once function).
    */
-typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPacketMap;
+  typedef std::map<packet_id_e, std::pair<bool, std::shared_ptr<void>>> KvhPacketMap;
 
-/**
+  /**
    * @typedef KvhPacketRequest
    * Defines the format for a packet, frequency (Hz) pair that should be passed in
    * by the user to retrieve specific packets at the given rate
    */
-typedef std::vector<std::pair<packet_id_e, uint16_t>> KvhPacketRequest;
+  typedef std::vector<std::pair<packet_id_e, uint16_t>> KvhPacketRequest;
 
-class KvhPacketStorage
-{
+  class KvhPacketStorage
+  {
 
-private:
+  private:
     KvhPacketMap packetMap_; ///< Map this class encapsulates. Maps packet id
     ///< to a pair with a bool for if the packet is updated, and a pointer
     ///< to the packet.
 
-public:
+  public:
     KvhPacketStorage();
 
     /**
@@ -103,18 +103,18 @@ public:
     template <class T>
     int UpdatePacket(packet_id_e _packetId, T& _packetData)
     {
-        // Check if packet type matches packet id
-        if (supportedPackets_.count(_packetId) <= 0 || packetTypeStr_[_packetId] != typeid(T).name())
-        {
-            return -1;
-        }
-        else if (this->Contains(_packetId))
-        {
-            *static_cast<T*>(packetMap_[_packetId].second.get()) = _packetData;
-            return 0;
-        }
+      // Check if packet type matches packet id
+      if (supportedPackets_.count(_packetId) <= 0 || packetTypeStr_[_packetId] != typeid(T).name())
+      {
+        return -1;
+      }
+      else if (this->Contains(_packetId))
+      {
+        *static_cast<T*>(packetMap_[_packetId].second.get()) = _packetData;
+        return 0;
+      }
 
-        return -2;
+      return -2;
     }
     
     /**
@@ -143,18 +143,18 @@ public:
     template <class T>
     int GetPacket(packet_id_e _packetId, T& _packet)
     {
-        // Check if packet types matches id
-        if (supportedPackets_.count(_packetId) <= 0 || packetTypeStr_[_packetId] != typeid(T).name())
-        {
-            return -1;
-        }
-        else if (this->Contains(_packetId))
-        {
-            _packet = *static_cast<T*>(packetMap_[_packetId].second.get());
-            return 0;
-        }
+      // Check if packet types matches id
+      if (supportedPackets_.count(_packetId) <= 0 || packetTypeStr_[_packetId] != typeid(T).name())
+      {
+        return -1;
+      }
+      else if (this->Contains(_packetId))
+      {
+        _packet = *static_cast<T*>(packetMap_[_packetId].second.get());
+        return 0;
+      }
 
-        return -2;
+      return -2;
     }
 
     // META functions for the class
@@ -188,5 +188,5 @@ public:
      * @endcode
      */
     static void PrintPacketSizes();
-};
+  };
 } // namespace kvh

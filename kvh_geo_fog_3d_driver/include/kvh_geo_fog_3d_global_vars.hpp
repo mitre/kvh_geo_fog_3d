@@ -41,8 +41,7 @@ namespace kvh
 {
   extern std::set<packet_id_e> supportedPackets_; ///< Set of packets containing all packet_id's we support
   extern std::map<packet_id_e, int> packetSize_; ///< Map relating packet id's to the associated struct size. Used for baudrate calculation
-  extern std::map<packet_id_e, std::string> packetTypeStr_; ///< Holds
-  ///< the string value for the different types of structs.
+  extern std::map<packet_id_e, std::string> packetTypeStr_; ///< Holds the string value for the different types of structs.
 
   /**
    * @struct utm_fix

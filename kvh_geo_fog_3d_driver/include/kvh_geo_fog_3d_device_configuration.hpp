@@ -44,10 +44,10 @@
 namespace kvh
 {
 
-class KvhDeviceConfig
-{
-private:
-public:
+  class KvhDeviceConfig
+  {
+  private:
+  public:
     /**
      * @code
      * kvh::KvhPacketRequest packRequest = {
@@ -70,31 +70,31 @@ public:
      * @endcode
      */
     static int CreateFilterOptionsPacket(
-        filter_options_packet_t &,
-        bool _permanent = true,
-        uint8_t _vehicle_type = vehicle_type_car,
-        bool _internal_gnss_enabled = true,
-        bool _atmospheric_altitude_enabled = true,
-        bool _velocity_heading_enabled = true,
-        bool _reversing_detection_enabled = true,
-        bool _motion_analysis_enabled = true);
+      filter_options_packet_t &,
+      bool _permanent = true,
+      uint8_t _vehicle_type = vehicle_type_car,
+      bool _internal_gnss_enabled = true,
+      bool _atmospheric_altitude_enabled = true,
+      bool _velocity_heading_enabled = true,
+      bool _reversing_detection_enabled = true,
+      bool _motion_analysis_enabled = true);
 
     /**
-    * @code
-    * std::string port{'/dev/USB0'};
-    * int curBaud = 115200;
-    * int prevBaud = 9600;
-    * kvh::KvhDeviceConfig::SetBaudRate(port, curBaud, prevBaud);
-    * @endcode
-    */
+     * @code
+     * std::string port{'/dev/USB0'};
+     * int curBaud = 115200;
+     * int prevBaud = 9600;
+     * kvh::KvhDeviceConfig::SetBaudRate(port, curBaud, prevBaud);
+     * @endcode
+     */
     static int SetBaudRate(std::string _port, int _curBaudRate, int _primaryBaudRate, int _gpioBaudRate = 115200, int _auxBaudRate = 115200);
 
     /**
-    * @code
-    * std::string port{'/dev/ttyUSB1'};
-    * int curBaud = FindCurrentBaudRate(port);
-    * @endcode
-    */
+     * @code
+     * std::string port{'/dev/ttyUSB1'};
+     * int curBaud = FindCurrentBaudRate(port);
+     * @endcode
+     */
     static int FindCurrentBaudRate(std::string);
 
     /**
@@ -106,6 +106,6 @@ public:
      * @endcode
      */
     static int CalculateRequiredBaud(KvhPacketRequest &);
-};
+  };
 
 } // namespace kvh
