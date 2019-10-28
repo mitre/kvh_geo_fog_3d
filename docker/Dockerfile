@@ -1,4 +1,4 @@
-FROM artifacts.mitre.org:8200/untrusted-mitrewide-overwritable/dart/dart_gitlab_runner_kinetic:latest
+FROM artifacts.mitre.org:8200/untrusted-mitrewide-overwritable/dart/dart_gitlab_runner_melodic:latest
 MAINTAINER Zach LaCelle <zlacelle@mitre.org>
 
 # catkin and ROS really like bash over sh
@@ -8,7 +8,7 @@ ARG catkin_ws=catkin_ws
 
 RUN mkdir -p ${catkin_ws}/src
 COPY --chown=build:root [".", "${catkin_ws}/src"]
-RUN source /opt/ros/kinetic/setup.bash && \
+RUN source /opt/ros/melodic/setup.bash && \
     pushd ${catkin_ws} && \
     catkin build -DCMAKE_BUILD_TYPE=Release && \
     popd
