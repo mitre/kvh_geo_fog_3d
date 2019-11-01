@@ -75,57 +75,33 @@ const static double PI = 3.14159;
 // Bounds on [-pi, pi)
 inline double BoundFromNegPiToPi(const double &_value)
 {
-  double result = _value;
-  while (result < -(PI))
+  double num = std::fmod(_value, (2*PI));
+  if (num > PI)
   {
-    result += (2 * PI);
+    num = num - (2*PI);
   }
-  while (result >= PI)
-  {
-    result -= (2 * PI);
-  }
-  return result;
+  return num;
 } //end: BoundFromNegPiToPi(double* _value)
+
 inline double BoundFromNegPiToPi(const float &_value)
 {
-  double result = _value;
-  while (result < -(PI))
+  double num = std::fmod(_value, (2*PI));
+  if (num > PI)
   {
-    result += (2 * PI);
+    num = num - (2*PI);
   }
-  while (result >= PI)
-  {
-    result -= (2 * PI);
-  }
-  return result;
+  return num;
 } //end: BoundFromNegPiToPi(const float& _value)
 
 // Bounds on [-pi, pi)
 inline double BoundFromZeroTo2Pi(const double &_value)
 {
-  double result = _value;
-  while (result < 0)
-  {
-    result += (2 * PI);
-  }
-  while (result >= (2 * PI))
-  {
-    result -= (2 * PI);
-  }
-  return result;
+  return std::fmod(_value, (2 * PI));
 } //end: BoundFromZeroTo2Pi(double* _value)
+
 inline double BoundFromZeroTo2Pi(const float &_value)
 {
-  double result = _value;
-  while (result < 0)
-  {
-    result += (2 * PI);
-  }
-  while (result >= (2 * PI))
-  {
-    result -= (2 * PI);
-  }
-  return result;
+  return std::fmod(_value, (2 * PI));
 } //end: BoundFromZeroTo2Pi(const float& _value)
 
 void SetupUpdater(diagnostic_updater::Updater *_diagnostics, mitre::KVH::DiagnosticsContainer *_diagContainer)
