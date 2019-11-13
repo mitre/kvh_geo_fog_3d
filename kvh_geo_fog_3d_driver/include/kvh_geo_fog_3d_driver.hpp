@@ -54,7 +54,6 @@ namespace kvh
   /**
    * @struct KvhInitOptions
    * Holds initialization options for the Kvh.
-   * \todo Implement gnss enabled
    */
   struct KvhInitOptions
   {
