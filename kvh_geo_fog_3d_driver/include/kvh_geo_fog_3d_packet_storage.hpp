@@ -157,7 +157,6 @@ namespace kvh
       return -2;
     }
 
-    // META functions for the class
     /**
      * @code
      * // Create and init packet storage

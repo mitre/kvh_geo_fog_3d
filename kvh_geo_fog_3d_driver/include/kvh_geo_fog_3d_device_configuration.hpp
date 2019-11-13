@@ -95,7 +95,7 @@ namespace kvh
      * int curBaud = FindCurrentBaudRate(port);
      * @endcode
      */
-    static int FindCurrentBaudRate(std::string);
+    static int FindCurrentBaudRate(std::string, int);
 
     /**
      * @code
