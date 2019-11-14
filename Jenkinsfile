@@ -11,8 +11,9 @@ pipeline
 {
     options
     {
-	// Keep N most recent builds
-	buildDiscarder(logRotator(numToKeepStr:'20'))
+    	// Keep N most recent builds
+        buildDiscarder(logRotator(numToKeepStr:'20'))
+	    timeout(time: 2, unit: 'HOURS') 
     }
     agent
     {
@@ -209,7 +210,6 @@ void BuildRelease()
     //Under here is contained catkin_ws/src/kvh_geo_fog_3d
     sh script: '''#!/bin/bash
         cd catkin_ws
-        ls /opt/ros
         source /opt/ros/kinetic/setup.bash
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On''', label: 'Build Release'
 }
