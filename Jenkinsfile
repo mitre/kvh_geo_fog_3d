@@ -45,7 +45,7 @@ pipeline
                 """, label: 'Setup github/gitlab SSH keys'
                 sh script: """#!/bin/bash
                     sudo -E apt-get update --fix-missing
-                """: label: 'Apt Cache Update'
+                """, label: 'Apt Cache Update'
                 //Setup the OS, specifically for ROS Kinetic
                 SetupKinetic()
             }
