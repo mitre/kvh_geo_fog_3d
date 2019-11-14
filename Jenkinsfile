@@ -16,7 +16,7 @@ pipeline
     }
     agent
     {
-        label 'docker-ubuntu-1804'
+        label 'docker-ubuntu-1604'
     }
     triggers
     {
