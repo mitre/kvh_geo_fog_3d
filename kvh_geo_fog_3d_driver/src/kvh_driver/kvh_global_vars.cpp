@@ -24,7 +24,7 @@
 
 /**
  * @file kvh_global_vars.cpp
- * @brief KVH Geo Fog 3D driver global variables, used to pass data in the driver
+ * @brief KVH Geo Fog 3D driver global variables. Holds general packet data that is used throughout the driver.
  * @author Trevor Bostic
  */
 
@@ -33,6 +33,7 @@
 
 namespace kvh
 {
+    // Keep a list of supported packets using KVH's packet id enum
     std::set<packet_id_e> supportedPackets_ = {
     packet_id_system_state,
     packet_id_unix_time,
@@ -48,6 +49,7 @@ namespace kvh
     packet_id_raw_gnss,
 };
 
+// Keep lookup table of packet sizes. Used for calculating required baud rates
 std::map<packet_id_e, int> packetSize_ = {
     {packet_id_system_state, sizeof(system_state_packet_t)},
     {packet_id_unix_time, sizeof(unix_time_packet_t)},
@@ -63,6 +65,7 @@ std::map<packet_id_e, int> packetSize_ = {
     {packet_id_raw_gnss, sizeof(raw_gnss_packet_t)},
 };
 
+// String names of struct types. Used for assurance we have received the correct packet
 std::map<packet_id_e, std::string> packetTypeStr_ = {
     {packet_id_system_state, typeid(system_state_packet_t).name()},
     {packet_id_unix_time, typeid(unix_time_packet_t).name()},

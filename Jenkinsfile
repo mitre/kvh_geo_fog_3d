@@ -11,8 +11,9 @@ pipeline
 {
     options
     {
-	// Keep N most recent builds
-	buildDiscarder(logRotator(numToKeepStr:'20'))
+    	// Keep N most recent builds
+        buildDiscarder(logRotator(numToKeepStr:'20'))
+	    timeout(time: 2, unit: 'HOURS') 
     }
     agent
     {
@@ -45,7 +46,7 @@ pipeline
                 """, label: 'Setup github/gitlab SSH keys'
                 sh script: """#!/bin/bash
                     sudo -E apt-get update --fix-missing
-                """: label: 'Apt Cache Update'
+                """, label: 'Apt Cache Update'
                 //Setup the OS, specifically for ROS Melodic
                 SetupMelodic()
             }
