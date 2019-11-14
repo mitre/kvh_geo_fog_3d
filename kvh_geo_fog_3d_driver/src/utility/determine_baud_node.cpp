@@ -54,13 +54,8 @@ int main(int argc, char **argv)
         19200, 57600, 115200, 230400,
         460800, 500000, 576000, 921600, 1000000};
 
-    // We will just look for the system state packet
-    kvh::KvhPacketRequest packetRequest =
-    {
-        std::pair<packet_id_e, int>(packet_id_system_state, 50)
-    };
-
     std::string kvhPort("/dev/ttyUSB0");
+    int startingBaud = 1200;
     // Check if the port has been set on the ros param server
     if (node.getParam("port", kvhPort))
     {
@@ -71,8 +66,18 @@ int main(int argc, char **argv)
         ROS_WARN("No port specified by param, defaulting to USB0!");
     }
 
+    if (node.getParam("starting_baud", startingBaud))
+    {
+        ROS_INFO_STREAM("Starting baud check at " << startingBaud);
+    }
+    else
+    {
+        ROS_WARN("No starting baud specified. Defaulting to 1200.");
+    }
+    
 
-    int curBaudRate = kvh::KvhDeviceConfig::FindCurrentBaudRate(kvhPort);
+
+    int curBaudRate = kvh::KvhDeviceConfig::FindCurrentBaudRate(kvhPort, startingBaud);
     
     if (curBaudRate > 0)
     {

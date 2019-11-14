@@ -134,12 +134,6 @@ namespace kvh
    * (5+(7*(1 for min or 50 for max))) (Detailed satellites) + 17 (local mag)
    * + 30 (utm) + 29 (ecef) + 32) * rate (50hz default) * 11
    * Minimum baud all packets at 100hz for worst case scenario is 644600
-   * 
-   * @warning When connecting we make the massive assumption that the kvh starts
-   * with a baud rate of 115200. The workflow here is Open comport -> Set baud to required
-   * -> Close comport -> Open comport with baud required
-   * 
-   * @todo Make sure return values are appropriate for each possible error
    */
   int Driver::Init(const std::string &_port, KvhPacketRequest &_packetsRequested, KvhInitOptions _initOptions)
   {
@@ -263,16 +257,7 @@ namespace kvh
    * for every single type of packet. Our goal is to be able to deal with all of them simply
    * within one single function, but that brings a lot of typing problems into the mix. Namely
    * making sure that we have the correct type of struct, and then calling the correct decoding
-   * function for that struct. If there is a good way to pass around types, so that I could 
-   * correctly cast that would be nice, but I do not know of a solution yet. Possibly using
-   * decltype might work.
-   * Assumptions:
-   *  Since our map takes in a shared_ptr<void> to deal with having multiple types of structs
-   * per function call, we have now way of knowing if they actually passed in the correct struct
-   * type that matches the packet id. If they didn't I could easily see us running into a seg fault,
-   * which might be disastrous. Perhaps I can at least check if the size of the struct we expect and
-   * the size they passed in are the same? That might prevent seg faults but would still be open to other
-   * errors.
+   * function for that struct.
    */
   int Driver::Once()
   {

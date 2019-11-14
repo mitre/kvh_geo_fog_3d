@@ -101,52 +101,74 @@ baud rates are listed out in the technical reference manual.
 
 ## Installation
 
-TODO
+Below are instructions on getting connected to the KVH.
 
-## Serial Port Configuration
+### Serial Port Configuration
 
-By default, the serial port is owned by root.dialout. To run this driver
-without root privileges, you must add your user to the dialout group.
+To connect to the KVH you can use the FTDI cable KVH provides or a serial cable to connect. In our setup, we use the FTDI cable to connect to our laptops for development and debug, and then a serial cable to connect to our mission computer. 
 
-Beware that some COM ports are limited to 115,200, which is not enough
-bandwidth to handle large amounts of KVH data. Some have higher speeds enabled
-by multiplying baud rates in userspace by some value, e.g. x8. The FTDI debug
-cable that comes with the KVH does not have this limitation.
+By default, the serial port is owned by the root.dialout group. To run this driver without root privileges, you must add your user to the dialout group. If you are still having permission errors you can use chmod to change the permissions manually.
 
-## Quick Start Using the Driver
-
-Below is some sample code that shows how you can leverage this Kvh Driver to get data.
-
-```cpp
-    typedef std::pair<packet_id_e, int> freqPair;
-
-    kvh::KvhPacketRequest packetRequest{
-        freqPair(packet_id_utm_position, 50),
-        freqPair(packet_id_system_state, 50),
-        ... // Any additional packets
-    };
-
-    // Set connected port
-    std::string kvhPort("/dev/ttyUSB0");
-
-    kvhDriver.Init(kvhPort, packetRequest);
-
-    system_state_packet_t sysPacket;
-
-    while(1)
-    {
-        kvhDriver.Once(); // Check for new published packets
-
-        if (kvhDriver.PacketIsUpdated(packet_id_system_state))
-        {
-            kvhDriver.GetPacket(packet_id_system_state, sysPacket);
-
-            ... // Use System State Packet
-        }
-        usleep(10000); // Usually will want to sleep for some amount of time
-    }
-
+```bash
+$ sudo chmod a+rw <port>  # E.g., port may be /dev/ttyUSB0
 ```
+
+Beware that some COM ports are limited to 115200, which is not enough bandwidth to handle large amounts of KVH data. In our case, we had to enable a multiplexer via the bios on our mission computer to allow larger baud rates. The FTDI cable KVH provides should support all baud rates.
+
+### Running the driver
+
+First you will need to clone and build the repository
+
+```bash
+$ git clone <url>
+$ cd kvh_geo_fog_3d
+$ catkin build kvh_geo_fog_3d
+```
+
+It is important that you have the KVH messages installed properly. After building initially you can check by running:
+```bash
+$ source .../devel/setup.bash # May be required after building
+$ rosmsg list | grep kvh
+```
+
+You should see the messages listed in the KVH-specific messages section above.
+
+Now you should be able to launch the driver by running
+
+```bash
+$ roslaunch kvh_geo_fog_3d_driver kvh_geo_fog_3d_node.launch port:=<port> baud:=<baud> # E.g., port="/dev/ttyUSB0" baud="921600"
+```
+If everything is set up properly, you should be able to see data being output on each of the topics listed above. Currently the driver is hardcoded to output the data from the following kvh packets:
+1. System State
+2. Satellites
+3. Detailed Satellites
+4. Local Magnetics
+5. UTM position
+6. ECEF position
+7. North Seeking Status
+8. Odometer State
+9. Raw Sensors
+10. Raw GNSS
+
+If you need other packets, please see the development guide below.
+
+Though the KVH defaults to 115200 baud, we recommend using the baud utility in the section below to set this baud rate to 921600 to prevent data overflow.
+
+#### Baud Debug
+Note that the above assumes you know the baudrate, which is 115200 by default. If you do not know the baud rate you have a couple options:
+
+1. Relaunch the node manually trying each of the possible baud rates.
+2. Contact KVH and get access to the GEO-FOG manager, which is a GUI tool for interacting with the KVH.
+3. We have provided a ros node that attempts to automatically detect the baud rate by trying each of the buad rates and checking for returned data. You can launch this node by running the command below. By default it will start at 1200, but the starting baud rate setting is available if you believe that the baud rate it is finding is incorrect or recieving random data (i.e. allows you to skip baud rates).
+```bash
+$ roslaunch kvh_geo_fog_3d_driver determine_baud.launch starting_baud:=<baud_rate>
+```
+Due to the rs232 connecting library we use, the possible baud rates are:
+1200, 1800, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 500000, 576000, 921600, 1000000
+
+This will give you the option to set the buad rate as well. It is currently recommended to set the baud rate to 921600 as that is the smallest baud rate that will never overflow. 
+
+**Note: this number can be smaller and still work, but due to the possibility of the detailed satellites packet being the maximum size we recommend this.**
 
 # ROS conformance and Conventions
 
@@ -217,12 +239,54 @@ as nav_msgs/Odometry, and is globally fixed in the NED and ENU frames.
 
 Below are instructions on how to complete several common tasks that may be required depending on your uses.
 
+## Quick Start Development
+
+The KVH driver was written as a standalone driver, and the ROS node simply uses and recieves data from that driver. Below is the general structure of the ROS side. 
+
+```cpp
+    typedef std::pair<packet_id_e, int> freqPair;
+
+    kvh::KvhPacketRequest packetRequest{
+        freqPair(packet_id_utm_position, 50),
+        freqPair(packet_id_system_state, 50),
+        ... // Any additional packets
+    };
+
+    // Set connected port
+    std::string kvhPort("/dev/ttyUSB0");
+
+    kvhDriver.Init(kvhPort, packetRequest);
+
+    system_state_packet_t sysPacket;
+
+    while(1)
+    {
+        kvhDriver.Once(); // Check for new published packets
+
+        if (kvhDriver.PacketIsUpdated(packet_id_system_state))
+        {
+            kvhDriver.GetPacket(packet_id_system_state, sysPacket);
+
+            ... // Use System State Packet
+        }
+        kvhDriver.SetPacketUpdated(packet_id_system_state, false);
+        usleep(10000); // Usually will want to sleep for some amount of time
+    }
+
+```
+*Developer Note: Notice that at the end we must run `kvhDriver.SetPacketUpdated(packet_id, bool)`. The driver has been implemented so that you must explicitly state when you have read its data. If you wish to keep track of when new data appears, the driver must be used this way. In any case, the driver will always store the most recent packet of a specific type that it recieves and will set the update status to true.*
+
+
 ## Adding a new packet type
-1. Add packet to each set/map currently in *src/kvh_driver/kvh_global_vars.cpp*. 
+The KVH offers a wide variety of packets. As such we have only implemented the ones that we found most useful. If you have others that you need, please see the instructions below for a guide on how to add them to the driver. 
 
-For the most part, you should be able to follow the predefined pattern, but you will be adding the packet_id to the supportedPackets_, the packet size to packetSize_, and the string literal of the packet type to packetTypeStr_. Note, this is essentially registering your desired packet. **Developer Note: The packetSize_ and packetTypeStr_ could be inferred from the packet_id, except for the fact that some packets exist that were not properly implemented in kvh's api, and which we have had to extend. We have chosen to modify here, instead of modifying their api for our purposes.**
+1. Add packet information to each set/map currently in `src/kvh_driver/kvh_global_vars.cpp`. 
 
-2. Add packet-specific decoding function to **DecodePacket** function in *src/kvh_driver/decode_packets.cpp* 
+For the most part, you should be able to follow the predefined pattern, but you will be adding the packet_id to the supportedPackets_, the packet size to packetSize_, and the string literal of the packet type to packetTypeStr_. Note, this is essentially registering your desired packet. 
+
+*Developer Note: The packetSize_ and packetTypeStr_ could be inferred from the packet_id, except for the fact that some packets exist that were not properly implemented in kvh's api, and which we have had to manually extend. We have chosen to make these fixes in our code instead of modifying their api.*
+
+2. Add packet-specific decoding function to **DecodePacket** function in `src/kvh_driver/decode_packets.cpp`
 
 You should be able to just follow the pattern shown by the previously implemented packets, but will be included here for comprehensiveness.
 
@@ -236,7 +300,7 @@ You should be able to just follow the pattern shown by the previously implemente
         }
 ```
 
-3. Add packet to initialisation mapping in the **Init** function of *src/kvh_driver/packet_storage.cpp*
+3. Add packet to initialisation mapping in the **Init** function of `src/kvh_driver/packet_storage.cpp`
 
 The packet storage is initialised with the requested packets at the beginning. You must add a line similar to the following to make sure the initialization succeeds.
 
@@ -255,7 +319,7 @@ For information on packaging and releasing this package at MITRE, see PACKAGING.
 # Limitations
 Here is just a list of some currently know limitations of the current architecture
 
-1. Inability to change packets without restarting entire driver. This could potentially be added by creating a function in the **kvh::Driver** class for sending the packet request packet, and then re-initialising/recreating the packet storage object with the new requested packets.
+1. Hard coded packets. It is currently not in the design to allow users to customize which packets they do and do not want to receive. 
 
 2. Added complexity due to make changes to struct outside of API classes. Many of the steps shown in the *Adding a new packet type* section could be done automatically if we did not need to account for the possibility of extended structs. Currently the only example we have is the utm_fix struct type which extends the utm_position packet the kvh api has. We did this since we did not want to change their API in any way, but there may be a time the added complexity is not worth it. 
 

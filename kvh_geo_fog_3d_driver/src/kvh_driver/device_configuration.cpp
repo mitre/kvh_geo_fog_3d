@@ -199,7 +199,7 @@ namespace kvh
    * either finds one that is receiving packets from the kvh, or runs out of
    * possibilities.
    */
-  int KvhDeviceConfig::FindCurrentBaudRate(std::string _port)
+  int KvhDeviceConfig::FindCurrentBaudRate(std::string _port, int _startingBaud)
   {
     std::vector<int> baudRates = {
       1200, 1800, 2400, 4800, 9600,
@@ -211,6 +211,12 @@ namespace kvh
 
     for (int baudRate : baudRates)
     {
+      // Skip over baud rates lower than what we want to start at
+      if (baudRate < _startingBaud)
+      {
+        continue;
+      }
+
       printf("Opening with port: %s, baudrate: %d...\n", portArr, baudRate);
       if (OpenComport(portArr, baudRate) != 0)
       {

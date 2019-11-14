@@ -63,6 +63,7 @@ namespace kvh
     else
       return -1;
   }
+
   /**
    * @fn Driver::DecodePacket
    * @param _anPacket [in] The packet to decode into a Kvh packet type
@@ -221,7 +222,6 @@ namespace kvh
         break;
       case packet_id_utm_position:
         // Below we had to create a modified decode function since
-        /** \todo Fix utm_position_packet_t to follow data provided by kvh instead of what they have defined.*/
 
         utm_fix utmPacket;
         if (DecodeUtmFix(&utmPacket, _anPacket) == 0)
