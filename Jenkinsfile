@@ -211,6 +211,11 @@ void BuildRelease()
     sh script: '''#!/bin/bash
         cd catkin_ws
         source /opt/ros/melodic/setup.bash
+        echo "CATTING CMAKELISTS"
+        cat src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/CMakeLists.txt
+        echo "SHOULD HAVE QT5 HERE"
+        ls /usr/lib/x86_64-linux-gnu/cmake/
+        echo "TRYING TO BUILD"
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On''', label: 'Build Release'
 }
 void BuildTest()
@@ -284,7 +289,7 @@ void PackageDebian()
 
 void SendEmail()
 {
-    emailext body: "${currentBuild.currentResult}: Job ${env.JOB_NAME} build ${env.BUILD_NUMBER}\n More info at: ${env.BUILD_URL}",
-                recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']],
-                subject: "Jenkins Build ${currentBuild.currentResult}: Job ${env.JOB_NAME}", to: 'zlacelle, tbostic'
+    //emailext body: "${currentBuild.currentResult}: Job ${env.JOB_NAME} build ${env.BUILD_NUMBER}\n More info at: ${env.BUILD_URL}",
+    //            recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']],
+    //            subject: "Jenkins Build ${currentBuild.currentResult}: Job ${env.JOB_NAME}", to: 'zlacelle, tbostic'
 }
