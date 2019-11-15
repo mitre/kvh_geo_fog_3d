@@ -62,7 +62,10 @@ for i in "${!PACKAGE_DIRS[@]}"; do
     package=${PACKAGE_NAMES[$i]}
     if [ -d ${dir}/src ]; then
         #PACKAGE_SOURCE_PATHS=${PROJECT_ROOT}/${dir}/src/*.cpp
-	for f in $(find ${dir}/src -name *.cpp); do
+	# Enable globstar and use globbing, instead of trying to for loop over
+	# find results. That approach broke on whitespace
+	shopt -s globstar
+	for f in **/*.cpp; do
 	    PACKAGE_SOURCE_PATHS+=$(realpath ${f})
 	    PACKAGE_SOURCE_PATHS+=" "
 	done
