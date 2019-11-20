@@ -163,10 +163,10 @@ pipeline
                 }
             }
 	}
-	success
-	{
-            //archiveArtifacts 'catkin_ws/src/*.deb'
-    	}
+//	success
+//	{
+//            archiveArtifacts 'catkin_ws/src/*.deb'
+//    	}
         failure
         {
             SendEmail()
