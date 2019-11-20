@@ -8,6 +8,7 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  diagnostic_updater
   dynamic_reconfigure
   geometry_msgs
   kvh_geo_fog_3d_msgs
@@ -113,8 +114,6 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
-  include/geo_fog_sdk
-  include/rs232
   ${catkin_INCLUDE_DIRS}
 )
 
