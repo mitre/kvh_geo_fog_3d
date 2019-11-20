@@ -30,7 +30,7 @@ pipeline
         {
             steps
             {
-                CheckoutMaster()
+                CheckoutKineticDevel()
             }
         } //end: stage('Checkout')
         stage('Setup')
@@ -179,11 +179,11 @@ pipeline
 } //end: pipeline
 
 
-void CheckoutMaster()
+void CheckoutKineticDevel()
 {
     //Clone the repo
     checkout([$class: 'GitSCM',
-        branches: [[name: '*/master']],
+        branches: [[name: '*/kinetic-devel']],
         doGenerateSubmoduleConfigurations: false,
         extensions: [[$class: 'RelativeTargetDirectory',
             relativeTargetDir: 'catkin_ws/src/kvh_geo_fog_3d']],
