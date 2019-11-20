@@ -100,9 +100,9 @@ generate_dynamic_reconfigure_options(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include include/geo_fog_sdk include/rs232
+  INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS dynamic_reconfigure kvh_geo_fog_3d_msgs message_runtime roscpp std_msgs tf2_ros
+  CATKIN_DEPENDS dynamic_reconfigure geometry_msgs kvh_geo_fog_3d_msgs message_runtime nav_msgs roscpp sensor_msgs std_msgs tf2_ros
 )
 
 ###########
@@ -283,13 +283,16 @@ roslint_cpp(
 ## Add gtest based cpp test target and link libraries
 include_directories(
   test/include
-)
-catkin_add_gtest(${PROJECT_NAME}-test 
-  test/init_vars.cpp
-  test/device_configuration_test.cpp
-  test/packet_storage_test.cpp
-  test/kvh_driver_test.cpp
-)
+  )
+
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(${PROJECT_NAME}-test 
+    test/init_vars.cpp
+    test/device_configuration_test.cpp
+    test/packet_storage_test.cpp
+    test/kvh_driver_test.cpp
+    )
+endif()
 target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 if(TARGET ${PROJECT_NAME}-test)
   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})

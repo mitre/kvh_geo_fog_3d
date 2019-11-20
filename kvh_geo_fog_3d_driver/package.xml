@@ -52,6 +52,7 @@ let us know where this software is being used.
   <exec_depend>roscpp</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+  <test_depend>rosunit</test_depend>
 
   <export>
     <rosdoc external="http://www.kvh.com/admin/products/gyros-imus-inss/ins/geo-fog-3d-dual/commercial-geo-fog-3d-dual/"/>

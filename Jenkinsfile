@@ -211,7 +211,7 @@ void BuildRelease()
     sh script: '''#!/bin/bash
         cd catkin_ws
         source /opt/ros/kinetic/setup.bash
-        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On''', label: 'Build Release'
+        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Release'
 }
 void BuildTest()
 {
@@ -230,7 +230,7 @@ void BuildDebug()
         cd catkin_ws
         set -o pipefail
         source /opt/ros/kinetic/setup.bash
-        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On''', label: 'Build Debug'
+        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Debug'
 }
 void CatkinLint()
 {
