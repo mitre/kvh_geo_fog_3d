@@ -30,7 +30,7 @@ pipeline
         {
             steps
             {
-                CheckoutMaster()
+                CheckoutMelodicDevel()
             }
         } //end: stage('Checkout')
         stage('Setup')
@@ -163,10 +163,10 @@ pipeline
                 }
             }
 	}
-	success
-	{
-            archiveArtifacts 'catkin_ws/src/*.deb'
-    	}
+//	success
+//	{
+//            archiveArtifacts 'catkin_ws/src/*.deb'
+//    	}
         failure
         {
             SendEmail()
@@ -179,11 +179,11 @@ pipeline
 } //end: pipeline
 
 
-void CheckoutMaster()
+void CheckoutMelodicDevel()
 {
     //Clone the repo
     checkout([$class: 'GitSCM',
-        branches: [[name: '*/master']],
+        branches: [[name: '*/melodic-devel']],
         doGenerateSubmoduleConfigurations: false,
         extensions: [[$class: 'RelativeTargetDirectory',
             relativeTargetDir: 'catkin_ws/src/kvh_geo_fog_3d']],
@@ -211,12 +211,7 @@ void BuildRelease()
     sh script: '''#!/bin/bash
         cd catkin_ws
         source /opt/ros/melodic/setup.bash
-        echo "CATTING CMAKELISTS"
-        cat src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/CMakeLists.txt
-        echo "SHOULD HAVE QT5 HERE"
-        ls /usr/lib/x86_64-linux-gnu/cmake/
-        echo "TRYING TO BUILD"
-        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On''', label: 'Build Release'
+        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Release'
 }
 void BuildTest()
 {
@@ -235,7 +230,7 @@ void BuildDebug()
         cd catkin_ws
         set -o pipefail
         source /opt/ros/melodic/setup.bash
-        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On''', label: 'Build Debug'
+        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Debug'
 }
 void CatkinLint()
 {
@@ -282,9 +277,12 @@ void RosLint()
 void PackageDebian()
 {
     sh script: '''#!/bin/bash
-        cd catkin_ws/src/kvh_geo_fog_3d
-        ./build_all_debs.sh
+        echo "Currently building debs is not supported! Can't handle missing deps"
     ''', label: "Debian Packaging"
+//    sh script: '''#!/bin/bash
+//        cd catkin_ws/src/kvh_geo_fog_3d
+//        ./build_all_debs.sh
+//    ''', label: "Debian Packaging"
 }
 
 void SendEmail()
