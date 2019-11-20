@@ -165,7 +165,7 @@ pipeline
 	}
 	success
 	{
-            archiveArtifacts 'catkin_ws/src/*.deb'
+            //archiveArtifacts 'catkin_ws/src/*.deb'
     	}
         failure
         {
@@ -277,9 +277,12 @@ void RosLint()
 void PackageDebian()
 {
     sh script: '''#!/bin/bash
-        cd catkin_ws/src/kvh_geo_fog_3d
-        ./build_all_debs.sh
+        echo "Currently building debs is not supported! Can't handle missing deps"
     ''', label: "Debian Packaging"
+//    sh script: '''#!/bin/bash
+//        cd catkin_ws/src/kvh_geo_fog_3d
+//        ./build_all_debs.sh
+//    ''', label: "Debian Packaging"
 }
 
 void SendEmail()
