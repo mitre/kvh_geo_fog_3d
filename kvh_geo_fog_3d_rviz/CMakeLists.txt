@@ -28,11 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-message( "RVIZ INFO" )
-message( ${rviz_QT_VERSION} )
-message( ${CMAKE_PREFIX_PATH} )
-
-if(rviz_QT_VERSION VERSION_LESS "5")
+if("${rviz_QT_VERSION}" VERSION_LESS "5")
   message(STATUS "Using Qt4 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
   find_package(Qt4 ${rviz_QT_VERSION} REQUIRED COMPONENTS QtCore QtGui)
   include(${QT_USE_FILE})
@@ -58,8 +54,8 @@ add_definitions(-DQT_NO_KEYWORDS)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES kvh_geo_fog_3d_rviz
- CATKIN_DEPENDS rviz kvh_geo_fog_3d_msgs
+ LIBRARIES ${PROJECT_NAME}
+ CATKIN_DEPENDS kvh_geo_fog_3d_msgs rviz
 )
 
 ###########

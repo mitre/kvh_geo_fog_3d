@@ -31,6 +31,7 @@ let us know where this software is being used.
   <build_depend>roslint</build_depend>
   <build_depend>rviz</build_depend>
   <build_export_depend>kvh_geo_fog_3d_msgs</build_export_depend>
+  <build_export_depend>rviz</build_export_depend>
   <exec_depend>kvh_geo_fog_3d_msgs</exec_depend>
   <exec_depend>rviz</exec_depend> <!-- If you don't have this, the plugin will silently fail to load in rviz!! #feature -->
 
