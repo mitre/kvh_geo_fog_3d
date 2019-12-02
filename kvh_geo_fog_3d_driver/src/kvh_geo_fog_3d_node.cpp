@@ -759,8 +759,11 @@ int main(int argc, char **argv)
         navSatFixMsg.status.status = navSatFixMsg.status.STATUS_GBAS_FIX;
       }
 
-      navSatFixMsg.latitude = systemStatePacket.latitude;
-      navSatFixMsg.longitude = systemStatePacket.longitude;
+      //NavSatFix specifies degrees as lat/lon, but KVH publishes in radians
+      double latitude_deg = (systemStatePacket.latitude * 180.0) / 3.141592654;
+      double longitude_deg = (systemStatePacket.longitude * 180.0) / 3.141592654;
+      navSatFixMsg.latitude = latitude_deg;
+      navSatFixMsg.longitude = longitude_deg;
       navSatFixMsg.altitude = systemStatePacket.height;
       navSatFixMsg.position_covariance_type = navSatFixMsg.COVARIANCE_TYPE_DIAGONAL_KNOWN;
       // They use ENU for mat for this matrix. To me it makes sense that we should use
@@ -892,8 +895,11 @@ int main(int argc, char **argv)
       rawNavSatFixMsg.header = header;
       rawNavSatFixMsg.header.frame_id = "gps";
 
-      rawNavSatFixMsg.latitude = rawGnssPacket.position[0];
-      rawNavSatFixMsg.longitude = rawGnssPacket.position[1];
+      //NavSatFix specifies degrees as lat/lon, but KVH publishes in radians
+      double rawGnssLatitude_deg = (rawGnssPacket.position[0] * 180.0) / 3.141592654;
+      double rawGnssLongitude_deg = (rawGnssPacket.position[1] * 180.0) / 3.141592654;
+      rawNavSatFixMsg.latitude = rawGnssLatitude_deg;
+      rawNavSatFixMsg.longitude = rawGnssLongitude_deg;
       rawNavSatFixMsg.altitude = rawGnssPacket.position[2];
 
       int status = systemStatePacket.filter_status.b.gnss_fix_type;

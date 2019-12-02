@@ -82,8 +82,8 @@ Publishes to:
 - \b "imu/rpy_ned_deg": [geometry_msgs/Vector3Stamped]  IMU roll/pitch/yaw, in NED convention (degrees)
 - \b "imu/rpy_enu":  [geometry_msgs/Vector3Stamped]     IMU roll/pitch/yaw, in ENU convention (radians)
 - \b "imu/rpy_enu_deg": [geometry_msgs/Vector3Stamped]  IMU roll/pitch/yaw, in ENU convention (degrees)
-- \b "gps/fix": [sensor_msgs/NavSatFix]                 Filtered GPS location, as NavSatFix message
-- \b "gps/raw_fix": [sensor_msgs/NavSatFix]             Raw GPS location, as NavSatFix message
+- \b "gps/fix": [sensor_msgs/NavSatFix]                 Filtered GPS location (degrees/meters), as NavSatFix message
+- \b "gps/raw_fix": [sensor_msgs/NavSatFix]             Raw GPS location (degrees/meters), as NavSatFix message
 - \b "gps/mag": [sensor_msgs/MagneticField]             Magnetic field measurement around the sensor
 - \b "gps/utm_ned": [nav_msgs/Odometry]                 UTM position, formatted as ROS Odometry, in NED convention
 - \b "gps/utm_enu": [nav_msgs/Odometry]                 UTM position, formatted as ROS Odometry, in ENU convention (REP-105)

@@ -68,8 +68,8 @@ is different than the KVH messages, which report latitude/longitude in radians.
 - `~<node_name>/imu/rpy_ned_deg` (geometry_msgs/Vector3Stamped)
 - `~<node_name>/imu/rpy_enu` (geometry_msgs/Vector3Stamped)
 - `~<node_name>/imu/rpy_enu_deg` (geometry_msgs/Vector3Stamped)
-- `~<node_name>/gps/fix` (sensor_msgs/NavSatFix) **Filtered GNSS location**
-- `~<node_name>/gps/raw_fix` (sensor_msgs/NavSatFix) **Raw GNSS location**
+- `~<node_name>/gps/fix` (sensor_msgs/NavSatFix) **Filtered GNSS location, in degrees**
+- `~<node_name>/gps/raw_fix` (sensor_msgs/NavSatFix) **Raw GNSS location, in degrees**
 - `~<node_name>/gps/mag` (sensor_msgs/MagneticField)
 - `~<node_name>/gps/utm_ned` (nav_msgs/Odometry)
 - `~<node_name>/gps/utm_enu` (nav_msgs/Odometry) **REP-105 compliant**
