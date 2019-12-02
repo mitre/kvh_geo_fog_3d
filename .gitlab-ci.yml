@@ -1,5 +1,5 @@
 variables:
-    ROS_DISTRO: "melodic"
+    ROS_DISTRO: "kinetic"
     CI_SOURCE_PATH: "$CI_PROJECT_DIR"
     GIT_SUBMODULE_STRATEGY: recursive
 
