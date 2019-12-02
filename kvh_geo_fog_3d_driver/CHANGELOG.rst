@@ -2,6 +2,27 @@
 Changelog for package kvh_geo_fog_3d_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.0 (2019-12-2)
+-----------
+* Fixing bug where we were reporting lat/lon for NavSatFix messages in radians, when ROS asks for them in degrees
+* Fixing missing include
+* Fixing missing find_package
+* Updating packaging and cmakes to conform to catkin_lint
+* Rewrote bounding functions
+* Fixing up some documentation issues that rosdoc_lite found.
+* Fixing spacing to match 2-space indents everywhere. Also fixing a missing break within a switch/case.
+* Adding the GPS transform to the static broadcaster
+* Cleaning up changelog, and adding MITRE's open soure usage email request header to files. Also adding license information to mainpage.dox
+* Added ROS API documentation
+* Adding a rosdoc yaml, and removing the old Doxyfile
+* Removing the yet-unimplemented nodelet classes
+* Adding copyright file headers.
+* Moving license files to be under each package, since theoretically they could be licensed separately.
+* Adding license information.
+* Updating cmakelists to build roslint targets correctly
+* Adding devops scripts
+* Contributors: Bostic, Trevor R, LaCelle, Zachary, Zach LaCelle
+
 1.2.0 (2019-09-27)
 -----------
 * Filter Options and Magnetometer
