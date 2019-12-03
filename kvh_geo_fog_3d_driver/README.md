@@ -79,6 +79,17 @@ is different than the KVH messages, which report latitude/longitude in radians.
 
 ### Parameters
 
+The driver asks for the wheel odometer pulses per meter to be passed as a parameter.
+This is because the KVH API provides the odometer pulses directionally (i.e. if
+you back up, the pulse count decreases) but the odometer distance as an absolute
+distance traveled (i.e. backing up increases distance traveled, and it never goes
+negative). This is the only source of non-differentiated data, which is useful
+to fuse as a position in filters since it doesn't drift over time (unlike velocity,
+which will drift).
+The KVH API does not provide a method for obtaining its current
+wheel odometer pulse distance value. Thus, it must be hand-coded in as a parameter.
+In the future, hopefully KVH exposes this value over the API.
+
 - `~<node_name>/port` (string, default: /dev/ttyUSB0)
 - `~<node_name>/baud` (int, default: 115200)
 - `~<node_name>/debug` (bool, default: false)
@@ -87,6 +98,7 @@ is different than the KVH messages, which report latitude/longitude in radians.
 - `~<node_name>/velocityHeadingEnabled` (bool, default: false)
 - `~<node_name>/reversingDetectionEnabled` (bool, default: true)
 - `~<node_name>/motionAnalysisEnabled` (bool, default: true)
+- `~<node_name>/odomPulseToMeters` (double, default: 0.000604)
 
 ## determine_baud_node
 

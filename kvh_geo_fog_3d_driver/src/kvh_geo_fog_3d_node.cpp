@@ -70,25 +70,23 @@
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Vector3Stamped.h"
 
-const static double PI = 3.14159;
-
 // Bounds on [-pi, pi)
 inline double BoundFromNegPiToPi(const double &_value)
 {
-  double num = std::fmod(_value, (2*PI));
-  if (num > PI)
+  double num = std::fmod(_value, (2*M_PI));
+  if (num > M_PI)
   {
-    num = num - (2*PI);
+    num = num - (2*M_PI);
   }
   return num;
 } //end: BoundFromNegPiToPi(double* _value)
 
 inline double BoundFromNegPiToPi(const float &_value)
 {
-  double num = std::fmod(_value, (2*PI));
-  if (num > PI)
+  double num = std::fmod(_value, (2*M_PI));
+  if (num > M_PI)
   {
-    num = num - (2*PI);
+    num = num - (2*M_PI);
   }
   return num;
 } //end: BoundFromNegPiToPi(const float& _value)
@@ -96,12 +94,12 @@ inline double BoundFromNegPiToPi(const float &_value)
 // Bounds on [-pi, pi)
 inline double BoundFromZeroTo2Pi(const double &_value)
 {
-  return std::fmod(_value, (2 * PI));
+  return std::fmod(_value, (2 * M_PI));
 } //end: BoundFromZeroTo2Pi(double* _value)
 
 inline double BoundFromZeroTo2Pi(const float &_value)
 {
-  return std::fmod(_value, (2 * PI));
+  return std::fmod(_value, (2 * M_PI));
 } //end: BoundFromZeroTo2Pi(const float& _value)
 
 void SetupUpdater(diagnostic_updater::Updater *_diagnostics, mitre::KVH::DiagnosticsContainer *_diagContainer)
@@ -133,7 +131,8 @@ int GetInitOptions(ros::NodeHandle& _node, kvh::KvhInitOptions& _initOptions)
   _node.getParam("velocityHeadingEnabled", _initOptions.velocityHeadingEnabled);
   _node.getParam("reversingDetectionEnabled", _initOptions.reversingDetectionEnabled);
   _node.getParam("motionAnalysisEnabled", _initOptions.motionAnalysisEnabled);
-
+  _node.getParam("odomPulseToMeters", _initOptions.odomPulseToMeters);
+  
   ROS_INFO_STREAM("Port: " << _initOptions.port);
   ROS_INFO_STREAM("Baud: " << _initOptions.baudRate);
   ROS_INFO_STREAM("Debug: " << _initOptions.debugOn);
@@ -142,6 +141,7 @@ int GetInitOptions(ros::NodeHandle& _node, kvh::KvhInitOptions& _initOptions)
   ROS_INFO_STREAM("Velocity Heading Enabled: " << _initOptions.velocityHeadingEnabled);
   ROS_INFO_STREAM("Reversing Detection Enabled: " << _initOptions.reversingDetectionEnabled);
   ROS_INFO_STREAM("Motion Analysis Enabled: " << _initOptions.motionAnalysisEnabled);
+  ROS_INFO_STREAM("Odometer Pulses to Meters: " << _initOptions.odomPulseToMeters);
 
   return 0;
 }
@@ -567,7 +567,7 @@ int main(int argc, char **argv)
       tf2::Quaternion orientQuatENU;
       //For NED -> ENU transformation:
       //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
-      double unfixedEnuBearing = (-1 * boundedBearingZero2Pi) + (PI / 2.0);
+      double unfixedEnuBearing = (-1 * boundedBearingZero2Pi) + (M_PI / 2.0);
       double enuBearing = BoundFromZeroTo2Pi(unfixedEnuBearing);
       orientQuatENU.setRPY(
           systemStatePacket.orientation[1], // ENU roll = NED pitch
@@ -657,9 +657,9 @@ int main(int argc, char **argv)
 
       imuDataRpyNEDDeg.header = header;
       imuDataRpyNEDDeg.header.frame_id = "imu_link_frd";
-      imuDataRpyNEDDeg.vector.x = ((imuDataRpyNED.vector.x * 180.0) / PI);
-      imuDataRpyNEDDeg.vector.y = ((imuDataRpyNED.vector.y * 180.0) / PI);
-      imuDataRpyNEDDeg.vector.z = ((imuDataRpyNED.vector.z * 180.0) / PI);
+      imuDataRpyNEDDeg.vector.x = ((imuDataRpyNED.vector.x * 180.0) / M_PI);
+      imuDataRpyNEDDeg.vector.y = ((imuDataRpyNED.vector.y * 180.0) / M_PI);
+      imuDataRpyNEDDeg.vector.z = ((imuDataRpyNED.vector.z * 180.0) / M_PI);
 
       // ANGULAR VELOCITY
       imuDataNED.angular_velocity.x = systemStatePacket.angular_velocity[0];
@@ -707,9 +707,9 @@ int main(int argc, char **argv)
       imuDataRpyENU.vector.y = systemStatePacket.orientation[0];
       imuDataRpyENU.vector.z = enuBearing;
 
-      imuDataRpyENUDeg.vector.x = ((imuDataRpyENU.vector.x * 180.0) / PI);
-      imuDataRpyENUDeg.vector.y = ((imuDataRpyENU.vector.y * 180.0) / PI);
-      imuDataRpyENUDeg.vector.z = ((imuDataRpyENU.vector.z * 180.0) / PI);
+      imuDataRpyENUDeg.vector.x = ((imuDataRpyENU.vector.x * 180.0) / M_PI);
+      imuDataRpyENUDeg.vector.y = ((imuDataRpyENU.vector.y * 180.0) / M_PI);
+      imuDataRpyENUDeg.vector.z = ((imuDataRpyENU.vector.z * 180.0) / M_PI);
 
       // ANGULAR VELOCITY
       // Keep in mind that for the sensor_msgs/Imu message, accelerations are
@@ -760,8 +760,8 @@ int main(int argc, char **argv)
       }
 
       //NavSatFix specifies degrees as lat/lon, but KVH publishes in radians
-      double latitude_deg = (systemStatePacket.latitude * 180.0) / 3.141592654;
-      double longitude_deg = (systemStatePacket.longitude * 180.0) / 3.141592654;
+      double latitude_deg = (systemStatePacket.latitude * 180.0) / M_PI;
+      double longitude_deg = (systemStatePacket.longitude * 180.0) / M_PI;
       navSatFixMsg.latitude = latitude_deg;
       navSatFixMsg.longitude = longitude_deg;
       navSatFixMsg.altitude = systemStatePacket.height;
@@ -878,8 +878,14 @@ int main(int argc, char **argv)
       nav_msgs::Odometry kvhOdomStateMsg;
 
       kvhOdomStateMsg.header = header;
+      //Technically this should be w.r.t the fixed frame locked to your wheel
+      //with the encoder mounted. But, since I don't know what you're going to
+      //call it, we'll stick with base_link.
       kvhOdomStateMsg.header.frame_id = "base_link";
 
+      kvhOdomStateMsg.pose.pose.position.x = (odomStatePacket.pulse_count * initOptions.odomPulseToMeters);
+      kvhOdomStateMsg.pose.pose.position.y = 0;
+      kvhOdomStateMsg.pose.pose.position.z = 0;
       kvhOdomStateMsg.twist.twist.linear.x = odomStatePacket.speed;
       kvhOdomStateMsg.twist.twist.linear.y = 0;
       kvhOdomStateMsg.twist.twist.linear.z = 0;
@@ -896,8 +902,8 @@ int main(int argc, char **argv)
       rawNavSatFixMsg.header.frame_id = "gps";
 
       //NavSatFix specifies degrees as lat/lon, but KVH publishes in radians
-      double rawGnssLatitude_deg = (rawGnssPacket.position[0] * 180.0) / 3.141592654;
-      double rawGnssLongitude_deg = (rawGnssPacket.position[1] * 180.0) / 3.141592654;
+      double rawGnssLatitude_deg = (rawGnssPacket.position[0] * 180.0) / M_PI;
+      double rawGnssLongitude_deg = (rawGnssPacket.position[1] * 180.0) / M_PI;
       rawNavSatFixMsg.latitude = rawGnssLatitude_deg;
       rawNavSatFixMsg.longitude = rawGnssLongitude_deg;
       rawNavSatFixMsg.altitude = rawGnssPacket.position[2];
