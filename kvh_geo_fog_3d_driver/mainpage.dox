@@ -106,6 +106,7 @@ options, see the KVH technical reference manual.
 - \b "~velocityHeadingEnabled" : \b [bool] Enable/disable velocity-based (i.e. course-over-ground) heading
 - \b "~reversingDetectionEnabled" : \b [bool] Enable/disable automatic reverse detection
 - \b "~motionAnalysisEnabled" : \b [bool] Enable/disable KVH's motion analysis filters.
+- \b "~odomPulseToMeters" : \b [double] The distance per odometer tick
 
 <hr>
 

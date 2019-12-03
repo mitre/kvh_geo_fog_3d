@@ -66,6 +66,7 @@ namespace kvh
     bool velocityHeadingEnabled{true};
     bool reversingDetectionEnabled{true};
     bool motionAnalysisEnabled{true};
+    double odomPulseToMeters{0.000604};
   };
 
   /**
