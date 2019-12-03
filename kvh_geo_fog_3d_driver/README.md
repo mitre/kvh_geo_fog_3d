@@ -235,6 +235,12 @@ rates and accelerations (which are measured w.r.t. the body frame), and is not p
 which separates these two frames. Orientation data within sensor_msgs/Imu conforms to the same conventions
 as nav_msgs/Odometry, and is globally fixed in the NED and ENU frames.
 
+## Height Convention
+
+The KVH reports height as the height above the WGS84 ellipsoid. This is the same height that
+sensor_msgs/NavSatFix expects. Other types of height include height above mean sea level (MSL) or
+height above ground (AGL) which is often used by aerial platforms.
+
 # Contributing
 
 Below are instructions on how to complete several common tasks that may be required depending on your uses.
