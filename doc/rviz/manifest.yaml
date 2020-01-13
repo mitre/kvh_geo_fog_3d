@@ -1,0 +1,17 @@
+actions: []
+authors: Zach LaCelle <zlacelle@mitre.org>
+brief: ''
+bugtracker: ''
+depends:
+- roslint
+- catkin
+- rviz
+- kvh_geo_fog_3d_msgs
+description: The KVH GEO FOG 3D rviz plugin package
+license: Apache 2.0
+maintainers: Zach LaCelle <zlacelle@mitre.org>
+msgs: []
+package_type: package
+repo_url: ''
+srvs: []
+url: ''
