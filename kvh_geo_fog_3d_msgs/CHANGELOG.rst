@@ -2,6 +2,15 @@
 Changelog for package kvh_geo_fog_3d_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.0 (2019-12-2)
+-----------
+* Updating packaging and cmakes to conform to catkin_lint
+* Merging in all of the PRS preparation. This code should be just about good to go.
+* Fixing LICENSE file for msgs.
+* Moving license files to be under each package, since theoretically they could be licensed separately.
+* Adding license information.
+* Contributors: Zach LaCelle
+
 1.2.0 (2019-09-27)
 -----------
 * Merge branch 'raw_packets' into 'master'
