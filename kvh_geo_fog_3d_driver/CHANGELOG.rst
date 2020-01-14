@@ -2,6 +2,12 @@
 Changelog for package kvh_geo_fog_3d_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.1 (2020-01-14)
+-----------
+* Adding odometer pulsePerMeter as a parameter.
+* Adding the X position calculated from odometery movement to the nav_msgs/Odometry wheel encoder message
+* Contributors: Bostic, Trevor R, Lacelle, Zachary
+
 1.3.0 (2019-12-2)
 -----------
 * Fixing bug where we were reporting lat/lon for NavSatFix messages in radians, when ROS asks for them in degrees
