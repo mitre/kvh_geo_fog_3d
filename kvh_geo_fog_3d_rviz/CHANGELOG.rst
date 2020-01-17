@@ -2,6 +2,14 @@
 Changelog for package kvh_geo_fog_3d_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.2 (2020-01-17)
+-----------
+* No changes to rviz package
+
+1.3.1 (2020-01-14)
+-----------
+* No changes to rviz package
+
 1.3.0 (2019-12-2)
 -----------
 * Fixing warnings in the catkin_lint results.
