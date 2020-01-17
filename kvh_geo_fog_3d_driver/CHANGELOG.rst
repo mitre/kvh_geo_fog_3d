@@ -2,11 +2,16 @@
 Changelog for package kvh_geo_fog_3d_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.2 (2020-01-17)
+-----------
+* Fixing build bug where driver would fail to build if CATKIN_ENABLE_TESTING was not set to true, due to an errant target_link_libraries line.
+* Contributors: LaCelle, Zachary
+
 1.3.1 (2020-01-14)
 -----------
 * Adding odometer pulsePerMeter as a parameter.
 * Adding the X position calculated from odometery movement to the nav_msgs/Odometry wheel encoder message
-* Contributors: Bostic, Trevor R, Lacelle, Zachary
+* Contributors: Bostic, Trevor R, LaCelle, Zachary
 
 1.3.0 (2019-12-2)
 -----------
