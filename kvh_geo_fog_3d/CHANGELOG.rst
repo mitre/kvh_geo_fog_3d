@@ -2,6 +2,10 @@
 Changelog for package kvh_geo_fog_3d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.2 (2020-01-17)
+-----------
+* No changes to meta-package
+
 1.3.1 (2020-01-14)
 -----------
 * No changes to meta-package
