@@ -2,6 +2,10 @@
 Changelog for package kvh_geo_fog_3d_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.3 (2020-01-21)
+-----------
+* No changes to msgs package.
+
 1.3.2 (2020-01-17)
 -----------
 * No changes to msgs package.
