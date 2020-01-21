@@ -2,6 +2,11 @@
 Changelog for package kvh_geo_fog_3d_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.3 (2020-01-21)
+-----------
+* Adding missing diagnostic_msgs dependency to kvh_geo_fog_3d_rviz package.
+* Contributors: LaCelle, Zachary
+
 1.3.2 (2020-01-17)
 -----------
 * No changes to rviz package
@@ -24,7 +29,7 @@ Changelog for package kvh_geo_fog_3d_rviz
 * Adding license information.
 * Updating cmakelists to build roslint targets correctly
 * Adding devops scripts
-* Contributors: LaCelle, Zachary, Zach LaCelle
+* Contributors: LaCelle, Zachary
 
 1.2.0 (2019-09-27)
 -----------
