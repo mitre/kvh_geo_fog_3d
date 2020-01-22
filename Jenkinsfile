@@ -11,9 +11,9 @@ pipeline
 {
     options
     {
-    	// Keep N most recent builds
+        // Keep N most recent builds
         buildDiscarder(logRotator(numToKeepStr:'20'))
-	    timeout(time: 2, unit: 'HOURS') 
+        timeout(time: 2, unit: 'HOURS') 
     }
     agent
     {
@@ -112,8 +112,8 @@ pipeline
             }
         }
     } //end: stages
-    
-    post
+
+post
     {
         always
         {
@@ -124,7 +124,7 @@ pipeline
             archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clang_format_kvh_geo_fog_3d.tar.gz'
             archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.clangtidy'
             archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt'
-            
+
             ////////////////////////////////////////////////////////////////////
             // Due to how fragile plugin publishers are with Declarative
             // Pipelines in Jenkins right now, I'm wrapping all of the publisher
@@ -149,11 +149,11 @@ pipeline
                 {
                     recordIssues enabledForFailure: false, aggregatingResults : false, tool: gcc4()
                 }
-		//Clang-tidy
+                //Clang-tidy
                 warnError('Publishing Clang-Tidy Results Failed!')
                 {
-		    //Use warnings-ng to publish clangtidy
-		    recordIssues(tools: [clangTidy(pattern: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.clangtidy')])
+                    //Use warnings-ng to publish clangtidy
+                    recordIssues(tools: [clangTidy(pattern: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.clangtidy')])
                 }
                 //Unit Testing
                 warnError('Publishing Unit Test Results Failed!')
@@ -162,11 +162,11 @@ pipeline
                         tools: [ GoogleTest(pattern: 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml') ])
                 }
             }
-	}
-//	success
-//	{
-//            archiveArtifacts 'catkin_ws/src/*.deb'
-//    	}
+        }
+//      success
+//      {
+//          archiveArtifacts 'catkin_ws/src/*.deb'
+//      }
         failure
         {
             SendEmail()
@@ -201,7 +201,8 @@ void SetupKinetic()
     sh script: """
         cd catkin_ws
         rosdep update
-        rosdep install --rosdistro kinetic --from-paths src -y -r src/kvh_geo_fog_3d
+        # Install all dependencies for packages, but ignore those which resolve to local packages. Automatically answer yes to questions.
+        rosdep install --rosdistro kinetic --from-paths src --ignore-src -y -r src/kvh_geo_fog_3d
     """, label: 'Install Package rosdeps'
 }
 void BuildRelease()
@@ -287,7 +288,7 @@ void PackageDebian()
 
 void SendEmail()
 {
-    //emailext body: "${currentBuild.currentResult}: Job ${env.JOB_NAME} build ${env.BUILD_NUMBER}\n More info at: ${env.BUILD_URL}",
-    //            recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']],
-    //            subject: "Jenkins Build ${currentBuild.currentResult}: Job ${env.JOB_NAME}", to: 'zlacelle, tbostic'
+    emailext body: "${currentBuild.currentResult}: Job ${env.JOB_NAME} build ${env.BUILD_NUMBER}\n More info at: ${env.BUILD_URL}",
+                recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']],
+                subject: "Jenkins Build ${currentBuild.currentResult}: Job ${env.JOB_NAME}", to: 'zlacelle, tbostic'
 }
