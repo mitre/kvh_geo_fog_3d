@@ -516,69 +516,9 @@ int main(int argc, char **argv)
     // STANDARD ROS MESSAGES
     ////////////////////////////////////
 
-    if (kvhDriver.PacketIsUpdated(packet_id_system_state) && kvhDriver.PacketIsUpdated(packet_id_euler_orientation_standard_deviation))
+    if (kvhDriver.PacketIsUpdated(packet_id_system_state) )
     {
       kvhDriver.GetPacket(packet_id_system_state, systemStatePacket);
-      kvhDriver.GetPacket(packet_id_euler_orientation_standard_deviation, eulStdDevPack);
-
-      // IMU Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/Imu.html
-      // Header
-      // Quaternion orientation
-      // float64[9] orientation_covariance
-      // Vector3 angular_velocity
-      // float64[9] angular_velocity_covariance
-      // Vector3 linear_acceleration
-      // float64[9] linear_acceleration_covariance
-
-      // [-pi,pi) bounded yaw
-      double boundedBearingPiToPi = BoundFromNegPiToPi(systemStatePacket.orientation[2]);
-      double boundedBearingZero2Pi = BoundFromZeroTo2Pi(systemStatePacket.orientation[2]);
-
-      // ORIENTATION
-      // All orientations from this sensor are w.r.t. true north.
-      if (std::isnan(eulStdDevPack.standard_deviation[0]))
-      {
-        eulStdDevPack.standard_deviation[0] = 0;
-        ROS_INFO("NAN Found");
-      }
-
-      if (std::isnan(eulStdDevPack.standard_deviation[1]))
-      {
-        eulStdDevPack.standard_deviation[1] = 0;
-        ROS_INFO("NAN Found");
-      }
-
-      if (std::isnan(eulStdDevPack.standard_deviation[2]))
-      {
-        eulStdDevPack.standard_deviation[2] = 0;
-        ROS_INFO("NAN Found");
-      }
-
-      tf2::Quaternion orientQuatNED;
-      orientQuatNED.setRPY(
-          systemStatePacket.orientation[0],
-          systemStatePacket.orientation[1],
-          boundedBearingZero2Pi);
-      double orientCovNED[3] = {
-          pow(eulStdDevPack.standard_deviation[0], 2),
-          pow(eulStdDevPack.standard_deviation[1], 2),
-          pow(eulStdDevPack.standard_deviation[2], 2)};
-
-      tf2::Quaternion orientQuatENU;
-      //For NED -> ENU transformation:
-      //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
-      double unfixedEnuBearing = (-1 * boundedBearingZero2Pi) + (M_PI / 2.0);
-      double enuBearing = BoundFromZeroTo2Pi(unfixedEnuBearing);
-      orientQuatENU.setRPY(
-          systemStatePacket.orientation[1], // ENU roll = NED pitch
-          systemStatePacket.orientation[0], // ENU pitch = NED roll
-          enuBearing                        // ENU bearing = -(NED bearing) + 90 degrees
-      );
-      double orientCovENU[3] = {
-          pow(eulStdDevPack.standard_deviation[1], 2),
-          pow(eulStdDevPack.standard_deviation[0], 2),
-          pow(eulStdDevPack.standard_deviation[2], 2),
-      };
 
       // DATA_RAW Topic
       sensor_msgs::Imu imuDataRaw;
@@ -630,106 +570,269 @@ int main(int argc, char **argv)
 
       imuDataRawFLUPub.publish(imuDataRawFLU);
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////
-      // DATA_NED topic
-      ///////////////////////////////////////////////////////////////////////////////////////////////
+      //We need this std dev to publish lots of things, including UTM messages,
+      //IMU with orientation, etc.
+      if( kvhDriver.PacketIsUpdated(packet_id_euler_orientation_standard_deviation) )
+      {
+        kvhDriver.GetPacket(packet_id_euler_orientation_standard_deviation, eulStdDevPack);
 
-      sensor_msgs::Imu imuDataNED;
-      geometry_msgs::Vector3Stamped imuDataRpyNED;
-      geometry_msgs::Vector3Stamped imuDataRpyNEDDeg;
-      imuDataNED.header = header;
-      imuDataNED.header.frame_id = "imu_link_frd";
+        // IMU Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/Imu.html
+        // Header
+        // Quaternion orientation
+        // float64[9] orientation_covariance
+        // Vector3 angular_velocity
+        // float64[9] angular_velocity_covariance
+        // Vector3 linear_acceleration
+        // float64[9] linear_acceleration_covariance
+        
+        // [-pi,pi) bounded yaw
+        double boundedBearingPiToPi = BoundFromNegPiToPi(systemStatePacket.orientation[2]);
+        double boundedBearingZero2Pi = BoundFromZeroTo2Pi(systemStatePacket.orientation[2]);
 
-      imuDataNED.orientation.x = orientQuatNED.x();
-      imuDataNED.orientation.y = orientQuatNED.y();
-      imuDataNED.orientation.z = orientQuatNED.z();
-      imuDataNED.orientation.w = orientQuatNED.w();
+        // ORIENTATION
+        // All orientations from this sensor are w.r.t. true north.
+        if (std::isnan(eulStdDevPack.standard_deviation[0]))
+        {
+          eulStdDevPack.standard_deviation[0] = 0;
+          ROS_INFO("NAN Found");
+        }
 
-      imuDataNED.orientation_covariance[0] = orientCovNED[0];
-      imuDataNED.orientation_covariance[4] = orientCovNED[1];
-      imuDataNED.orientation_covariance[8] = orientCovNED[2];
+        if (std::isnan(eulStdDevPack.standard_deviation[1]))
+        {
+          eulStdDevPack.standard_deviation[1] = 0;
+          ROS_INFO("NAN Found");
+        }
 
-      imuDataRpyNED.header = header;
-      imuDataRpyNED.header.frame_id = "imu_link_frd";
-      imuDataRpyNED.vector.x = systemStatePacket.orientation[0];
-      imuDataRpyNED.vector.y = systemStatePacket.orientation[1];
-      imuDataRpyNED.vector.z = boundedBearingZero2Pi;
+        if (std::isnan(eulStdDevPack.standard_deviation[2]))
+        {
+          eulStdDevPack.standard_deviation[2] = 0;
+          ROS_INFO("NAN Found");
+        }
 
-      imuDataRpyNEDDeg.header = header;
-      imuDataRpyNEDDeg.header.frame_id = "imu_link_frd";
-      imuDataRpyNEDDeg.vector.x = ((imuDataRpyNED.vector.x * 180.0) / M_PI);
-      imuDataRpyNEDDeg.vector.y = ((imuDataRpyNED.vector.y * 180.0) / M_PI);
-      imuDataRpyNEDDeg.vector.z = ((imuDataRpyNED.vector.z * 180.0) / M_PI);
+        tf2::Quaternion orientQuatNED;
+        orientQuatNED.setRPY(
+          systemStatePacket.orientation[0],
+          systemStatePacket.orientation[1],
+          boundedBearingZero2Pi);
+        double orientCovNED[3] = {
+          pow(eulStdDevPack.standard_deviation[0], 2),
+          pow(eulStdDevPack.standard_deviation[1], 2),
+          pow(eulStdDevPack.standard_deviation[2], 2)};
 
-      // ANGULAR VELOCITY
-      imuDataNED.angular_velocity.x = systemStatePacket.angular_velocity[0];
-      imuDataNED.angular_velocity.y = systemStatePacket.angular_velocity[1];
-      imuDataNED.angular_velocity.z = systemStatePacket.angular_velocity[2];
+        tf2::Quaternion orientQuatENU;
+        //For NED -> ENU transformation:
+        //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
+        double unfixedEnuBearing = (-1 * boundedBearingZero2Pi) + (M_PI / 2.0);
+        double enuBearing = BoundFromZeroTo2Pi(unfixedEnuBearing);
+        orientQuatENU.setRPY(
+          systemStatePacket.orientation[1], // ENU roll = NED pitch
+          systemStatePacket.orientation[0], // ENU pitch = NED roll
+          enuBearing                        // ENU bearing = -(NED bearing) + 90 degrees
+          );
+        double orientCovENU[3] = {
+          pow(eulStdDevPack.standard_deviation[1], 2),
+          pow(eulStdDevPack.standard_deviation[0], 2),
+          pow(eulStdDevPack.standard_deviation[2], 2),
+        };
+        
+        ///////////////////////////////////////////////////////////////////////////////////////////////
+        // DATA_NED topic
+        ///////////////////////////////////////////////////////////////////////////////////////////////
 
-      // LINEAR ACCELERATION
-      imuDataNED.linear_acceleration.x = systemStatePacket.body_acceleration[0];
-      imuDataNED.linear_acceleration.y = systemStatePacket.body_acceleration[1];
-      imuDataNED.linear_acceleration.z = systemStatePacket.body_acceleration[2];
+        sensor_msgs::Imu imuDataNED;
+        geometry_msgs::Vector3Stamped imuDataRpyNED;
+        geometry_msgs::Vector3Stamped imuDataRpyNEDDeg;
+        imuDataNED.header = header;
+        imuDataNED.header.frame_id = "imu_link_frd";
+        
+        imuDataNED.orientation.x = orientQuatNED.x();
+        imuDataNED.orientation.y = orientQuatNED.y();
+        imuDataNED.orientation.z = orientQuatNED.z();
+        imuDataNED.orientation.w = orientQuatNED.w();
 
-      imuDataNEDPub.publish(imuDataNED);
-      imuDataRpyNEDPub.publish(imuDataRpyNED);
-      imuDataRpyNEDDegPub.publish(imuDataRpyNEDDeg);
+        imuDataNED.orientation_covariance[0] = orientCovNED[0];
+        imuDataNED.orientation_covariance[4] = orientCovNED[1];
+        imuDataNED.orientation_covariance[8] = orientCovNED[2];
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////
-      // DATA_ENU topic
-      ///////////////////////////////////////////////////////////////////////////////////////////////
+        imuDataRpyNED.header = header;
+        imuDataRpyNED.header.frame_id = "imu_link_frd";
+        imuDataRpyNED.vector.x = systemStatePacket.orientation[0];
+        imuDataRpyNED.vector.y = systemStatePacket.orientation[1];
+        imuDataRpyNED.vector.z = boundedBearingZero2Pi;
 
-      sensor_msgs::Imu imuDataENU;
-      geometry_msgs::Vector3Stamped imuDataRpyENU;
-      geometry_msgs::Vector3Stamped imuDataRpyENUDeg;
+        imuDataRpyNEDDeg.header = header;
+        imuDataRpyNEDDeg.header.frame_id = "imu_link_frd";
+        imuDataRpyNEDDeg.vector.x = ((imuDataRpyNED.vector.x * 180.0) / M_PI);
+        imuDataRpyNEDDeg.vector.y = ((imuDataRpyNED.vector.y * 180.0) / M_PI);
+        imuDataRpyNEDDeg.vector.z = ((imuDataRpyNED.vector.z * 180.0) / M_PI);
 
-      imuDataENU.header = header;
-      imuDataENU.header.frame_id = "imu_link_flu";
+        // ANGULAR VELOCITY
+        imuDataNED.angular_velocity.x = systemStatePacket.angular_velocity[0];
+        imuDataNED.angular_velocity.y = systemStatePacket.angular_velocity[1];
+        imuDataNED.angular_velocity.z = systemStatePacket.angular_velocity[2];
 
-      imuDataRpyENU.header = header;
-      imuDataRpyENU.header.frame_id = "imu_link_flu";
+        // LINEAR ACCELERATION
+        imuDataNED.linear_acceleration.x = systemStatePacket.body_acceleration[0];
+        imuDataNED.linear_acceleration.y = systemStatePacket.body_acceleration[1];
+        imuDataNED.linear_acceleration.z = systemStatePacket.body_acceleration[2];
 
-      imuDataRpyENUDeg.header = header;
-      imuDataRpyENUDeg.header.frame_id = "imu_link_flu";
+        imuDataNEDPub.publish(imuDataNED);
+        imuDataRpyNEDPub.publish(imuDataRpyNED);
+        imuDataRpyNEDDegPub.publish(imuDataRpyNEDDeg);
 
-      // ORIENTATION
-      //Keep in mind that these are w.r.t. frame_id
-      imuDataENU.orientation.x = orientQuatENU.x();
-      imuDataENU.orientation.y = orientQuatENU.y();
-      imuDataENU.orientation.z = orientQuatENU.z();
-      imuDataENU.orientation.w = orientQuatENU.w();
+        ///////////////////////////////////////////////////////////////////////////////////////////////
+        // DATA_ENU topic
+        ///////////////////////////////////////////////////////////////////////////////////////////////
 
-      imuDataENU.orientation_covariance[0] = orientCovENU[1];
-      imuDataENU.orientation_covariance[4] = orientCovENU[0];
-      imuDataENU.orientation_covariance[8] = orientCovENU[2];
+        sensor_msgs::Imu imuDataENU;
+        geometry_msgs::Vector3Stamped imuDataRpyENU;
+        geometry_msgs::Vector3Stamped imuDataRpyENUDeg;
 
-      imuDataRpyENU.vector.x = systemStatePacket.orientation[1];
-      imuDataRpyENU.vector.y = systemStatePacket.orientation[0];
-      imuDataRpyENU.vector.z = enuBearing;
+        imuDataENU.header = header;
+        imuDataENU.header.frame_id = "imu_link_flu";
 
-      imuDataRpyENUDeg.vector.x = ((imuDataRpyENU.vector.x * 180.0) / M_PI);
-      imuDataRpyENUDeg.vector.y = ((imuDataRpyENU.vector.y * 180.0) / M_PI);
-      imuDataRpyENUDeg.vector.z = ((imuDataRpyENU.vector.z * 180.0) / M_PI);
+        imuDataRpyENU.header = header;
+        imuDataRpyENU.header.frame_id = "imu_link_flu";
 
-      // ANGULAR VELOCITY
-      // Keep in mind that for the sensor_msgs/Imu message, accelerations are
-      // w.r.t the frame_id, which in this case is imu_link_flu.
-      imuDataENU.angular_velocity.x = systemStatePacket.angular_velocity[0];
-      imuDataENU.angular_velocity.y = -1 * systemStatePacket.angular_velocity[1];
-      imuDataENU.angular_velocity.z = -1 * systemStatePacket.angular_velocity[2];
+        imuDataRpyENUDeg.header = header;
+        imuDataRpyENUDeg.header.frame_id = "imu_link_flu";
 
-      // LINEAR ACCELERATION
-      // Keep in mind that for the sensor_msgs/Imu message, accelerations are
-      // w.r.t the frame_id, which in this case is imu_link_flu.
-      imuDataENU.linear_acceleration.x = systemStatePacket.body_acceleration[0];
-      imuDataENU.linear_acceleration.y = -1 * systemStatePacket.body_acceleration[1];
-      imuDataENU.linear_acceleration.z = -1 * systemStatePacket.body_acceleration[2];
+        // ORIENTATION
+        //Keep in mind that these are w.r.t. frame_id
+        imuDataENU.orientation.x = orientQuatENU.x();
+        imuDataENU.orientation.y = orientQuatENU.y();
+        imuDataENU.orientation.z = orientQuatENU.z();
+        imuDataENU.orientation.w = orientQuatENU.w();
 
-      // Publish
-      imuDataENUPub.publish(imuDataENU);
-      imuDataRpyENUPub.publish(imuDataRpyENU);
-      imuDataRpyENUDegPub.publish(imuDataRpyENUDeg);
+        imuDataENU.orientation_covariance[0] = orientCovENU[1];
+        imuDataENU.orientation_covariance[4] = orientCovENU[0];
+        imuDataENU.orientation_covariance[8] = orientCovENU[2];
 
+        imuDataRpyENU.vector.x = systemStatePacket.orientation[1];
+        imuDataRpyENU.vector.y = systemStatePacket.orientation[0];
+        imuDataRpyENU.vector.z = enuBearing;
+
+        imuDataRpyENUDeg.vector.x = ((imuDataRpyENU.vector.x * 180.0) / M_PI);
+        imuDataRpyENUDeg.vector.y = ((imuDataRpyENU.vector.y * 180.0) / M_PI);
+        imuDataRpyENUDeg.vector.z = ((imuDataRpyENU.vector.z * 180.0) / M_PI);
+
+        // ANGULAR VELOCITY
+        // Keep in mind that for the sensor_msgs/Imu message, accelerations are
+        // w.r.t the frame_id, which in this case is imu_link_flu.
+        imuDataENU.angular_velocity.x = systemStatePacket.angular_velocity[0];
+        imuDataENU.angular_velocity.y = -1 * systemStatePacket.angular_velocity[1];
+        imuDataENU.angular_velocity.z = -1 * systemStatePacket.angular_velocity[2];
+
+        // LINEAR ACCELERATION
+        // Keep in mind that for the sensor_msgs/Imu message, accelerations are
+        // w.r.t the frame_id, which in this case is imu_link_flu.
+        imuDataENU.linear_acceleration.x = systemStatePacket.body_acceleration[0];
+        imuDataENU.linear_acceleration.y = -1 * systemStatePacket.body_acceleration[1];
+        imuDataENU.linear_acceleration.z = -1 * systemStatePacket.body_acceleration[2];
+
+        // Publish IMU with orientation
+        imuDataENUPub.publish(imuDataENU);
+        imuDataRpyENUPub.publish(imuDataRpyENU);
+        imuDataRpyENUDegPub.publish(imuDataRpyENUDeg);
+        
+        // If we have system state and utm position we can publish odometry
+        if (kvhDriver.PacketIsUpdated(packet_id_utm_position))
+        {
+          // Odometry Message Structure: http://docs.ros.org/melodic/api/nav_msgs/html/msg/Odometry.html
+          // Header
+          // String child_frame_id \todo Fill out child frame id
+          // PoseWithCovariance pose
+          // --> Pose
+          // -->-->Point position
+          // -->-->Quaternion orientation
+          // -->float6[36] covariance // 6x6 order is [x, y, z, X axis rot, y axis rot, z axis rot]
+          // TwistWithCovariance twist
+          // --> Twist // Velocity in free space
+          // -->-->Vector3 linear
+          // -->-->Vector3 angular
+          // -->float64[36] covariance // 6x6 order is [x, y, z, x axis rot, y axis rot, z axis rot]
+
+          // Since UTM is by default NED, we will publish a message like that and a message using
+          // the ros ENU standard
+          nav_msgs::Odometry odomMsgENU;
+          nav_msgs::Odometry odomMsgNED;
+          int error = kvhDriver.GetPacket(packet_id_utm_position, utmPosPacket);
+          if (error < 0)
+          {
+            printf("Error Code: %d\n", error);
+            printf("UTM PACKET: %f, %f, %f\n", utmPosPacket.position[0], utmPosPacket.position[1], utmPosPacket.position[2]);
+          }
+
+          odomMsgENU.header = header;
+          odomMsgENU.header.frame_id = "utm_enu";     //The nav_msgs/Odometry "Pose" section should be in this frame
+          odomMsgENU.child_frame_id = "imu_link_flu"; //The nav_msgs/Odometry "Twist" section should be in this frame
+
+          odomMsgNED.header = header;
+          odomMsgNED.header.frame_id = "utm_ned";     //The nav_msgs/Odometry "Pose" section should be in this frame
+          odomMsgNED.child_frame_id = "imu_link_frd"; //The nav_msgs/Odometry "Twist" section should be in this frame
+
+          // POSE
+          // Position ENU
+          odomMsgENU.pose.pose.position.x = utmPosPacket.position[1];
+          odomMsgENU.pose.pose.position.y = utmPosPacket.position[0];
+          odomMsgENU.pose.pose.position.z = -1 * utmPosPacket.position[2];
+          // odomMsg.pose.covariance[0] =
+          // odomMsg.pose.covariance[7] =
+          // odomMsg.pose.covariance[14] =
+
+          // Position NED
+          odomMsgNED.pose.pose.position.x = utmPosPacket.position[0];
+          odomMsgNED.pose.pose.position.y = utmPosPacket.position[1];
+          odomMsgNED.pose.pose.position.z = utmPosPacket.position[2];
+          // odomMsg.pose.covariance[0] =
+          // odomMsg.pose.covariance[7] =
+          // odomMsg.pose.covariance[14] =
+
+          // Orientation ENU
+          // Use orientation quaternion we created earlier
+          odomMsgENU.pose.pose.orientation.x = orientQuatENU.x();
+          odomMsgENU.pose.pose.orientation.y = orientQuatENU.y();
+          odomMsgENU.pose.pose.orientation.z = orientQuatENU.z();
+          odomMsgENU.pose.pose.orientation.w = orientQuatENU.w();
+          // Use covariance array created earlier to fill out orientation covariance
+          odomMsgENU.pose.covariance[21] = orientCovENU[0];
+          odomMsgENU.pose.covariance[28] = orientCovENU[1];
+          odomMsgENU.pose.covariance[35] = orientCovENU[2];
+
+          // Orientation NED
+          odomMsgNED.pose.pose.orientation.x = orientQuatNED.x();
+          odomMsgNED.pose.pose.orientation.y = orientQuatNED.y();
+          odomMsgNED.pose.pose.orientation.z = orientQuatNED.z();
+          odomMsgNED.pose.pose.orientation.w = orientQuatNED.w();
+          // Use covariance array created earlier to fill out orientation covariance
+          odomMsgNED.pose.covariance[21] = orientCovNED[0];
+          odomMsgNED.pose.covariance[28] = orientCovNED[1];
+          odomMsgNED.pose.covariance[35] = orientCovNED[2];
+
+          // TWIST
+          // ENU uses FLU rates/accels
+          odomMsgENU.twist.twist.linear.x = systemStatePacket.velocity[0];
+          odomMsgENU.twist.twist.linear.y = (-1 * systemStatePacket.velocity[1]);
+          odomMsgENU.twist.twist.linear.z = (-1 * systemStatePacket.velocity[2]);
+
+          odomMsgENU.twist.twist.angular.x = systemStatePacket.angular_velocity[0];
+          odomMsgENU.twist.twist.angular.y = (-1 * systemStatePacket.angular_velocity[1]);
+          odomMsgENU.twist.twist.angular.z = (-1 * systemStatePacket.angular_velocity[2]);
+
+          // NED uses FRD rates/accels
+          odomMsgNED.twist.twist.linear.x = systemStatePacket.velocity[0];
+          odomMsgNED.twist.twist.linear.y = systemStatePacket.velocity[1];
+          odomMsgNED.twist.twist.linear.z = systemStatePacket.velocity[2];
+
+          odomMsgNED.twist.twist.angular.x = systemStatePacket.angular_velocity[0];
+          odomMsgNED.twist.twist.angular.y = systemStatePacket.angular_velocity[1];
+          odomMsgNED.twist.twist.angular.z = systemStatePacket.angular_velocity[2];
+
+          odomPubENU.publish(odomMsgENU);
+          odomPubNED.publish(odomMsgNED);
+        }
+      } //end: if( kvhDriver.PacketIsUpdated(packet_id_euler_orientation_standard_deviation) )
+      
       // NAVSATFIX Message Structure: http://docs.ros.org/melodic/api/sensor_msgs/html/msg/NavSatFix.html
       // NavSatStatus status
       // float64 latitude
@@ -774,103 +877,49 @@ int main(int argc, char **argv)
 
       navSatFixPub.publish(navSatFixMsg);
 
-      // If we have system state and utm position we can publish odometry
-      if (kvhDriver.PacketIsUpdated(packet_id_utm_position))
+      //Raw GNSS needs systemState for fix type
+      if (kvhDriver.PacketIsUpdated(packet_id_raw_gnss))
       {
-        // Odometry Message Structure: http://docs.ros.org/melodic/api/nav_msgs/html/msg/Odometry.html
-        // Header
-        // String child_frame_id \todo Fill out child frame id
-        // PoseWithCovariance pose
-        // --> Pose
-        // -->-->Point position
-        // -->-->Quaternion orientation
-        // -->float6[36] covariance // 6x6 order is [x, y, z, X axis rot, y axis rot, z axis rot]
-        // TwistWithCovariance twist
-        // --> Twist // Velocity in free space
-        // -->-->Vector3 linear
-        // -->-->Vector3 angular
-        // -->float64[36] covariance // 6x6 order is [x, y, z, x axis rot, y axis rot, z axis rot]
+        kvhDriver.GetPacket(packet_id_raw_gnss, rawGnssPacket);
+        sensor_msgs::NavSatFix rawNavSatFixMsg;
 
-        // Since UTM is by default NED, we will publish a message like that and a message using
-        // the ros ENU standard
-        nav_msgs::Odometry odomMsgENU;
-        nav_msgs::Odometry odomMsgNED;
-        int error = kvhDriver.GetPacket(packet_id_utm_position, utmPosPacket);
-        if (error < 0)
+        rawNavSatFixMsg.header = header;
+        rawNavSatFixMsg.header.frame_id = "gps";
+        
+        //NavSatFix specifies degrees as lat/lon, but KVH publishes in radians
+        double rawGnssLatitude_deg = (rawGnssPacket.position[0] * 180.0) / M_PI;
+        double rawGnssLongitude_deg = (rawGnssPacket.position[1] * 180.0) / M_PI;
+        rawNavSatFixMsg.latitude = rawGnssLatitude_deg;
+        rawNavSatFixMsg.longitude = rawGnssLongitude_deg;
+        rawNavSatFixMsg.altitude = rawGnssPacket.position[2];
+
+        int status = systemStatePacket.filter_status.b.gnss_fix_type;
+        switch (status)
         {
-          printf("Error Code: %d\n", error);
-          printf("UTM PACKET: %f, %f, %f\n", utmPosPacket.position[0], utmPosPacket.position[1], utmPosPacket.position[2]);
+          case 0:
+            rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_NO_FIX;
+            break;
+          case 1:
+          case 2:
+            rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_FIX;
+            break;
+          case 3:
+            rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_SBAS_FIX;
+            break;
+          default:
+            rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_GBAS_FIX;
         }
 
-        odomMsgENU.header = header;
-        odomMsgENU.header.frame_id = "utm_enu";     //The nav_msgs/Odometry "Pose" section should be in this frame
-        odomMsgENU.child_frame_id = "imu_link_flu"; //The nav_msgs/Odometry "Twist" section should be in this frame
-
-        odomMsgNED.header = header;
-        odomMsgNED.header.frame_id = "utm_ned";     //The nav_msgs/Odometry "Pose" section should be in this frame
-        odomMsgNED.child_frame_id = "imu_link_frd"; //The nav_msgs/Odometry "Twist" section should be in this frame
-
-        // POSE
-        // Position ENU
-        odomMsgENU.pose.pose.position.x = utmPosPacket.position[1];
-        odomMsgENU.pose.pose.position.y = utmPosPacket.position[0];
-        odomMsgENU.pose.pose.position.z = -1 * utmPosPacket.position[2];
-        // odomMsg.pose.covariance[0] =
-        // odomMsg.pose.covariance[7] =
-        // odomMsg.pose.covariance[14] =
-
-        // Position NED
-        odomMsgNED.pose.pose.position.x = utmPosPacket.position[0];
-        odomMsgNED.pose.pose.position.y = utmPosPacket.position[1];
-        odomMsgNED.pose.pose.position.z = utmPosPacket.position[2];
-        // odomMsg.pose.covariance[0] =
-        // odomMsg.pose.covariance[7] =
-        // odomMsg.pose.covariance[14] =
-
-        // Orientation ENU
-        // Use orientation quaternion we created earlier
-        odomMsgENU.pose.pose.orientation.x = orientQuatENU.x();
-        odomMsgENU.pose.pose.orientation.y = orientQuatENU.y();
-        odomMsgENU.pose.pose.orientation.z = orientQuatENU.z();
-        odomMsgENU.pose.pose.orientation.w = orientQuatENU.w();
-        // Use covariance array created earlier to fill out orientation covariance
-        odomMsgENU.pose.covariance[21] = orientCovENU[0];
-        odomMsgENU.pose.covariance[28] = orientCovENU[1];
-        odomMsgENU.pose.covariance[35] = orientCovENU[2];
-
-        // Orientation NED
-        odomMsgNED.pose.pose.orientation.x = orientQuatNED.x();
-        odomMsgNED.pose.pose.orientation.y = orientQuatNED.y();
-        odomMsgNED.pose.pose.orientation.z = orientQuatNED.z();
-        odomMsgNED.pose.pose.orientation.w = orientQuatNED.w();
-        // Use covariance array created earlier to fill out orientation covariance
-        odomMsgNED.pose.covariance[21] = orientCovNED[0];
-        odomMsgNED.pose.covariance[28] = orientCovNED[1];
-        odomMsgNED.pose.covariance[35] = orientCovNED[2];
-
-        // TWIST
-        // ENU uses FLU rates/accels
-        odomMsgENU.twist.twist.linear.x = systemStatePacket.velocity[0];
-        odomMsgENU.twist.twist.linear.y = (-1 * systemStatePacket.velocity[1]);
-        odomMsgENU.twist.twist.linear.z = (-1 * systemStatePacket.velocity[2]);
-
-        odomMsgENU.twist.twist.angular.x = systemStatePacket.angular_velocity[0];
-        odomMsgENU.twist.twist.angular.y = (-1 * systemStatePacket.angular_velocity[1]);
-        odomMsgENU.twist.twist.angular.z = (-1 * systemStatePacket.angular_velocity[2]);
-
-        // NED uses FRD rates/accels
-        odomMsgNED.twist.twist.linear.x = systemStatePacket.velocity[0];
-        odomMsgNED.twist.twist.linear.y = systemStatePacket.velocity[1];
-        odomMsgNED.twist.twist.linear.z = systemStatePacket.velocity[2];
-
-        odomMsgNED.twist.twist.angular.x = systemStatePacket.angular_velocity[0];
-        odomMsgNED.twist.twist.angular.y = systemStatePacket.angular_velocity[1];
-        odomMsgNED.twist.twist.angular.z = systemStatePacket.angular_velocity[2];
-
-        odomPubENU.publish(odomMsgENU);
-        odomPubNED.publish(odomMsgNED);
+        rawNavSatFixMsg.position_covariance_type = rawNavSatFixMsg.COVARIANCE_TYPE_DIAGONAL_KNOWN;
+        // They use ENU for mat for this matrix. To me it makes sense that we should use
+        // the longitude standard deviation for east.
+        rawNavSatFixMsg.position_covariance[0] = pow(rawGnssPacket.position_standard_deviation[1], 2);
+        rawNavSatFixMsg.position_covariance[4] = pow(rawGnssPacket.position_standard_deviation[0], 2);
+        rawNavSatFixMsg.position_covariance[8] = pow(rawGnssPacket.position_standard_deviation[2], 2);
+        
+        rawNavSatFixPub.publish(rawNavSatFixMsg);
       }
-    }
+    } //end: if (kvhDriver.PacketIsUpdated(packet_id_system_state) )
 
     if (kvhDriver.PacketIsUpdated(packet_id_odometer_state))
     {
@@ -891,49 +940,6 @@ int main(int argc, char **argv)
       kvhOdomStateMsg.twist.twist.linear.z = 0;
 
       odomStatePub.publish(kvhOdomStateMsg);
-    }
-
-    if (kvhDriver.PacketIsUpdated(packet_id_raw_gnss))
-    {
-      kvhDriver.GetPacket(packet_id_raw_gnss, rawGnssPacket);
-      sensor_msgs::NavSatFix rawNavSatFixMsg;
-
-      rawNavSatFixMsg.header = header;
-      rawNavSatFixMsg.header.frame_id = "gps";
-
-      //NavSatFix specifies degrees as lat/lon, but KVH publishes in radians
-      double rawGnssLatitude_deg = (rawGnssPacket.position[0] * 180.0) / M_PI;
-      double rawGnssLongitude_deg = (rawGnssPacket.position[1] * 180.0) / M_PI;
-      rawNavSatFixMsg.latitude = rawGnssLatitude_deg;
-      rawNavSatFixMsg.longitude = rawGnssLongitude_deg;
-      rawNavSatFixMsg.altitude = rawGnssPacket.position[2];
-
-      int status = systemStatePacket.filter_status.b.gnss_fix_type;
-      switch (status)
-      {
-      case 0:
-        rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_NO_FIX;
-        break;
-      case 1:
-      case 2:
-        rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_FIX;
-        break;
-      case 3:
-        rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_SBAS_FIX;
-        break;
-      default:
-        rawNavSatFixMsg.status.status = rawNavSatFixMsg.status.STATUS_GBAS_FIX;
-      }
-
-      rawNavSatFixMsg.position_covariance_type = rawNavSatFixMsg.COVARIANCE_TYPE_DIAGONAL_KNOWN;
-      // They use ENU for mat for this matrix. To me it makes sense that we should use
-      // the longitude standard deviation for east.
-      rawNavSatFixMsg.position_covariance[0] = pow(rawGnssPacket.position_standard_deviation[1], 2);
-      rawNavSatFixMsg.position_covariance[4] = pow(rawGnssPacket.position_standard_deviation[0], 2);
-      rawNavSatFixMsg.position_covariance[8] = pow(rawGnssPacket.position_standard_deviation[2], 2);
-
-      rawNavSatFixPub.publish(rawNavSatFixMsg);
-
     }
 
     if (kvhDriver.PacketIsUpdated(packet_id_raw_sensors))
