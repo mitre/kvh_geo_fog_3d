@@ -2,6 +2,10 @@
 Changelog for package kvh_geo_fog_3d_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.0 (2020-06-16)
+-----------
+* No changes to the RViz plugin.
+
 1.3.3 (2020-01-21)
 -----------
 * Fixing missing dependency in kvh_geo_fog_3d_rviz package.

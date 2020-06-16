@@ -2,6 +2,11 @@
 Changelog for package kvh_geo_fog_3d_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.4.0 (2020-06-16)
+-----------
+* Changing node so that it publishes raw IMU even if it doesn't have euler orientation stddev.
+* Contributors: Zach LaCelle
+
 1.3.3 (2020-01-21)
 -----------
 * No changes to driver package.
