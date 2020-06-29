@@ -928,7 +928,7 @@ int main(int argc, char **argv)
 
       kvhOdomStateMsg.header = header;
 
-      kvhOdomStateMsg.header.frame_id = "wheel_odometer";
+      kvhOdomStateMsg.header.frame_id = "wheel_encoder";
 
       kvhOdomStateMsg.pose.pose.position.x = (odomStatePacket.pulse_count * initOptions.odomPulseToMeters);
       kvhOdomStateMsg.pose.pose.position.y = 0;
