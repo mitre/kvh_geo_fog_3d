@@ -69,6 +69,7 @@
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Vector3Stamped.h"
+#include "geometry_msgs/TwistWithCovarianceStamped.h"
 
 // Bounds on [-pi, pi)
 inline double BoundFromNegPiToPi(const double &_value)
@@ -187,7 +188,9 @@ int main(int argc, char **argv)
   ros::Publisher odomStatePub = node.advertise<nav_msgs::Odometry>("odom/wheel_encoder", 1);
   ros::Publisher rawSensorImuPub = node.advertise<sensor_msgs::Imu>("imu/raw_sensor_frd", 1);
   ros::Publisher rawSensorImuFluPub = node.advertise<sensor_msgs::Imu>("imu/raw_sensor_flu", 1);
-
+  ros::Publisher velNEDTwistPub = node.advertise<geometry_msgs::TwistWithCovarianceStamped>("gps/vel_ned", 1);
+  ros::Publisher velENUTwistPub = node.advertise<geometry_msgs::TwistWithCovarianceStamped>("gps/vel_enu", 1);
+  
   //////////////////////////
   // KVH Setup
   //////////////////////////
@@ -570,6 +573,28 @@ int main(int argc, char **argv)
 
       imuDataRawFLUPub.publish(imuDataRawFLU);
 
+      //NED/ENU velocity
+      //TODO add velocity stddev packet!!
+      geometry_msgs::TwistWithCovarianceStamped velNED;
+      geometry_msgs::TwistWithCovarianceStamped velENU;
+
+      velNED.header.frame_id = "utm_ned";
+      velNED.header.stamp = header.stamp;
+      velNED.twist.twist.linear.x = systemStatePacket.velocity[0];
+      velNED.twist.twist.linear.y = systemStatePacket.velocity[1];
+      velNED.twist.twist.linear.z = systemStatePacket.velocity[2];
+      velNED.twist.covariance[0] = -1;
+      
+      velENU.header.frame_id = "utm_enu";
+      velENU.header.stamp = header.stamp;
+      velENU.twist.twist.linear.x = velNED.twist.twist.linear.y;
+      velENU.twist.twist.linear.y = velNED.twist.twist.linear.x;
+      velENU.twist.twist.linear.z = -(velNED.twist.twist.linear.z);
+      velENU.twist.covariance[0] = -1;
+      
+      velNEDTwistPub.publish(velNED);
+      velENUTwistPub.publish(velENU);
+      
       //We need this std dev to publish lots of things, including UTM messages,
       //IMU with orientation, etc.
       if( kvhDriver.PacketIsUpdated(packet_id_euler_orientation_standard_deviation) )
