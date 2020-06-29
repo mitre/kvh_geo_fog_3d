@@ -927,10 +927,8 @@ int main(int argc, char **argv)
       nav_msgs::Odometry kvhOdomStateMsg;
 
       kvhOdomStateMsg.header = header;
-      //Technically this should be w.r.t the fixed frame locked to your wheel
-      //with the encoder mounted. But, since I don't know what you're going to
-      //call it, we'll stick with base_link.
-      kvhOdomStateMsg.header.frame_id = "base_link";
+
+      kvhOdomStateMsg.header.frame_id = "wheel_odometer";
 
       kvhOdomStateMsg.pose.pose.position.x = (odomStatePacket.pulse_count * initOptions.odomPulseToMeters);
       kvhOdomStateMsg.pose.pose.position.y = 0;
