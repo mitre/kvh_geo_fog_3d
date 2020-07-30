@@ -155,6 +155,7 @@ add_dependencies(${PROJECT_NAME}
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node 
   src/kvh_geo_fog_3d_node.cpp
+  src/packet_publisher.cpp
   ${KVH_DRIVER_FILES}
 )
 

@@ -65,6 +65,7 @@ namespace kvh
     // \todo Figure out what to do with duplicated and unsupported variables
     int duplicated = 0;
     int unsupported = 0;
+    int currentPacketPeriod = 0;
 
     for (int i = 0; i < _packetsRequested.size(); i++)
     {
@@ -86,10 +87,11 @@ namespace kvh
       packet_period_t period;
       period.packet_id = _packetsRequested[i].first;
       period.period = 1000 / _packetsRequested[i].second; // Using formula for rate to period derived above
-      _packetPeriods.packet_periods[i] = period;
+      _packetPeriods.packet_periods[currentPacketPeriod] = period;
 
       // Record we have seen this packet id to look for duplicates
       packetIdList.insert(packet.first);
+      currentPacketPeriod++;
     }
 
     return unsupported + duplicated;
@@ -137,7 +139,31 @@ namespace kvh
 
     return 0;
   }
- 
+
+  /**
+   * @fn KvhDeviceConfig::CreateOdometerOptionsPacket
+   * @param [out] _odometerOptions The created odometer options packet
+   * @param [in] _permanent Whether the options should persist through reset. Default true
+   * @param [in] _odom_pulse_to_meters The number of meters traveled per pulse
+   * @param [in] _odom_auto_cal If the KVH should automatically calibrate the odometer
+   * 
+   * @return int
+   *  0 = Success
+   *  -2 = Vehicle type out of range
+   */
+  int KvhDeviceConfig::CreateOdometerOptionsPacket(
+    odometer_configuration_packet_t &_odometerOptions,
+    bool _permanent,
+    float _odom_pulse_to_meters,
+    bool _odom_auto_cal)
+  {
+    _odometerOptions.permanent = _permanent;
+    _odometerOptions.automatic_calibration = _odom_auto_cal;
+    _odometerOptions.pulse_length = _odom_pulse_to_meters;
+
+    return 0;
+  }
+  
   /**
    * @fn KvhDeviceConfig::SetBaudRate
    * @param [in] _port The port connected to the kvh (Ex. /dev/ttyS0)

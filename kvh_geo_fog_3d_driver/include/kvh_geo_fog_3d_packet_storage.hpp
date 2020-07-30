@@ -84,6 +84,13 @@ namespace kvh
     int Init(KvhPacketRequest &);
 
     /**
+     * @fn AddPacket
+     * @param _packetId the id of the packet to add to the map
+     * @return 0 = success, <0 on error
+     */
+    int AddPacket(packet_id_e);
+
+    /**
      * @fn UpdatePacket
      * @param _packetId The id of the packet we want to update
      * @param _packetData A struct with data we want to update our storage to
