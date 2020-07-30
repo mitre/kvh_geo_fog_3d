@@ -328,7 +328,57 @@ namespace kvh
           return -2;
         }
         break;
+      case packet_id_body_velocity:
+        body_velocity_packet_t bodyVelocityPacket;
+        if (decode_body_velocity_packet(&bodyVelocityPacket, _anPacket) == 0)
+        {
+          packetStorage_.UpdatePacket(packet_id_body_velocity, bodyVelocityPacket);
+          packetStorage_.SetPacketUpdated(packet_id_body_velocity, true);
+
+          if (debug_)
+            printf("Collected body velocity packet\n");
+        if (debug_)
+            printf("Failed to decode bodyvelocity packet\n");
+          return -2;
+        }
+        break;
+      case packet_id_odometer_configuration:
+        odometer_configuration_packet_t odomConfigPacket;
+        if (decode_odometer_configuration_packet(&odomConfigPacket, _anPacket) == 0)
+        {
+          packetStorage_.UpdatePacket(packet_id_odometer_configuration, odomConfigPacket);
+          packetStorage_.SetPacketUpdated(packet_id_odometer_configuration, true);
+
+          if (debug_)
+            printf("Collected odometer configuration packet.\n");
+        }
+        else
+        {
+          if (debug_)
+            printf("Failed to decode velocity standard deviation packet\n");
+          return -2;
+        }
+        break;
+      case packet_id_velocity_standard_deviation:
+        velocity_standard_deviation_packet_t velocityStandardDeviationPacket;
+        if (decode_velocity_standard_deviation_packet(&velocityStandardDeviationPacket, _anPacket) == 0)
+        {
+          packetStorage_.UpdatePacket(packet_id_velocity_standard_deviation, velocityStandardDeviationPacket);
+          packetStorage_.SetPacketUpdated(packet_id_velocity_standard_deviation, true);
+
+          if (debug_)
+            printf("Collected velocity standard deviation packet\n");
+        }
+        else
+        {
+          if (debug_)
+            printf("Failed to decode velocity standard deviation packet\n");
+          return -2;
+        }
+        break;
       default:
+        if (debug_)
+          printf("Unsupported packet with id: %u unable to be decoded\n", _anPacket->id);
         break;
     }
 

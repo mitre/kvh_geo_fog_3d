@@ -81,6 +81,20 @@ namespace kvh
 
     /**
      * @code
+     * odometer_configuration_packet_t odometerOptions;
+     * if (kvh::KvhDeviceConfig::CreateOdometerOptionsPacket(odometerOptions, ... // Additional options) != 0)
+     *    // Error
+     * // Use filter options
+     * @endcode
+     */
+    static int CreateOdometerOptionsPacket(
+      odometer_configuration_packet_t &,
+      bool _permanent = true,
+      float _odom_pulse_to_meters = 0.000583,
+      bool _odom_auto_cal = true);
+    
+    /**
+     * @code
      * std::string port{'/dev/USB0'};
      * int curBaud = 115200;
      * int prevBaud = 9600;

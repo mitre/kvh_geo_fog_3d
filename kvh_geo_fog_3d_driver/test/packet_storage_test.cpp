@@ -50,13 +50,19 @@ TEST(PacketStorage, initLargeRequest)
 TEST(PacketStorage, initDuplicate)
 {
     kvh::KvhPacketStorage packetStorage;
-    EXPECT_EQ(-1, packetStorage.Init(KvhPackReqEnv::duplicateRequest));
+    EXPECT_EQ(1, packetStorage.Init(KvhPackReqEnv::duplicateRequest));
 }
 
 TEST(PacketStorage, initUnsupported)
 {
     kvh::KvhPacketStorage packetStorage;
-    EXPECT_EQ(-2, packetStorage.Init(KvhPackReqEnv::unsupportedRequest));
+    EXPECT_EQ(-1, packetStorage.Init(KvhPackReqEnv::unsupportedRequest));
+}
+
+TEST(PacketStorage, initAll)
+{
+    kvh::KvhPacketStorage packetStorage;
+    EXPECT_EQ(0, packetStorage.Init(KvhPackReqEnv::allPacketRequest));
 }
 
 TEST(PacketStorage, updatePacket)
@@ -316,4 +322,11 @@ TEST(PacketStorage, printPacketTypes)
 TEST(PacketStorage, printPacketSizes)
 {
     EXPECT_NO_FATAL_FAILURE(kvh::KvhPacketStorage::PrintPacketSizes());
+}
+
+TEST(PacketStorage, addPacket)
+{
+    kvh::KvhPacketStorage packetStorage;
+    EXPECT_EQ(0, packetStorage.Init(KvhPackReqEnv::smallRequest));
+    EXPECT_EQ(0, packetStorage.AddPacket(packet_id_odometer_configuration));
 }
