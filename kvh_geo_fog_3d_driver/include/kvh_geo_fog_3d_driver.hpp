@@ -66,7 +66,10 @@ namespace kvh
     bool velocityHeadingEnabled{true};
     bool reversingDetectionEnabled{true};
     bool motionAnalysisEnabled{true};
-    double odomPulseToMeters{0.000604};
+    double odomPulseToMeters{0.000583};
+    bool trackWidth{1.63576};
+    double odometerVelocityCovariance{0.00001};
+    bool encoderOnLeft{true};
   };
 
   /**
@@ -142,14 +145,60 @@ namespace kvh
      */
     int Once();
 
+    /**
+     * @code
+     * if(kvhDriver.PacketIsUpdated(packet_id))
+     * {
+     *  // Do stuff, e.g.
+     *    Packet packet;
+     *    kvhDriver.GetPacket(packet_id, packet)
+     * }
+     * @endcode
+     */
     bool PacketIsUpdated(packet_id_e);
+
+    /**
+     * @code
+     * kvhDriver.SetPacketUpdated(packet_id, true/false);
+     * @endcode
+     */
     int SetPacketUpdated(packet_id_e, bool);
 
+    /**
+     * @code
+     * kvhDriver.AddPacket(packet_id);
+     * @endcode
+     */
+    int AddPacket(packet_id_e);
+
+    /**
+     * @fn GetPacket
+     * @param[in] _packetId The id of the packet you wish to retrieve
+     * @param[out] _packet The retrieved packet data
+     * @return 0 if successful, <0 if error
+     * 
+     * @brief Retrieves the requested packets that are currently stored.
+     * Use PacketIsUpdated and SetPacketUpdated to keep track of if the 
+     * packets have been updated since last use.
+     * 
+     * @code
+     * Packet packet;
+     * kvhDriver.GetPacket(packet_id, packet);
+     * @endcode
+     */
     template <class T>
-    int GetPacket(packet_id_e _packetId, T &packet)
+    int GetPacket(packet_id_e _packetId, T &_packet)
     {
-      return packetStorage_.GetPacket(_packetId, packet);
+      return packetStorage_.GetPacket(_packetId, _packet);
     }
+
+    /**
+     * @code
+     * kvhDriver.requestPacket(packet_id);
+     * // Packet will be picked up next time Once() is called
+     * @endcode
+     */
+    int RequestPacket(packet_id_e);
 
     /**
      * \code

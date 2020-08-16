@@ -38,6 +38,7 @@ public:
     static kvh::KvhPacketRequest smallRequest;
     static kvh::KvhPacketRequest largeRequest;
     static kvh::KvhPacketRequest largeVaryingRatesRequest;
+    static kvh::KvhPacketRequest allPacketRequest;
     static kvh::KvhPacketRequest minFrequencyRequest;
     static kvh::KvhPacketRequest maxFrequencyRequest;
     static kvh::KvhPacketRequest exceedingMaxFrequencyRequest;
