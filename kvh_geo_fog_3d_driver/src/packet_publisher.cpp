@@ -583,7 +583,7 @@ void PublishOdomNED(ros::Publisher &_publisher, system_state_packet_t _sysStateP
     // Position NED
     odomMsgNED.pose.pose.position.x = _utmPosPacket.position[0];
     odomMsgNED.pose.pose.position.y = _utmPosPacket.position[1];
-    odomMsgNED.pose.pose.position.z = _utmPosPacket.position[2];
+    odomMsgNED.pose.pose.position.z = -1 * _utmPosPacket.position[2];
     odomMsgNED.pose.covariance[0] = _sysStatePacket.standard_deviation[0];
     odomMsgNED.pose.covariance[7] = _sysStatePacket.standard_deviation[1];
     odomMsgNED.pose.covariance[14] = _sysStatePacket.standard_deviation[2];
@@ -632,7 +632,7 @@ void PublishOdomENU(ros::Publisher &_publisher, system_state_packet_t _sysStateP
     // Position ENU
     odomMsgENU.pose.pose.position.x = _utmPosPacket.position[1];
     odomMsgENU.pose.pose.position.y = _utmPosPacket.position[0];
-    odomMsgENU.pose.pose.position.z = -1 * _utmPosPacket.position[2];
+    odomMsgENU.pose.pose.position.z = _utmPosPacket.position[2];
     odomMsgENU.pose.covariance[0] = _sysStatePacket.standard_deviation[0];
     odomMsgENU.pose.covariance[7] = _sysStatePacket.standard_deviation[1];
     odomMsgENU.pose.covariance[14] = _sysStatePacket.standard_deviation[2];
