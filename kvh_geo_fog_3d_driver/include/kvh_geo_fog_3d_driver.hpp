@@ -67,7 +67,7 @@ namespace kvh
     bool reversingDetectionEnabled{true};
     bool motionAnalysisEnabled{true};
     double odomPulseToMeters{0.000583};
-    bool trackWidth{1.63576};
+    double trackWidth{1.63576};
     double odometerVelocityCovariance{0.00001};
     bool encoderOnLeft{true};
   };
