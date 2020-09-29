@@ -19,6 +19,10 @@ pipeline
     {
         label 'docker-ubuntu-1604'
     }
+    environment
+    {
+       STATICK_LEVEL='sei_cert'
+    }
     triggers
     {
         //Trigger builds every night at 2AM
@@ -66,7 +70,7 @@ pipeline
                 {
                     warnError('Statick Failed!')
                     {
-                        RunStatickTools()
+                        RunStatickTools_SEI()
                     }
                 }
             }
@@ -92,7 +96,7 @@ pipeline
     {
         always
         {
-	    sh 'tar -cjvf statick_results_${BUILD_NUMBER}.tar.bz statick_output/*.json.statick'
+	    sh 'tar -cjvf statick_results_${STATICK_LEVEL}_${BUILD_NUMBER}.tar.bz statick_output/all_packages-${STATICK_LEVEL}/*.json.statick'
             archiveArtifacts '*.tar.bz'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
 
@@ -111,7 +115,7 @@ pipeline
 		    recordIssues(
 				  enabledForFailure: true,
 				  qualityGates: [[threshold: 1, type: 'TOTAL']],
-				  tools: [issues(name: 'Statick', pattern: 'statick_output/*.json.statick')]
+				  tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-${STATICK_LEVEL}/*.json.statick')]
 				)
                 }
                 //Unit Testing
@@ -189,13 +193,13 @@ void BuildDebug()
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Debug'
 }
 
-void RunStatickTools()
+void RunStatickTools_SEI()
 {
     sh script: '''#!/bin/bash
         mkdir -p statick_output
 	echo "Starting statick runs"
 	mkdir -p statick_output
-	static_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output
+	statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output
     ''': label: 'Statick Analysis Toolkit'
 }
 
