@@ -195,11 +195,22 @@ void BuildDebug()
 
 void RunStatickTools_SEI()
 {
+    //Get our Statick config repo
+    checkout([$class: 'GitSCM',
+        branches: [[name: '*/master']],
+        doGenerateSubmoduleConfigurations: false,
+        extensions: [[$class: 'RelativeTargetDirectory',
+            relativeTargetDir: 'statick-mitre-ros-configuration']],
+        submoduleCfg: [],
+        userRemoteConfigs:
+            [[credentialsId:'ZLAC_GITLAB_KEY',
+            url: 'git@gitlab.mitre.org:DART-release/statick-mitre-ros-configuration.git']]
+        ])
     sh script: '''#!/bin/bash
         mkdir -p statick_output
 	echo "Starting statick runs"
 	mkdir -p statick_output
-	statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output
+	statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths statick-mitre-ros-configuration/statick_config --profile cmu_sei.yaml
     ''': label: 'Statick Analysis Toolkit'
 }
 
