@@ -51,27 +51,6 @@ pipeline
                 SetupKinetic()
             }
         } //end: stage('Setup')
-        stage('Pre-Build Code Analysis')
-        {
-            steps
-            {
-                script
-                {
-                    warnError('Catkin Linter Failed!')
-                    {
-                        CatkinLint()
-                    }
-                    warnError('CppCheck Failed!')
-                    {
-                        CppCheck()
-                    }
-                    warnError('Lizard Complexity Analysis Failed!')
-                    {
-                        Lizard()
-                    }
-                }
-            }
-        } //end: stage('Code Analysis')
         stage('Build')
         {
             steps
@@ -85,17 +64,13 @@ pipeline
             {
                 script
                 {
-                    warnError('ClangTidy Failed!')
+                    warnError('Statick Failed!')
                     {
-                        ClangTidy()
-                    }
-                    warnError('RosLint Failed!')
-                    {
-                        RosLint()
+                        RunStatickTools()
                     }
                 }
             }
-        }
+        } //end: stage('Code Analysis')
         stage('Test')
         {
             steps
@@ -113,17 +88,13 @@ pipeline
         }
     } //end: stages
 
-post
+    post
     {
         always
         {
-            archiveArtifacts 'catkin_ws/*_lint.txt'
-            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/cppcheck_output/*.cppcheck'
-            archiveArtifacts 'lizard.xml'
+	    sh 'tar -cjvf statick_results_${BUILD_NUMBER}.tar.bz statick_output/*.json.statick'
+            archiveArtifacts '*.tar.bz'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
-            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clang_format_kvh_geo_fog_3d.tar.gz'
-            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.clangtidy'
-            archiveArtifacts 'catkin_ws/src/kvh_geo_fog_3d/roslint_output/*.txt'
 
             ////////////////////////////////////////////////////////////////////
             // Due to how fragile plugin publishers are with Declarative
@@ -133,27 +104,15 @@ post
             ////////////////////////////////////////////////////////////////////
             script
             {
-                //CPPCHECK
-                warnError('Publishing CppCheck Results Failed!')
+                //Statick
+                warnError('Publishing Statick Results Failed!')
                 {
                     //Using the warnings-ng plugin
-                    recordIssues enabledForFailure: false, aggregatingResults : false, tool: cppCheck(pattern: 'catkin_ws/src/kvh_geo_fog_3d/cppcheck_output/*.cppcheck')
-                }
-                //LIZARD
-                //warnError('Publishing Lizard Results Failed!')
-                //{
-                //    step([$class: 'hudson.plugins.cppncss.CppNCSSPublisher', reportFilenamePattern: 'lizard.xml', functionCcnViolationThreshold: 5, functionNcssViolationThreshold: 10, targets: []])
-                //}
-                //GCC Warnings/Errors
-                warnError('Publishing GCC Warnings/Errors Failed!')
-                {
-                    recordIssues enabledForFailure: false, aggregatingResults : false, tool: gcc4()
-                }
-                //Clang-tidy
-                warnError('Publishing Clang-Tidy Results Failed!')
-                {
-                    //Use warnings-ng to publish clangtidy
-                    recordIssues(tools: [clangTidy(pattern: 'catkin_ws/src/kvh_geo_fog_3d/clangtidy/*.clangtidy')])
+		    recordIssues(
+				  enabledForFailure: true,
+				  qualityGates: [[threshold: 1, type: 'TOTAL']],
+				  tools: [issues(name: 'Statick', pattern: 'statick_output/*.json.statick')]
+				)
                 }
                 //Unit Testing
                 warnError('Publishing Unit Test Results Failed!')
@@ -163,18 +122,14 @@ post
                 }
             }
         }
-//      success
-//      {
-//          archiveArtifacts 'catkin_ws/src/*.deb'
-//      }
-        failure
-        {
-            SendEmail()
-        }
-        fixed
-        {
-            SendEmail()
-        }
+//        failure
+//        {
+//            SendEmail()
+//        }
+//        fixed
+//        {
+//            SendEmail()
+//        }
     }
 } //end: pipeline
 
@@ -212,7 +167,7 @@ void BuildRelease()
     sh script: '''#!/bin/bash
         cd catkin_ws
         source /opt/ros/kinetic/setup.bash
-        catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Release'
+        catkin build --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Release'
 }
 void BuildTest()
 {
@@ -233,48 +188,17 @@ void BuildDebug()
         source /opt/ros/kinetic/setup.bash
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Debug'
 }
-void CatkinLint()
+
+void RunStatickTools()
 {
     sh script: '''#!/bin/bash
-        cd catkin_ws
-        set -o pipefail
-        source /opt/ros/kinetic/setup.bash
-        catkin lint -W2 src/kvh_geo_fog_3d |& tee catkinpackage_lint.txt
-    ''', label: 'Catkin Linter'
+        mkdir -p statick_output
+	echo "Starting statick runs"
+	mkdir -p statick_output
+	static_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output
+    ''': label: 'Statick Analysis Toolkit'
 }
-void CppCheck()
-{
-    //Run cppcheck
-    sh script: """
-        # Run this from the base of the workspace! File paths are relative to
-        # the run location, and Jenkins reports want those paths to be relative
-        # to the workspace root (e.g. /home/jenkins/workspace/kvh_geo_fog_3d_driver)
-        cd catkin_ws/src/kvh_geo_fog_3d
-        ./devops/cppcheck.sh kvh_geo_fog_3d
-    """, label: 'CPPCheck'
-}
-void Lizard()
-{
-    sh script: """
-        lizard -l cpp catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/src/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_driver/include/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/src/ catkin_ws/src/kvh_geo_fog_3d/kvh_geo_fog_3d_rviz/include/ --xml > lizard.xml 2>&1
-    """, label: 'Lizard'
-}
-void ClangTidy()
-{
-    sh script: """#!/bin/bash
-        cd catkin_ws/src/kvh_geo_fog_3d
-        source ../../devel/setup.bash
-        ./devops/clang_tidy.sh kvh_geo_fog_3d
-    """, label: 'Clang-tidy'
-}
-void RosLint()
-{
-    sh script: """#!/bin/bash
-        cd catkin_ws/src/kvh_geo_fog_3d
-        source ../../devel/setup.bash
-        ./devops/roslint.sh
-    """, label: 'Roslint'
-}
+
 void PackageDebian()
 {
     sh script: '''#!/bin/bash
