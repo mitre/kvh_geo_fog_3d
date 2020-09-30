@@ -1,0 +1,117 @@
+# From global config, but adding non-KVH packages as ignores 
+global:
+  exceptions:
+    file:
+      # System headers
+      - tools: all
+        globs: ["/opt/ros/*", "/usr/*"]
+      # ROS auto-generated headers
+      - tools: all
+        globs: ["*/devel/include/*", "*/devel/*/include"]
+      # SBPL headers
+      - tools: all
+        globs: ["*/include/sbpl/*"]
+      # Qt auto-generated files
+      - tools: all
+        globs: ["*/build/include/*/moc_*.cpp"]
+      # Auto-generated build files
+      - tools: all
+        globs: ["*/build/*"]
+      # Auto-generated build files
+      - tools: all
+        globs: ["*/dist/*"]
+      - tools: all
+        globs: ["*/egg-info/*"]
+      - tools: all
+        globs: ["*/statick_output/*"]
+      # Documentation files
+      - tools: all
+        globs: ["*/docs/*"]
+      # Tox packages (used in testing)
+      - tools: all
+        globs: ["*/.tox/*"]
+      # Leftover files from tox
+      - tools: all
+        globs: ["*/output-py*/*"]
+      # The test directories themselves - there are files with intentional errors
+      - tools: all
+        globs: ["*/tests/*"]
+      # VCS directories
+      - tools: all
+        globs: ["*/.svn/*", "*/.git/*", "*/.hg/*"]
+      # RS232 directory
+      - tools: all
+        globs: ["*/geo_fog_sdk/rs232/*", ]
+      # GEO FOG SDK
+      - tools: all
+        globs: ["*/geo_fog_sdk/*"]
+    message_regex:
+      # This is triggered by std::isnan for some reason
+      - tools: [clang-tidy]
+        regex: "implicit cast 'typename __gnu_cxx.*__type' -> bool"
+      # ROS uses uint8_t for its bool type. It's too much trouble to make
+      # everything using ROS bools to cast.
+      - tools: [clang-tidy]
+        regex: "implicit cast '_.*_type' -> bool"
+      - tools: [clang-tidy]
+        regex: "implicit cast bool -> '_.*_type'"
+      - tools: [clang-tidy]
+        regex: "implicit cast 'safe_bool' -> bool"
+      # This happens for boost::shared_ptrs
+      - tools: [clang-tidy]
+        regex: "implicit cast 'unspecified_bool_type' -> bool"
+      # This happens for yamlcpp
+      - tools: [clang-tidy]
+        regex: "implicit cast 'YAML::detail::unspecified_bool_type' -> bool"
+      # clang-tidy chokes on openmp headers
+      - tools: [clang-tidy]
+        regex: "'omp.h' file not found"
+      # BOOST_STATIC_ASSERT causes this
+      - tools: [clang-tidy]
+        regex: "unused typedef 'boost_static_assert_typedef_.*'"
+      # BOOST_FOREACH causes this
+      - tools: [clang-tidy]
+        regex: "implicit cast .* -> 'struct boost_se_params_t_.*::boost_se_param_t_.*'"
+      # clang-tidy complains about pluginlib
+      - tools: [clang-tidy]
+        regex: "'log_deprecated' is deprecated"
+      # catkin_lint doesn't like usage of gtest without rosunit for some reason
+      - tools: [catkin_lint]
+        regex: "missing test_depend on 'rosunit'"
+      # Some packages need to be able to call this twice
+      - tools: [catkin_lint]
+        regex: "duplicate catkin_package()"
+      # Some packages need to be able to change this
+      - tools: [catkin_lint]
+        regex: "variable CMAKE_MODULE_PATH is modified"
+      # catkin_lint false detects on packages exporting their own plugins
+      - tools: [catkin_lint]
+        regex: "package exports (.+) plugin but does not exec_depend on '\\1'"
+      # numpy breaks pylint
+      - tools: [pylint]
+        regex: ".+: Module 'numpy' has no '.+' member"
+      # cv2 breaks pylint
+      - tools: [pylint]
+        regex: ".+: Module 'cv2' has no '.+' member"
+      # tf breaks pylint
+      - tools: [pylint]
+        regex: ".+: Module 'tf' has no '.*Exception' member"
+      # tf2_ros breaks pylint
+      - tools: [pylint]
+        regex: ".+: Module 'tf2_ros' has no '.*Exception' member"
+      # PyKDL breaks pylint
+      - tools: [pylint]
+        regex: ".+: Module 'PyKDL' has no '.+' member"
+      # Locally disabling checks breaks pylint
+      - tools: [pylint]
+        regex: "Locally disabling .+"
+      - tools: [pylint]
+        regex: "Locally enabling .+"
+      # Python 2/3 compatibility requires inheriting from `object`.
+      - tools: [pylint]
+        regex: ".+: Class .+ inherits from object, can be safely removed from bases in python3"
+
+packages:
+
+ignore_packages:
+  []
