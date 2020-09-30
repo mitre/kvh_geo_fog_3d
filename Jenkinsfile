@@ -21,7 +21,7 @@ pipeline
     }
     environment
     {
-       STATICK_LEVEL='sei_cert'
+       STATICK_LEVEL='rosm'
     }
     triggers
     {
@@ -70,7 +70,7 @@ pipeline
                 {
                     warnError('Statick Failed!')
                     {
-                        RunStatickTools_SEI()
+                        RunStatickTools_ROSM()
                     }
                 }
             }
@@ -96,7 +96,7 @@ pipeline
     {
         always
         {
-	        sh 'tar -cjvf statick_results_sei_cert_${BUILD_NUMBER}.tar.bz statick_output/all_packages-sei_cert/*.json.statick || true'
+	        sh 'tar -cjvf statick_results_rosm_objective_${BUILD_NUMBER}.tar.bz statick_output/all_packages-rosm_objective/*.json.statick || true'
             archiveArtifacts '*.tar.bz'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
 
@@ -117,7 +117,7 @@ pipeline
 				        qualityGates: [[threshold: 1, type: 'TOTAL_ERROR'],
                                        [threshold: 1, type: 'TOTAL_HIGH'],
                                        [threshold: 1, type: 'TOTAL_NORMAL', unstable: true]],
-				        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-sei_cert/*.json.statick')]
+				        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-*/*.json.statick')]
 				)
                 }
                 //Unit Testing
@@ -195,7 +195,7 @@ void BuildDebug()
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Debug'
 }
 
-void RunStatickTools_SEI()
+void RunStatickTools_ROSM()
 {
     //Get our Statick config repo
     checkout([$class: 'GitSCM',
@@ -212,7 +212,7 @@ void RunStatickTools_SEI()
         mkdir -p statick_output
 	    echo "Starting statick runs"
 	    mkdir -p statick_output
-	    statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths catkin_ws/src/kvh_geo_fog_3d/devops/statick_config,statick-mitre-ros-configuration/statick_config --profile cmu_sei.yaml
+	    statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths catkin_ws/src/kvh_geo_fog_3d/devops/statick_config,statick-mitre-ros-configuration/statick_config --profile rosm.yaml
     ''', label: 'Statick Analysis Toolkit'
 }
 
