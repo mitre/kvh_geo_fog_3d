@@ -119,7 +119,7 @@ pipeline
 		//GCC warnings/errors recorded separately
 		warnError('Publishing GCC Warnings/Errors Failed!')
 		{
-		    recordIssues(enabledForFailure: false, aggregatingResults : false, tool: gcc4())
+		    recordIssues(enabledForFailure: true, aggregatingResults: false, tool: gcc4())
 		}
                 //Unit Testing
                 warnError('Publishing Unit Test Results Failed!')
