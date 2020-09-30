@@ -114,7 +114,9 @@ pipeline
                     //Using the warnings-ng plugin
 		            recordIssues(
 				        enabledForFailure: true,
-				        qualityGates: [[threshold: 1, type: 'TOTAL']],
+				        qualityGates: [[threshold: 1, type: 'TOTAL_ERROR'],
+                                       [threshold: 1, type: 'TOTAL_HIGH'],
+                                       [threshold: 1, type: 'TOTAL_NORMAL', unstable: true]],
 				        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-sei_cert/*.json.statick')]
 				)
                 }
