@@ -96,7 +96,9 @@ pipeline
     {
         always
         {
-	    sh 'tar -cjvf statick_results_${STATICK_LEVEL}_${BUILD_NUMBER}.tar.bz statick_output/all_packages-${STATICK_LEVEL}/*.json.statick'
+            sh 'ls'
+            sh 'ls statick_output/'
+	        sh 'tar -cjvf statick_results_sei_cert_${BUILD_NUMBER}.tar.bz statick_output/all_packages-sei_cert/*.json.statick' || true
             archiveArtifacts '*.tar.bz'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
 
@@ -115,7 +117,7 @@ pipeline
 		            recordIssues(
 				        enabledForFailure: true,
 				        qualityGates: [[threshold: 1, type: 'TOTAL']],
-				        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-${STATICK_LEVEL}/*.json.statick')]
+				        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-sei_cert/*.json.statick')]
 				)
                 }
                 //Unit Testing
