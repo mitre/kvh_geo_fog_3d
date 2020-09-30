@@ -210,7 +210,7 @@ void RunStatickTools_SEI()
         mkdir -p statick_output
 	    echo "Starting statick runs"
 	    mkdir -p statick_output
-	    statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths statick-mitre-ros-configuration/statick_config --profile cmu_sei.yaml
+	    statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths catkin_ws/src/kvh_geo_fog_3d/devops/statick_config,statick-mitre-ros-configuration/statick_config --profile cmu_sei.yaml
     ''', label: 'Statick Analysis Toolkit'
 }
 
