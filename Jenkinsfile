@@ -96,9 +96,7 @@ pipeline
     {
         always
         {
-            sh 'ls'
-            sh 'ls statick_output/'
-	        sh 'tar -cjvf statick_results_sei_cert_${BUILD_NUMBER}.tar.bz statick_output/all_packages-sei_cert/*.json.statick' || true
+	        sh 'tar -cjvf statick_results_sei_cert_${BUILD_NUMBER}.tar.bz statick_output/all_packages-sei_cert/*.json.statick || true'
             archiveArtifacts '*.tar.bz'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
 
