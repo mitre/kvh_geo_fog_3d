@@ -124,14 +124,14 @@ pipeline
                 }
             }
         }
-//        failure
-//        {
-//            SendEmail()
-//        }
-//        fixed
-//        {
-//            SendEmail()
-//        }
+        failure
+        {
+            SendEmail()
+        }
+        fixed
+        {
+            SendEmail()
+        }
     }
 } //end: pipeline
 
