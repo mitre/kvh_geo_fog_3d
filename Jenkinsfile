@@ -116,6 +116,11 @@ pipeline
 				        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-*/*.json.statick')]
 				)
                 }
+		//GCC warnings/errors recorded separately
+		warnError('Publishing GCC Warnings/Errors Failed!')
+		{
+		    recordIssues(enabledForFailure: false, aggregatingResults : false, tool: gcc4())
+		}
                 //Unit Testing
                 warnError('Publishing Unit Test Results Failed!')
                 {
@@ -124,14 +129,14 @@ pipeline
                 }
             }
         }
-//        failure
-//        {
-//            SendEmail()
-//        }
-//        fixed
-//        {
-//            SendEmail()
-//        }
+        failure
+        {
+            SendEmail()
+        }
+        fixed
+        {
+            SendEmail()
+        }
     }
 } //end: pipeline
 
