@@ -112,10 +112,10 @@ pipeline
                 warnError('Publishing Statick Results Failed!')
                 {
                     //Using the warnings-ng plugin
-		    recordIssues(
-				  enabledForFailure: true,
-				  qualityGates: [[threshold: 1, type: 'TOTAL']],
-				  tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-${STATICK_LEVEL}/*.json.statick')]
+		            recordIssues(
+				        enabledForFailure: true,
+				        qualityGates: [[threshold: 1, type: 'TOTAL']],
+				        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-${STATICK_LEVEL}/*.json.statick')]
 				)
                 }
                 //Unit Testing
@@ -208,10 +208,10 @@ void RunStatickTools_SEI()
         ])
     sh script: '''#!/bin/bash
         mkdir -p statick_output
-	echo "Starting statick runs"
-	mkdir -p statick_output
-	statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths statick-mitre-ros-configuration/statick_config --profile cmu_sei.yaml
-    ''': label: 'Statick Analysis Toolkit'
+	    echo "Starting statick runs"
+	    mkdir -p statick_output
+	    statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths statick-mitre-ros-configuration/statick_config --profile cmu_sei.yaml
+    ''', label: 'Statick Analysis Toolkit'
 }
 
 void PackageDebian()
