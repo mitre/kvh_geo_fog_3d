@@ -19,10 +19,6 @@ pipeline
     {
         label 'docker-ubuntu-1604'
     }
-    environment
-    {
-       STATICK_LEVEL='rosm'
-    }
     triggers
     {
         //Trigger builds every night at 2AM
@@ -70,7 +66,7 @@ pipeline
                 {
                     warnError('Statick Failed!')
                     {
-                        RunStatickTools_ROSM()
+                        RunStatickTools()
                     }
                 }
             }
@@ -96,7 +92,7 @@ pipeline
     {
         always
         {
-	        sh 'tar -cjvf statick_results_rosm_objective_${BUILD_NUMBER}.tar.bz statick_output/all_packages-rosm_objective/*.json.statick || true'
+	        sh 'tar -cjvf statick_results_mitre_ros_${BUILD_NUMBER}.tar.bz statick_output/all_packages-mitre_ros/*.json.statick || true'
             archiveArtifacts '*.tar.bz'
             archiveArtifacts 'catkin_ws/build/kvh_geo_fog_3d_driver/test_results/kvh_geo_fog_3d_driver/gtest-kvh_geo_fog_3d_driver-test.xml'
 
@@ -195,7 +191,7 @@ void BuildDebug()
         catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DCATKIN_ENABLE_TESTING=1''', label: 'Build Debug'
 }
 
-void RunStatickTools_ROSM()
+void RunStatickTools()
 {
     //Get our Statick config repo
     checkout([$class: 'GitSCM',
@@ -212,7 +208,7 @@ void RunStatickTools_ROSM()
         mkdir -p statick_output
 	    echo "Starting statick runs"
 	    mkdir -p statick_output
-	    statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths catkin_ws/src/kvh_geo_fog_3d/devops/statick_config,statick-mitre-ros-configuration/statick_config --profile rosm.yaml
+	    statick_ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths catkin_ws/src/kvh_geo_fog_3d/devops/statick_config,statick-mitre-ros-configuration/statick_config --profile mitre_ros.yaml
     ''', label: 'Statick Analysis Toolkit'
 }
 
