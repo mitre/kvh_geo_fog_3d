@@ -61,11 +61,7 @@ global:
       # Ignore "executable but not installed" warnings. These trigger on our devops
       # scripts and catkin_lint doesn't have exclude options.
       - tools: [catkin_lint]
-        regex: "executable but not installed"
-      # Ignore the "include paths are ambiguous" warning because we need the
-      # duplicate include paths for external libraries in the driver.
-      - tools: [catkin_lint]
-        regex: "include paths .+ are ambiguous"
+        regex: ".+executable but not installed.+"
       ####################################
       # This is triggered by std::isnan for some reason
       - tools: [clang-tidy]

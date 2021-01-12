@@ -108,13 +108,12 @@ pipeline
                 warnError('Publishing Statick Results Failed!')
                 {
                     //Using the warnings-ng plugin
-		            recordIssues(
-				        enabledForFailure: true,
-				        qualityGates: [[threshold: 1, type: 'TOTAL_ERROR'],
-                                       [threshold: 1, type: 'TOTAL_HIGH'],
-                                       [threshold: 1, type: 'TOTAL_NORMAL', unstable: true]],
-				        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-*/*.json.statick')]
-				)
+		    recordIssues(
+		        enabledForFailure: true,
+		        qualityGates: [[threshold: 1, type: 'TOTAL_ERROR'],
+                                       [threshold: 1, type: 'TOTAL_HIGH', unstable: true]],
+		        tools: [issues(name: 'Statick', pattern: 'statick_output/all_packages-*/*.json.statick')]
+		    )
                 }
 		//GCC warnings/errors recorded separately
 		warnError('Publishing GCC Warnings/Errors Failed!')
