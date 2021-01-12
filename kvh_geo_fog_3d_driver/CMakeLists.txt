@@ -118,14 +118,14 @@ include_directories(
 )
 
 ## Notes on the below:
-## I would like to build the sdk as a seperate library, instead of building it 
+## I would like to build the sdk as a seperate library, instead of building it
 ## in with the ros library. When built seperately, I run into the issue of tcgetattribute
-## causing a segmentation fault. There must be some cmake way around this, but I do not 
+## causing a segmentation fault. There must be some cmake way around this, but I do not
 ## know or want to spend time on it right now.
 #add_library(geo_fog_sdk
 #  geo_fog_sdk/an_packet_protocol.c
 #  geo_fog_sdk/spatial_packets.c
-#  geo_fog_sdk/rs232/rs232.c 
+#  geo_fog_sdk/rs232/rs232.c
 #)
 
 add_library(${PROJECT_NAME}
@@ -144,7 +144,7 @@ target_link_libraries(${PROJECT_NAME}
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(${PROJECT_NAME} 
+add_dependencies(${PROJECT_NAME}
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
   ${PROJECT_NAME}_gencfg
@@ -153,7 +153,7 @@ add_dependencies(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node 
+add_executable(${PROJECT_NAME}_node
   src/kvh_geo_fog_3d_node.cpp
   src/packet_publisher.cpp
   ${KVH_DRIVER_FILES}
@@ -239,7 +239,7 @@ install(DIRECTORY include/rs232
   PATTERN ".svn" EXCLUDE
 )
 ## Make sure we get everything in launch installed
-install(DIRECTORY launch 
+install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
@@ -286,7 +286,7 @@ include_directories(
   )
 
 if(CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(${PROJECT_NAME}-test 
+  catkin_add_gtest(${PROJECT_NAME}-test
     test/init_vars.cpp
     test/device_configuration_test.cpp
     test/packet_storage_test.cpp

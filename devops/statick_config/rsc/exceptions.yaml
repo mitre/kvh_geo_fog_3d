@@ -2,6 +2,14 @@
 global:
   exceptions:
     file:
+      #####################################
+      ## ACCEPTED ERRORS, USE WITH CAUTION
+      #####################################
+
+      # Accept certain Lizard CCN errors
+      - tools: lizard
+        globs: ["*/kvh_geo_fog_3d_node.cpp", "*/kvh_driver/decode_packets.cpp", "*/kvh_geo_fog_3d_status_panel.cpp"]
+      ######################################
       # System headers
       - tools: all
         globs: ["/opt/ros/*", "/usr/*"]
