@@ -1,0 +1,9 @@
+# This is an extension of the ROS-M settings, but with more
+# scanning (for instance, flawfinder)
+default: kvh_geo_fog_3d
+
+packages:
+
+# You can do individual package level overrides like:
+# packages:
+#   my_package: objective
