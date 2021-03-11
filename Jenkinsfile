@@ -212,7 +212,7 @@ void RunStatickTools()
         mkdir -p statick_output
 	    echo "Starting statick runs"
 	    mkdir -p statick_output
-	    statick -ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths catkin_ws/src/kvh_geo_fog_3d/devops/statick_config,statick-mitre-ros-configuration/statick_config --profile mitre_ros.yaml
+	    statick -ws catkin_ws/src/kvh_geo_fog_3d --output-directory statick_output --user-paths catkin_ws/src/kvh_geo_fog_3d/devops/statick_config,statick-mitre-ros-configuration/statick_config --profile kvh_geo_fog_3d.yaml
     ''', label: 'Statick Analysis Toolkit'
 }
 
