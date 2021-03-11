@@ -1,0 +1,6 @@
+levels:
+    kvh_geo_fog_3d:
+        inherits_from: "mitre_ros"
+        tool:
+            lizard:
+                flags: "--modified --CCN=30"
