@@ -6,8 +6,8 @@ variables:
 before_script:
     - docker info
     - mkdir docker
-    - wget https://gitlab.mitre.org/dart-release/gitlabci-configs/-/raw/master/docker/kinetic/Dockerfile
-    - wget https://gitlab.mitre.org/dart-release/gitlabci-configs/-/raw/master/docker/kinetic/ros_entrypoint.sh
+    - wget https://gitlab.mitre.org/dart-release/gitlabci-configs/-/raw/master/docker/${ROS_DISTRO}/Dockerfile
+    - wget https://gitlab.mitre.org/dart-release/gitlabci-configs/-/raw/master/docker/${ROS_DISTRO}/ros_entrypoint.sh
     - chmod +x ros_entrypoint.sh
     - mv Dockerfile ros_entrypoint.sh docker/
 
