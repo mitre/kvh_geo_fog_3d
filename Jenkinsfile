@@ -161,7 +161,7 @@ void SetupKinetic()
     //since rosdep calls sudo for apt-get install.
     sh script: """
         cd catkin_ws
-        rosdep update
+        rosdep update --include-eol-distros
         # Install all dependencies for packages, but ignore those which resolve to local packages. Automatically answer yes to questions.
         rosdep install --rosdistro kinetic --from-paths src --ignore-src -y -r src/kvh_geo_fog_3d
     """, label: 'Install Package rosdeps'
