@@ -3,13 +3,8 @@ variables:
     CI_SOURCE_PATH: "$CI_PROJECT_DIR"
     GIT_SUBMODULE_STRATEGY: recursive
 
-before_script:
-    - docker info
-    - mkdir docker
-    - wget https://gitlab.mitre.org/dart-release/gitlabci-configs/-/raw/master/docker/${ROS_DISTRO}/Dockerfile
-    - wget https://gitlab.mitre.org/dart-release/gitlabci-configs/-/raw/master/docker/${ROS_DISTRO}/ros_entrypoint.sh
-    - chmod +x ros_entrypoint.sh
-    - mv Dockerfile ros_entrypoint.sh docker/
+image:
+    name: "artifacts.mitre.org:8200/untrusted-mitrewide-overwritable/dart/dart_gitlab_runner_${ROS_DISTRO}"
 
 stages:
     - build
@@ -18,23 +13,29 @@ stages:
 build:
     stage: build
     script:
-        - docker build -t ros_${ROS_DISTRO}_kvh_geo_fog_3d -f docker/Dockerfile .
+      - mkdir -p catkin_ws/src/${CI_PROJECT_NAME}
+      - shopt -s extglob dotglob
+      - mv !(catkin_ws) catkin_ws/src/${CI_PROJECT_NAME}/
+      - shopt -u dotglob
+      - cd catkin_ws
+      - source /opt/ros/${ROS_DISTRO}/setup.bash
+      - catkin build -DCMAKE_BUILD_TYPE=Release
     tags:
-        - docker-shell
+        - docker
 
-pages:
-  stage: deploy
-  script:
-    - rm -rf public/ || true
-    - mkdir public/
-    - docker rm ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen || true
-    - docker run --name ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen -e ROS_DISTRO='${ROS_DISTRO}' ros_${ROS_DISTRO}_kvh_geo_fog_3d bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && cd catkin_ws/src && rosdoc_lite -o doc kvh_geo_fog_3d_driver"
-    - docker cp ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen:/home/build/catkin_ws/src/doc/html/. public/
-    - docker rm ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen
-  tags:
+#pages:
+#  stage: deploy
+#  script:
+#    - rm -rf public/ || true
+#    - mkdir public/
+#    - docker rm ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen || true
+#    - docker run --name ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen -e ROS_DISTRO='${ROS_DISTRO}' ros_${ROS_DISTRO}_kvh_geo_fog_3d bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && cd catkin_ws/src && rosdoc_lite -o doc kvh_geo_fog_3d_driver"
+#    - docker cp ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen:/home/build/catkin_ws/src/doc/html/. public/
+#    - docker rm ros_${ROS_DISTRO}_kvh_geo_fog_3d_tmpdocgen
+#  tags:
     - docker-shell
-  artifacts:
-    paths:
-      - public/
-  only:
-    - master
+#  artifacts:
+#    paths:
+#      - public/
+#  only:
+#    - master
