@@ -6,9 +6,15 @@ variables:
 image:
     name: "artifacts.mitre.org:8200/untrusted-mitrewide-overwritable/dart/dart_gitlab_runner_${ROS_DISTRO}"
 
+# Use the before_script to check the environment
+before_script:
+    - lsb_release -c
+    - uname -a
+    - ls /opt/ros
+    - echo ${ROS_DISTRO}
+
 stages:
     - build
-    - deploy
 
 build:
     stage: build
