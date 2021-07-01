@@ -47,6 +47,9 @@ namespace kvh
     packet_id_euler_orientation_standard_deviation,
     packet_id_odometer_state,
     packet_id_raw_gnss,
+    packet_id_body_velocity,
+    packet_id_velocity_standard_deviation,
+    packet_id_odometer_configuration,
 };
 
 // Keep lookup table of packet sizes. Used for calculating required baud rates
@@ -63,9 +66,11 @@ std::map<packet_id_e, int> packetSize_ = {
     {packet_id_euler_orientation_standard_deviation, sizeof(euler_orientation_standard_deviation_packet_t)},
     {packet_id_odometer_state, sizeof(odometer_state_packet_t)},
     {packet_id_raw_gnss, sizeof(raw_gnss_packet_t)},
+    {packet_id_body_velocity, sizeof(body_velocity_packet_t)},
+    {packet_id_velocity_standard_deviation, sizeof(velocity_standard_deviation_packet_t)},
+    {packet_id_odometer_configuration, sizeof(odometer_configuration_packet_t)},
 };
 
-// String names of struct types. Used for assurance we have received the correct packet
 std::map<packet_id_e, std::string> packetTypeStr_ = {
     {packet_id_system_state, typeid(system_state_packet_t).name()},
     {packet_id_unix_time, typeid(unix_time_packet_t).name()},
@@ -79,5 +84,8 @@ std::map<packet_id_e, std::string> packetTypeStr_ = {
     {packet_id_euler_orientation_standard_deviation, typeid(euler_orientation_standard_deviation_packet_t).name()},
     {packet_id_odometer_state, typeid(odometer_state_packet_t).name()},
     {packet_id_raw_gnss, typeid(raw_gnss_packet_t).name()},
+    {packet_id_body_velocity, typeid(body_velocity_packet_t).name()},
+    {packet_id_velocity_standard_deviation, typeid(velocity_standard_deviation_packet_t).name()},
+    {packet_id_odometer_configuration, typeid(odometer_configuration_packet_t).name()},
 };
 }

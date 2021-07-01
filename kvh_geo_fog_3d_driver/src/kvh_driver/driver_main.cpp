@@ -154,7 +154,12 @@ namespace kvh
     ////////////////////////////////
 
     packet_periods_packet_t packetPeriods;
-    deviceConfig_.CreatePacketPeriodsPacket(_packetsRequested, packetPeriods);
+    if (deviceConfig_.CreatePacketPeriodsPacket(_packetsRequested, packetPeriods) < 0)
+    {
+      if (debug_)
+        printf("Unable to create packet periods packet properly.");
+      return -2;
+    }
 
     ////////////////////////////////
     // CALCULATING BUAD RATE
@@ -180,9 +185,18 @@ namespace kvh
                                                 _initOptions.gnssEnabled, _initOptions.atmosphericAltitudeEnabled, _initOptions.velocityHeadingEnabled,
                                                 _initOptions.reversingDetectionEnabled, _initOptions.motionAnalysisEnabled) != 0)
     {
-      return -2;
+      return -3;
     }
 
+    ////////////////////////////////////////
+    // SETTING UP ODOMETER OPTIONS
+    ////////////////////////////////////////
+    odometer_configuration_packet_t odometerOptions;
+    if (deviceConfig_.CreateOdometerOptionsPacket(odometerOptions, true, static_cast<float>(_initOptions.odomPulseToMeters), false) != 0 )
+    {
+      return -2;
+    }
+    
     ////////////////////////////////////////
     // CONNECTING TO KVH
     ////////////////////////////////////////
@@ -195,7 +209,7 @@ namespace kvh
     {
       if (debug_)
         printf("Unable to establish connection.\n");
-      return -3;
+      return -4;
     }
     // We are connected to the KVH!
     connected_ = true;
@@ -216,7 +230,7 @@ namespace kvh
     requestPacket = nullptr;
     if (packetError)
     {
-      return -4;
+      return -5;
     }
 
     if (debug_)
@@ -227,7 +241,7 @@ namespace kvh
     requestPacket = nullptr;
     if (packetError != 0)
     {
-      return -5;
+      return -6;
     }
 
     /////////////////////////////////////
@@ -306,7 +320,7 @@ namespace kvh
       }
     }
 
-    if (debug_) printf("Recieved %d unexpected packets during transmission.", unexpectedPackets);
+    if (debug_) printf("Recieved %d unexpected packets during transmission.\n", unexpectedPackets);
   } // END Once()
 
   /**
@@ -334,6 +348,42 @@ namespace kvh
   int Driver::SetPacketUpdated(packet_id_e _packetId, bool _updateStatus)
   {
     return packetStorage_.SetPacketUpdated(_packetId, _updateStatus);
+  }
+
+  /**
+   * @fn Driver::AddPacket
+   * @param _packetId The id of the packet to set the status of
+   * @return 0 = success, 1 = duplicate, -1 = Error, unsupported
+   */
+  int Driver::AddPacket(packet_id_e _packetId)
+  {
+    return packetStorage_.AddPacket(_packetId);
+  }
+
+  /**
+   * @fn Driver::RequestPacket
+   * @param _requestedPacket The id of the packet you want to request
+   * @return 0 if successful, <0 if error
+   * 
+   * @brief This function is used to request packets that you only want
+   * once or that cannot be requested through the packet periods packet. 
+   * For example, we wish to access the pulse length from the odom configuration
+   * packet, which is only available by requesting in this method.
+   * 
+   * \todo Verify with KVH that odom configuration is not available through packet periods.
+   * I tried it and got errors with both testing programatically and using their GUI.
+   */
+  int Driver::RequestPacket(packet_id_e _requestedPacket)
+  {
+    an_packet_t* anPacket = encode_request_packet(_requestedPacket);
+    if (SendPacket(anPacket) != 0)
+    {
+      if (debug_)
+        printf("Unable to send packet request.\n");
+      return -1;
+    }
+
+    return 0;
   }
 
   /**

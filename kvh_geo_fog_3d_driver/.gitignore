@@ -1,6 +1,4 @@
-##
-# Don't track MITRE-specific files
-build_deb.sh
-clean_deb.sh
-packaging
-##
+docs/html
+docs/latex
+debian
+obj-x86_64-linux-gnu

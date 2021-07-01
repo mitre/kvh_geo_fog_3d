@@ -1,10 +1,7 @@
-##
-# Don't track MITRE-specific files
-Jenkinsfile
-PACKAGING.md
-release.sh
-build_all_debs.sh
-clean_all_debs.sh
-devops
-docker
-##
+.vscode
+ros-kinetic-*
+cppcheck_output
+clangtidy
+clang_format_*
+roslint_output
+doc

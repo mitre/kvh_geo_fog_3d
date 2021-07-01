@@ -98,7 +98,8 @@ In the future, hopefully KVH exposes this value over the API.
 - `~<node_name>/velocityHeadingEnabled` (bool, default: false)
 - `~<node_name>/reversingDetectionEnabled` (bool, default: true)
 - `~<node_name>/motionAnalysisEnabled` (bool, default: true)
-- `~<node_name>/odomPulseToMeters` (double, default: 0.000604)
+- `~<node_name>/odomPulseToMeters` (double, default: 0.000583)
+    - Note: We check the KVH odometer_configuration packet to see if this value exists. If so we use the KVH value, otherwise, we will use this parameter. 
 
 ## determine_baud_node
 
@@ -161,6 +162,7 @@ If everything is set up properly, you should be able to see data being output on
 8. Odometer State
 9. Raw Sensors
 10. Raw GNSS
+11. Odom Configuration Packet (used but not output)
 
 If you need other packets, please see the development guide below.
 

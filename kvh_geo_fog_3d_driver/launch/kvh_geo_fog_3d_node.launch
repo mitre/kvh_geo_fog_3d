@@ -9,20 +9,28 @@
        to achieve higher baud rates. -->
   <arg name="baud" default="115200" />
   <arg name="debug" default="false" />
+  <arg name="odomPulseToMeters" default="0.000583" />
   <arg name="filterVehicleType" default="2" /> <!-- 2 is for car, see table 13.10.5.1 in GEO FOG Reference Manual for options -->
   <arg name="atmosphericAltitudeEnabled" default="true" />
   <arg name="velocityHeadingEnabled" default="false" />
   <arg name="reversingDetectionEnabled" default="true" />
   <arg name="motionAnalysisEnabled" default="true" />
-
+  <arg name="vehicleTrackWidth" default="1.63576" /> <!-- Used for calculating vehicle-centered velocity given encoder velocity calculated at one of the rear-axle wheels -->
+  <arg name="encoderOnLeft" default="True" /> <!-- True means left-side rear-axle-mounted encoder, False means right-side rear-axle-mounted encoder -->
+  <arg name="odometerVelocityCovariance" default="0.00001" /> <!-- Covariance value to use for vehicle-center-calculated velocity based on wheel encoder, in case you want to fuse into robot_localizaiton. -->
+  
   <node pkg="kvh_geo_fog_3d_driver" type="kvh_geo_fog_3d_driver_node" name="kvh_geo_fog_3d_driver_node" output="screen">
     <param name="port" value="$(arg port)" />
     <param name="baud" value="$(arg baud)" />
     <param name="debug" value="$(arg debug)" />
+    <param name="odomPulseToMeters" value="$(arg odomPulseToMeters)" />
     <param name="filterVehicleType" value="$(arg filterVehicleType)" />
     <param name="atmosphericAltitudeEnabled" value="$(arg atmosphericAltitudeEnabled)" />
     <param name="velocityHeadingEnabled" value="$(arg velocityHeadingEnabled)" />
     <param name="reversingDetectionEnabled" value="$(arg reversingDetectionEnabled)" />
     <param name="motionAnalysisEnabled" value="$(arg motionAnalysisEnabled)" />
+    <param name="vehicleTrackWidth" value="$(arg vehicleTrackWidth)" />
+    <param name="encoderOnLeft" value="$(arg encoderOnLeft)" />
+    <param name="odometerVelocityCovariance" value="$(arg odometerVelocityCovariance)" />
   </node>
 </launch>
