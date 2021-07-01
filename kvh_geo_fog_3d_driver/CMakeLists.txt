@@ -21,14 +21,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
 )
 
-set(KVH_DRIVER_FILES
-  src/kvh_driver/driver_main.cpp
-  src/kvh_driver/decode_packets.cpp
-  src/kvh_driver/packet_storage.cpp
-  src/kvh_driver/kvh_global_vars.cpp
-  src/kvh_driver/device_configuration.cpp
-)
-
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
@@ -118,14 +110,14 @@ include_directories(
 )
 
 ## Notes on the below:
-## I would like to build the sdk as a seperate library, instead of building it 
+## I would like to build the sdk as a seperate library, instead of building it
 ## in with the ros library. When built seperately, I run into the issue of tcgetattribute
-## causing a segmentation fault. There must be some cmake way around this, but I do not 
+## causing a segmentation fault. There must be some cmake way around this, but I do not
 ## know or want to spend time on it right now.
 #add_library(geo_fog_sdk
 #  geo_fog_sdk/an_packet_protocol.c
 #  geo_fog_sdk/spatial_packets.c
-#  geo_fog_sdk/rs232/rs232.c 
+#  geo_fog_sdk/rs232/rs232.c
 #)
 
 add_library(${PROJECT_NAME}
@@ -133,7 +125,11 @@ add_library(${PROJECT_NAME}
   geo_fog_sdk/rs232/rs232.c
   geo_fog_sdk/spatial_packets.c
   src/kvh_diagnostics_container.cpp
-  ${KVH_DRIVER_FILES}
+  src/kvh_driver/driver_main.cpp
+  src/kvh_driver/decode_packets.cpp
+  src/kvh_driver/device_configuration.cpp
+  src/kvh_driver/kvh_global_vars.cpp
+  src/kvh_driver/packet_storage.cpp
 )
 
 ## Specify libraries to link a library or executable target against
@@ -144,7 +140,7 @@ target_link_libraries(${PROJECT_NAME}
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(${PROJECT_NAME} 
+add_dependencies(${PROJECT_NAME}
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
   ${PROJECT_NAME}_gencfg
@@ -153,9 +149,9 @@ add_dependencies(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node 
+add_executable(${PROJECT_NAME}_node
   src/kvh_geo_fog_3d_node.cpp
-  ${KVH_DRIVER_FILES}
+  src/packet_publisher.cpp
 )
 
 ## Add cmake target dependencies of the executable
@@ -196,9 +192,6 @@ target_link_libraries(determine_baud_node
 #  ${PROJECT_NAME}_gencfg
 #)
 
-#configure_file(src/config.txt ${CMAKE_CURRENT_BINARY_DIR}/config.txt COPYONLY)
-#file(COPY settings DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/flir_adk_driver_node.dir/src)
-
 #############
 ## Install ##
 #############
@@ -206,15 +199,8 @@ target_link_libraries(determine_baud_node
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
 ## Mark executables and/or libraries for installation
-install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node determine_baud_node
+install(TARGETS determine_baud_node ${PROJECT_NAME} ${PROJECT_NAME}_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -238,7 +224,7 @@ install(DIRECTORY include/rs232
   PATTERN ".svn" EXCLUDE
 )
 ## Make sure we get everything in launch installed
-install(DIRECTORY launch 
+install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
@@ -285,7 +271,7 @@ include_directories(
   )
 
 if(CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(${PROJECT_NAME}-test 
+  catkin_add_gtest(${PROJECT_NAME}-test
     test/init_vars.cpp
     test/device_configuration_test.cpp
     test/packet_storage_test.cpp

@@ -53,6 +53,23 @@
         freqPair(packet_id_ecef_position, 46),
         freqPair(packet_id_north_seeking_status, 12)};
 
+    kvh::KvhPacketRequest KvhPackReqEnv::allPacketRequest = {
+        freqPair(packet_id_system_state, 30),
+        freqPair(packet_id_unix_time, 30),
+        freqPair(packet_id_raw_sensors, 30),
+        freqPair(packet_id_satellites, 30),
+        freqPair(packet_id_satellites_detailed, 30),
+        freqPair(packet_id_local_magnetics, 30),
+        freqPair(packet_id_utm_position, 30),
+        freqPair(packet_id_ecef_position, 30),
+        freqPair(packet_id_north_seeking_status, 30),
+        freqPair(packet_id_euler_orientation_standard_deviation, 30),
+        freqPair(packet_id_odometer_state, 30),
+        freqPair(packet_id_raw_gnss, 30),
+        freqPair(packet_id_body_velocity, 30),
+        freqPair(packet_id_velocity_standard_deviation, 30),
+    };
+
     kvh::KvhPacketRequest KvhPackReqEnv::minFrequencyRequest = {
         freqPair(packet_id_system_state, 0)};
 
