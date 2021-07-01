@@ -2,6 +2,11 @@
 Changelog for package kvh_geo_fog_3d_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.1 (2021-07-01)
+-----------
+* Fixing merge error in changelog
+* Contributors: Zach LaCelle
+
 1.5.0 (2021-07-01)
 -----------
 * No changes to the RViz plugin.

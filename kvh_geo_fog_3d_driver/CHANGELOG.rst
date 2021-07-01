@@ -2,6 +2,10 @@
 Changelog for package kvh_geo_fog_3d_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.1 (2021-07-01)
+-----------
+* No changes to driver package.
+
 1.5.0 (2021-07-01)
 -----------
 * Fixing major bug with ENU and FLU roll/pitch.
