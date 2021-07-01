@@ -370,9 +370,9 @@ void PublishIMU_ENU(ros::Publisher &_publisher, system_state_packet_t _sysStateP
     imuENU.header.frame_id = "imu_link_flu";
 
     //For NED -> ENU transformation:
-    //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
-    double roll = _sysStatePacket.orientation[1];
-    double pitch = _sysStatePacket.orientation[0];
+    //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> -Pitch, and Roll -> Roll)
+    double roll = _sysStatePacket.orientation[0];
+    double pitch = -1 * _sysStatePacket.orientation[1];
     double yawNED = BoundFromZeroTo2Pi(_sysStatePacket.orientation[2]);
     double yawENU = BoundFromZeroTo2Pi(-1 * yawNED + (M_PI_2));
 
@@ -446,9 +446,9 @@ void PublishIMU_RPY_ENU(ros::Publisher &_publisher, system_state_packet_t _sysSt
     imuRpyENU.header.frame_id = "imu_link_flu";
 
     //For NED -> ENU transformation:
-    //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
-    double roll = _sysStatePacket.orientation[1];
-    double pitch = _sysStatePacket.orientation[0];
+    //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> -Pitch, and Roll -> Roll)
+    double roll = _sysStatePacket.orientation[0];
+    double pitch = -1 * _sysStatePacket.orientation[1];
     double yawNED = BoundFromZeroTo2Pi(_sysStatePacket.orientation[2]);
     double yawENU = BoundFromZeroTo2Pi(-1 * yawNED + (M_PI_2));
 
@@ -466,9 +466,9 @@ void PublishIMU_RPY_ENU_DEG(ros::Publisher &_publisher, system_state_packet_t _s
     imuRpyENUDeg.header.frame_id = "imu_link_flu";
 
     //For NED -> ENU transformation:
-    //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
-    double rollDeg = ((_sysStatePacket.orientation[1] * 180.0) / M_PI);
-    double pitchDeg = ((_sysStatePacket.orientation[0] * 180.0) / M_PI);
+    //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> -Pitch, and Roll -> Roll)
+    double rollDeg = ((_sysStatePacket.orientation[0] * 180.0) / M_PI);
+    double pitchDeg = -1 * ((_sysStatePacket.orientation[1] * 180.0) / M_PI);
     double yawNED = BoundFromZeroTo2Pi(_sysStatePacket.orientation[2]);
     double yawENU = BoundFromZeroTo2Pi(-1 * yawNED + (M_PI_2));
     double yawENUDeg = ((yawENU * 180.0) / M_PI);
@@ -639,9 +639,9 @@ void PublishOdomENU(ros::Publisher &_publisher, system_state_packet_t _sysStateP
 
     // Orientation
     //For NED -> ENU transformation:
-    //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> Roll, and Roll -> Pitch)
-    double roll = _sysStatePacket.orientation[1];
-    double pitch = _sysStatePacket.orientation[0];
+    //(X -> Y, Y -> -X, Z -> -Z, Yaw = -Yaw + 90 deg, Pitch -> -Pitch, and Roll -> Roll)
+    double roll = _sysStatePacket.orientation[0];
+    double pitch = -1 * _sysStatePacket.orientation[1];
     double yawNED = BoundFromZeroTo2Pi(_sysStatePacket.orientation[2]);
     double yawENU = (-1 * yawNED + M_PI_2);
     tf2::Quaternion q = quatFromRPY(roll, pitch, yawENU);
@@ -760,13 +760,13 @@ void PublishIMUSensorRawFLU(ros::Publisher &_publisher, raw_sensors_packet_t _ra
     imuRawFLU.header.frame_id = "imu_link_flu";
 
     // ANGULAR VELOCITY
-    imuRawFLU.angular_velocity.x = _rawSensorPack.gyroscopes[1];
-    imuRawFLU.angular_velocity.y = _rawSensorPack.gyroscopes[0];
+    imuRawFLU.angular_velocity.x = _rawSensorPack.gyroscopes[0];
+    imuRawFLU.angular_velocity.y = -1 * _rawSensorPack.gyroscopes[1];
     imuRawFLU.angular_velocity.z = -1 * _rawSensorPack.gyroscopes[2]; // To account for east north up system
 
     // LINEAR ACCELERATION
-    imuRawFLU.linear_acceleration.x = _rawSensorPack.accelerometers[1];
-    imuRawFLU.linear_acceleration.y = _rawSensorPack.accelerometers[0];
+    imuRawFLU.linear_acceleration.x = _rawSensorPack.accelerometers[0];
+    imuRawFLU.linear_acceleration.y = -1 * _rawSensorPack.accelerometers[1];
     imuRawFLU.linear_acceleration.z = -1 * _rawSensorPack.accelerometers[2];
 
     _publisher.publish(imuRawFLU);
